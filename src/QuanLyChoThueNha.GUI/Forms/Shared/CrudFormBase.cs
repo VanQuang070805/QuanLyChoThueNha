@@ -1,0 +1,532 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Drawing;
+using System.Linq;
+using System.Reflection;
+using System.Windows.Forms;
+using MaterialSkin.Controls;
+
+namespace QuanLyChoThueNha.GUI.Forms.Shared
+{
+    public class FieldDefinition
+    {
+        public FieldDefinition(string propertyName, string caption, Type valueType = null,
+            bool readOnly = false, string[] options = null, bool multiline = false,
+            IEnumerable<ComboOption> lookupOptions = null)
+        {
+            PropertyName = propertyName;
+            Caption = caption;
+            ValueType = valueType;
+            ReadOnly = readOnly;
+            Options = options;
+            Multiline = multiline;
+            LookupOptions = lookupOptions == null ? null : lookupOptions.ToList();
+        }
+
+        public string PropertyName { get; private set; }
+        public string Caption { get; private set; }
+        public Type ValueType { get; private set; }
+        public bool ReadOnly { get; private set; }
+        public string[] Options { get; private set; }
+        public bool Multiline { get; private set; }
+        public IList<ComboOption> LookupOptions { get; private set; }
+
+        public static FieldDefinition Lookup(string propertyName, string caption,
+            IEnumerable<ComboOption> options, bool readOnly = false)
+        {
+            return new FieldDefinition(propertyName, caption, typeof(string), readOnly, null, false, options);
+        }
+    }
+
+    public class ComboOption
+    {
+        public ComboOption(string value, string display)
+        {
+            Value = value;
+            Display = string.IsNullOrWhiteSpace(display) ? value : display;
+        }
+
+        public string Value { get; private set; }
+        public string Display { get; private set; }
+
+        public override string ToString()
+        {
+            return Display;
+        }
+    }
+
+    public abstract class CrudFormBase<T> : MaterialForm where T : class, new()
+    {
+        private readonly List<FieldDefinition> _fields;
+        private readonly Dictionary<string, Control> _editors = new Dictionary<string, Control>();
+        private readonly FlowLayoutPanel _commandPanel = new FlowLayoutPanel();
+        private readonly ErrorProvider _errorProvider = new ErrorProvider();
+        protected readonly DataGridView Grid = new DataGridView();
+        protected readonly TextBox TxtSearch = new TextBox();
+        protected readonly Label LblStatus = new Label();
+
+        protected CrudFormBase(string title, IEnumerable<FieldDefinition> fields)
+        {
+            Text = title;
+            Size = new Size(1180, 680);
+            StartPosition = FormStartPosition.CenterScreen;
+            _fields = fields.ToList();
+            _errorProvider.BlinkStyle = ErrorBlinkStyle.NeverBlink;
+            BuildLayout();
+            Load += delegate { ReloadData(); };
+        }
+
+        protected abstract IEnumerable<T> GetItems();
+        protected abstract bool AddItem(T item, out string error);
+        protected abstract bool UpdateItem(T item, out string error);
+        protected abstract bool DeleteItem(T item, out string error);
+
+        protected virtual void AfterGridBound()
+        {
+        }
+
+        protected void AddCommandButton(string text, EventHandler handler)
+        {
+            var btn = CreateButton(text);
+            btn.Click += handler;
+            _commandPanel.Controls.Add(btn);
+        }
+
+        protected T CurrentItem
+        {
+            get
+            {
+                if (Grid.CurrentRow == null) return null;
+                return Grid.CurrentRow.DataBoundItem as T;
+            }
+        }
+
+        protected void ReloadData()
+        {
+            try
+            {
+                var items = GetItems().ToList();
+                var keyword = TxtSearch.Text.Trim().ToLowerInvariant();
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    items = items.Where(x => _fields.Any(f =>
+                    {
+                        var value = GetProperty(f.PropertyName).GetValue(x, null);
+                        return value != null && value.ToString().ToLowerInvariant().Contains(keyword);
+                    })).ToList();
+                }
+
+                Grid.DataSource = new BindingList<T>(items);
+                AfterGridBound();
+                LblStatus.Text = string.Format("So dong: {0}", items.Count);
+            }
+            catch (Exception ex)
+            {
+                Grid.DataSource = null;
+                LblStatus.Text = "Khong tai du lieu: " + ex.Message;
+            }
+        }
+
+        private void BuildLayout()
+        {
+            var root = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Padding = new Padding(12, 76, 12, 12)
+            };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68));
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32));
+
+            var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3 };
+            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+
+            TxtSearch.Dock = DockStyle.Fill;
+            TxtSearch.TextChanged += delegate { ReloadData(); };
+            left.Controls.Add(TxtSearch, 0, 0);
+
+            Grid.Dock = DockStyle.Fill;
+            Grid.AutoGenerateColumns = true;
+            Grid.AllowUserToAddRows = false;
+            Grid.AllowUserToDeleteRows = false;
+            Grid.ReadOnly = true;
+            Grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            Grid.MultiSelect = false;
+            Grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            Grid.RowHeadersVisible = false;
+            Grid.DataBindingComplete += delegate { Grid.ClearSelection(); };
+            Grid.SelectionChanged += delegate { BindCurrentToInputs(); };
+            left.Controls.Add(Grid, 0, 1);
+
+            LblStatus.Dock = DockStyle.Fill;
+            LblStatus.TextAlign = ContentAlignment.MiddleLeft;
+            left.Controls.Add(LblStatus, 0, 2);
+
+            var right = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                ColumnCount = 1,
+                Padding = new Padding(10)
+            };
+
+            foreach (var field in _fields)
+            {
+                right.Controls.Add(new Label
+                {
+                    Text = field.Caption,
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Margin = new Padding(0, 6, 0, 2)
+                });
+
+                var editor = CreateEditor(field);
+                _editors[field.PropertyName] = editor;
+                right.Controls.Add(editor);
+            }
+
+            _commandPanel.Dock = DockStyle.Top;
+            _commandPanel.AutoSize = true;
+            _commandPanel.WrapContents = true;
+            _commandPanel.Margin = new Padding(0, 12, 0, 0);
+            _commandPanel.Controls.Add(CreateButton("Them", BtnAdd_Click));
+            _commandPanel.Controls.Add(CreateButton("Sua", BtnUpdate_Click));
+            _commandPanel.Controls.Add(CreateButton("Xoa", BtnDelete_Click));
+            _commandPanel.Controls.Add(CreateButton("Lam moi", delegate { ClearInputs(); ReloadData(); }));
+            right.Controls.Add(_commandPanel);
+
+            root.Controls.Add(left, 0, 0);
+            root.Controls.Add(right, 1, 0);
+            Controls.Add(root);
+        }
+
+        private Control CreateEditor(FieldDefinition field)
+        {
+            var type = Nullable.GetUnderlyingType(field.ValueType ?? GetProperty(field.PropertyName).PropertyType)
+                ?? (field.ValueType ?? GetProperty(field.PropertyName).PropertyType);
+
+            if (field.LookupOptions != null && field.LookupOptions.Count > 0)
+            {
+                var combo = new ComboBox
+                {
+                    Dock = DockStyle.Top,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Height = 30,
+                    Enabled = !field.ReadOnly,
+                    DisplayMember = "Display",
+                    ValueMember = "Value"
+                };
+                combo.DataSource = field.LookupOptions.ToList();
+                return combo;
+            }
+
+            if (field.Options != null && field.Options.Length > 0)
+            {
+                var combo = new ComboBox
+                {
+                    Dock = DockStyle.Top,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Height = 30,
+                    Enabled = !field.ReadOnly
+                };
+                combo.Items.AddRange(field.Options);
+                if (combo.Items.Count > 0) combo.SelectedIndex = 0;
+                return combo;
+            }
+
+            if (type == typeof(bool))
+            {
+                return new CheckBox { Dock = DockStyle.Top, Height = 28, Enabled = !field.ReadOnly };
+            }
+
+            if (type == typeof(DateTime))
+            {
+                return new DateTimePicker
+                {
+                    Dock = DockStyle.Top,
+                    Format = DateTimePickerFormat.Custom,
+                    CustomFormat = "dd/MM/yyyy",
+                    ShowCheckBox = Nullable.GetUnderlyingType(GetProperty(field.PropertyName).PropertyType) != null,
+                    Enabled = !field.ReadOnly
+                };
+            }
+
+            if (type == typeof(int) || type == typeof(decimal) || type == typeof(float) || type == typeof(double))
+            {
+                return new NumericUpDown
+                {
+                    Dock = DockStyle.Top,
+                    Maximum = 1000000000000,
+                    Minimum = -1000000000000,
+                    DecimalPlaces = type == typeof(int) ? 0 : 2,
+                    ThousandsSeparator = true,
+                    Enabled = !field.ReadOnly
+                };
+            }
+
+            return new TextBox
+            {
+                Dock = DockStyle.Top,
+                ReadOnly = field.ReadOnly,
+                Multiline = field.Multiline,
+                Height = field.Multiline ? 66 : 28,
+                ScrollBars = field.Multiline ? ScrollBars.Vertical : ScrollBars.None
+            };
+        }
+
+        private MaterialButton CreateButton(string text, EventHandler handler = null)
+        {
+            var btn = new MaterialButton
+            {
+                Text = text,
+                AutoSize = true,
+                Margin = new Padding(0, 4, 6, 4)
+            };
+            if (handler != null) btn.Click += handler;
+            return btn;
+        }
+
+        private void BtnAdd_Click(object sender, EventArgs e)
+        {
+            var item = ReadInputs(new T(), false);
+            if (!ValidateBeforeSave(item)) return;
+            string error;
+            if (!AddItem(item, out error))
+            {
+                ShowError(error);
+                return;
+            }
+            ReloadData();
+            ClearInputs();
+        }
+
+        private void BtnUpdate_Click(object sender, EventArgs e)
+        {
+            var item = CurrentItem;
+            if (item == null)
+            {
+                ShowError("Chon dong can sua.");
+                return;
+            }
+            ReadInputs(item, true);
+            if (!ValidateBeforeSave(item)) return;
+            string error;
+            if (!UpdateItem(item, out error))
+            {
+                ShowError(error);
+                return;
+            }
+            ReloadData();
+        }
+
+        private void BtnDelete_Click(object sender, EventArgs e)
+        {
+            var item = CurrentItem;
+            if (item == null)
+            {
+                ShowError("Chon dong can xoa.");
+                return;
+            }
+            if (MessageBox.Show("Xoa ban ghi dang chon?", "Xac nhan", MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question) != DialogResult.Yes) return;
+
+            string error;
+            if (!DeleteItem(item, out error))
+            {
+                ShowError(error);
+                return;
+            }
+            ReloadData();
+            ClearInputs();
+        }
+
+        private T ReadInputs(T item, bool updateMode)
+        {
+            foreach (var field in _fields)
+            {
+                if (field.ReadOnly && !updateMode) continue;
+                if (field.ReadOnly && updateMode) continue;
+
+                var property = GetProperty(field.PropertyName);
+                var value = ReadEditorValue(field, property.PropertyType);
+                property.SetValue(item, value, null);
+            }
+            return item;
+        }
+
+        private object ReadEditorValue(FieldDefinition field, Type propertyType)
+        {
+            var type = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+            var editor = _editors[field.PropertyName];
+
+            if (editor is ComboBox)
+            {
+                var combo = (ComboBox)editor;
+                if (combo.SelectedItem is ComboOption)
+                    return ((ComboOption)combo.SelectedItem).Value;
+                return combo.SelectedItem == null ? null : combo.SelectedItem.ToString();
+            }
+            if (editor is CheckBox) return ((CheckBox)editor).Checked;
+            if (editor is DateTimePicker)
+            {
+                var picker = (DateTimePicker)editor;
+                if (Nullable.GetUnderlyingType(propertyType) != null && !picker.Checked) return null;
+                return picker.Value.Date;
+            }
+            if (editor is NumericUpDown)
+            {
+                var value = ((NumericUpDown)editor).Value;
+                if (type == typeof(int)) return Convert.ToInt32(value);
+                if (type == typeof(float)) return Convert.ToSingle(value);
+                if (type == typeof(double)) return Convert.ToDouble(value);
+                return value;
+            }
+            return ((TextBox)editor).Text.Trim();
+        }
+
+        private void BindCurrentToInputs()
+        {
+            var item = CurrentItem;
+            if (item == null) return;
+            foreach (var field in _fields)
+            {
+                var property = GetProperty(field.PropertyName);
+                var value = property.GetValue(item, null);
+                var editor = _editors[field.PropertyName];
+
+                if (editor is ComboBox)
+                {
+                    var combo = (ComboBox)editor;
+                    if (combo.DataSource != null && value != null)
+                    {
+                        combo.SelectedValue = value.ToString();
+                    }
+                    else
+                    {
+                        combo.SelectedItem = value == null ? null : value.ToString();
+                    }
+                }
+                else if (editor is CheckBox)
+                {
+                    ((CheckBox)editor).Checked = value != null && (bool)value;
+                }
+                else if (editor is DateTimePicker)
+                {
+                    var picker = (DateTimePicker)editor;
+                    if (value == null)
+                    {
+                        picker.Checked = false;
+                    }
+                    else
+                    {
+                        picker.Checked = true;
+                        picker.Value = (DateTime)value;
+                    }
+                }
+                else if (editor is NumericUpDown)
+                {
+                    ((NumericUpDown)editor).Value = value == null ? 0 : Convert.ToDecimal(value);
+                }
+                else
+                {
+                    ((TextBox)editor).Text = value == null ? string.Empty : value.ToString();
+                }
+            }
+        }
+
+        private void ClearInputs()
+        {
+            foreach (var field in _fields)
+            {
+                var editor = _editors[field.PropertyName];
+                if (editor is TextBox) ((TextBox)editor).Clear();
+                else if (editor is NumericUpDown) ((NumericUpDown)editor).Value = 0;
+                else if (editor is CheckBox) ((CheckBox)editor).Checked = false;
+                else if (editor is DateTimePicker)
+                {
+                    var picker = (DateTimePicker)editor;
+                    picker.Value = DateTime.Today;
+                    picker.Checked = !picker.ShowCheckBox;
+                }
+                else if (editor is ComboBox && ((ComboBox)editor).Items.Count > 0) ((ComboBox)editor).SelectedIndex = 0;
+            }
+            Grid.ClearSelection();
+            ClearErrors();
+        }
+
+        private PropertyInfo GetProperty(string propertyName)
+        {
+            return typeof(T).GetProperty(propertyName);
+        }
+
+        protected void ShowError(string error)
+        {
+            MessageBox.Show(string.IsNullOrWhiteSpace(error) ? "Thao tac khong thanh cong." : error,
+                "Thong bao", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        protected Control GetEditor(string propertyName)
+        {
+            return _editors.ContainsKey(propertyName) ? _editors[propertyName] : null;
+        }
+
+        protected void SetEditorValue(string propertyName, object value)
+        {
+            var editor = GetEditor(propertyName);
+            if (editor == null) return;
+
+            if (editor is TextBox) ((TextBox)editor).Text = value == null ? string.Empty : value.ToString();
+            else if (editor is NumericUpDown) ((NumericUpDown)editor).Value = value == null ? 0 : Convert.ToDecimal(value);
+            else if (editor is CheckBox) ((CheckBox)editor).Checked = value != null && Convert.ToBoolean(value);
+            else if (editor is ComboBox)
+            {
+                var combo = (ComboBox)editor;
+                if (combo.DataSource != null && value != null) combo.SelectedValue = value.ToString();
+                else combo.SelectedItem = value == null ? null : value.ToString();
+            }
+        }
+
+        protected void ClearFormInputs()
+        {
+            ClearInputs();
+        }
+
+        private bool ValidateBeforeSave(T item)
+        {
+            ClearErrors();
+
+            var context = new ValidationContext(item, null, null);
+            var results = new List<ValidationResult>();
+            Validator.TryValidateObject(item, context, results, true);
+            results = results
+                .Where(r => !r.MemberNames.Any() || r.MemberNames.Any(m => _editors.ContainsKey(m)))
+                .ToList();
+
+            if (results.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (var result in results)
+            {
+                var member = result.MemberNames.FirstOrDefault();
+                if (!string.IsNullOrEmpty(member) && _editors.ContainsKey(member))
+                    _errorProvider.SetError(_editors[member], result.ErrorMessage);
+            }
+
+            ShowError(string.Join(Environment.NewLine, results.Select(r => r.ErrorMessage)));
+            return false;
+        }
+
+        private void ClearErrors()
+        {
+            foreach (var editor in _editors.Values)
+                _errorProvider.SetError(editor, string.Empty);
+        }
+    }
+}
