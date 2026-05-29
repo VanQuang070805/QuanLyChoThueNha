@@ -165,12 +165,13 @@ namespace QuanLyChoThueNha.BLL.Services
                     NgayTao = DateTime.Now
                 };
                 _uow.TaiKhoans.Add(taiKhoan);
+                _uow.Complete(); // flush TaiKhoan truoc de FK hop le
 
                 khach.MaKhach = SinhMa();
                 khach.MaTaiKhoan = taiKhoan.MaTaiKhoan;
                 _uow.KhachThues.Add(khach);
-
                 _uow.Complete();
+
                 _uow.CommitTransaction();
                 return true;
             }
