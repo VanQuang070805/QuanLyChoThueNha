@@ -297,6 +297,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         private void Grid_SelectionChanged(object sender, EventArgs e)
         {
+            if (_mode == FormMode.Adding) return;
             if (grid.CurrentRow == null) return;
             var khach = grid.CurrentRow.DataBoundItem as KhachThue;
             if (khach == null) return;
