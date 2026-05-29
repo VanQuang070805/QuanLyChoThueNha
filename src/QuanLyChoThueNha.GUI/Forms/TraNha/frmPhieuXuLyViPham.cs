@@ -36,7 +36,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         protected override bool AddItem(PhieuXuLyViPham item, out string error)
         {
-            item.MaNhanVien = SessionContext.MaNguoiDung; // mã người lập (NhanVien hoặc Admin)
+            item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             return _service.GhiNhan(item, out error);
         }
 

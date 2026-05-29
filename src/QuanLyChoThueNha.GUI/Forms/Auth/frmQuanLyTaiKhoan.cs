@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Forms.Shared;
@@ -34,7 +35,18 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             };
         }
 
-        protected override IEnumerable<TaiKhoan> GetItems() { return _service.LayTatCa(); }
+        // Hien thi Admin/NhanVien kem ma nguoi dung (MaAdmin/MaNhanVien). KhachThue quan ly rieng.
+        protected override IEnumerable<TaiKhoan> GetItems()
+        {
+            return _service.LayTatCaVoiMaNguoiDung();
+        }
+
+        protected override void AfterGridBound()
+        {
+            // An cot hash mat khau - khong can hien thi
+            if (Grid.Columns.Contains("MatKhauHash"))
+                Grid.Columns["MatKhauHash"].Visible = false;
+        }
 
         protected override bool AddItem(TaiKhoan item, out string error)
         {
@@ -55,7 +67,16 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private void BtnTaoMoi_Click(object sender, EventArgs e)
         {
-            ClearFormInputs();
+            GoToAddMode();
+        }
+
+        protected override void OnAfterAdd()
+        {
+            DatMaTaiKhoanMoi();
+        }
+
+        private void DatMaTaiKhoanMoi()
+        {
             SetEditorValue("MaTaiKhoan", _service.LayMaTaiKhoanTiepTheo());
             SetEditorValue("VaiTro", "NhanVien");
             SetEditorValue("TrangThai", true);

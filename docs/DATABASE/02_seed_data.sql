@@ -12,9 +12,9 @@ GO
 
 -- ── TaiKhoan ────────────────────────────────────────────────
 INSERT INTO TaiKhoan VALUES
-('TK001','admin',    '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','admin@gmail.com',    '0901000001','Admin',    1, GETDATE()),
-('TK002','nhanvien', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','nv@gmail.com',       '0901000002','NhanVien', 1, GETDATE()),
-('TK003','khach01',  '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','khach01@gmail.com',  '0901000003','KhachThue',1, GETDATE());
+('TK001','admin',    '$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2','admin@gmail.com',    '0901000001','Admin',    1, GETDATE()),
+('TK002','nhanvien', '$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2','nv@gmail.com',       '0901000002','NhanVien', 1, GETDATE()),
+('TK003','khach01',  '$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2','khach01@gmail.com',  '0901000003','KhachThue',1, GETDATE());
 
 -- ── Admin ───────────────────────────────────────────────────
 INSERT INTO Admin VALUES ('AD001','TK001','Nguyễn Văn Admin');

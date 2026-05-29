@@ -37,7 +37,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         protected override bool AddItem(GiaHanHopDong item, out string error)
         {
-            var maNhanVien = SessionContext.MaNguoiDung;
+            var maNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             return _service.YeuCauGiaHan(item.MaHopDong, item.NgayKetThucMoi, maNhanVien, out error);
         }
 

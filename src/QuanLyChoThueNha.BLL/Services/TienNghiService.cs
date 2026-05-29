@@ -177,9 +177,14 @@ namespace QuanLyChoThueNha.BLL.Services
             catch (Exception ex)
             {
                 _uow.RollbackTransaction();
-                loi = "Loi he thong: " + ex.Message;
+                var inner = ex;
+                while (inner.InnerException != null) inner = inner.InnerException;
+                loi = inner.Message;
                 return false;
             }
         }
+
+        public string LayMaKhachTiepTheo()   => SinhMa();
+        public string LayMaTaiKhoanTiepTheo() => SinhMaTaiKhoan();
     }
 }

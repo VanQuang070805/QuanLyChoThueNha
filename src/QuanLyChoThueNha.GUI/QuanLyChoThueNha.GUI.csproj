@@ -93,6 +93,9 @@
     <Compile Include="Forms\Auth\frmQuanLyTaiKhoan.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\Auth\frmQuanLyTaiKhoanKhach.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\frmMain.cs">
       <SubType>Form</SubType>
     </Compile>

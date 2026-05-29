@@ -13,10 +13,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 {
     public class frmCanHo : MaterialForm
     {
+        private enum FormMode { View, Adding, Editing }
+
         private readonly CanHoService _canHoSvc = new CanHoService();
         private readonly ToaService _toaSvc = new ToaService();
         private readonly LoaiCanHoService _loaiSvc = new LoaiCanHoService();
         private readonly ErrorProvider _errors = new ErrorProvider();
+
+        private FormMode _mode = FormMode.View;
 
         private DataGridView dgv;
         private MaterialTextBox txtMa;
@@ -31,6 +35,13 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private NumericUpDown numTienCoc;
         private NumericUpDown numTang;
 
+        // Button references de doi nhan / trang thai theo mode
+        private MaterialButton btnThem;
+        private MaterialButton btnSua;
+        private MaterialButton btnXoa;
+        private MaterialButton btnLamMoi;
+        private Label _lblMsg;
+
         public frmCanHo()
         {
             Text = "Quan ly Can ho";
@@ -40,6 +51,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             BuildLayout();
             NapComboBox();
             TaiDuLieu();
+            EnterAddMode();
         }
 
         private void BuildLayout()
@@ -98,6 +110,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             txtMoTa.Multiline = true;
             txtMoTa.Height = 72;
 
+            // Bat dau tat ca cac truong co the sua - se duoc bat khi vao Add/Edit mode
+            SetEditorsEnabled(false);
+
             AddField(right, "Ma can ho", txtMa);
             AddField(right, "Toa nha *", cboToa);
             AddField(right, "Loai can ho *", cboLoai);
@@ -109,17 +124,86 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             AddField(right, "Tinh trang", cboTinhTrang);
             AddField(right, "Mo ta", txtMoTa);
 
-            var commands = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true, Margin = new Padding(0, 12, 0, 0) };
-            commands.Controls.Add(CreateButton("Them", btnThem_Click));
-            commands.Controls.Add(CreateButton("Sua", btnSua_Click));
-            commands.Controls.Add(CreateButton("Xoa", btnXoa_Click));
-            commands.Controls.Add(CreateButton("Lam moi", delegate { TaiDuLieu(); XoaTrong(); }));
+            var commands = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top, AutoSize = true, WrapContents = true,
+                Margin = new Padding(0, 12, 0, 0)
+            };
+            btnThem   = CreateButton("Them",    btnThem_Click);
+            btnSua    = CreateButton("Sua",     btnSua_Click);
+            btnXoa    = CreateButton("Xoa",     btnXoa_Click);
+            btnLamMoi = CreateButton("Lam moi", btnLamMoi_Click);
+            commands.Controls.Add(btnThem);
+            commands.Controls.Add(btnSua);
+            commands.Controls.Add(btnXoa);
+            commands.Controls.Add(btnLamMoi);
             right.Controls.Add(commands);
 
             root.Controls.Add(left, 0, 0);
             root.Controls.Add(right, 1, 0);
+
+            _lblMsg = new Label
+            {
+                Dock = DockStyle.Bottom, Height = 34, AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(10, 0, 10, 0),
+                Font = new Font("Segoe UI", 9f), Visible = false
+            };
             Controls.Add(root);
+            Controls.Add(_lblMsg);
         }
+
+        private void ShowError(string msg)
+        {
+            _lblMsg.Text = msg; _lblMsg.BackColor = Color.MistyRose;
+            _lblMsg.ForeColor = Color.DarkRed; _lblMsg.Visible = true;
+        }
+
+        private void HideMsg() { _lblMsg.Visible = false; }
+
+        // ── Mode management ──────────────────────────────────────────────────────
+
+        private void EnterAddMode()
+        {
+            _mode = FormMode.Adding;
+            HideMsg(); XoaTrong(); SetEditorsEnabled(true);
+            btnThem.Text  = "Luu";  btnThem.Enabled  = true;
+            btnSua.Text   = "Sua";  btnSua.Enabled   = false;
+            btnXoa.Enabled = false; btnLamMoi.Text = "Lam moi";
+        }
+
+        private void EnterViewMode()
+        {
+            _mode = FormMode.View;
+            HideMsg(); SetEditorsEnabled(false);
+            btnThem.Text  = "Them"; btnThem.Enabled  = true;
+            btnSua.Text   = "Sua";  btnSua.Enabled   = true;
+            btnXoa.Enabled = true;  btnLamMoi.Text = "Lam moi";
+        }
+
+        private void EnterEditMode()
+        {
+            _mode = FormMode.Editing;
+            HideMsg(); SetEditorsEnabled(true);
+            btnThem.Text  = "Them"; btnThem.Enabled  = false;
+            btnSua.Text   = "Luu";  btnSua.Enabled   = true;
+            btnXoa.Enabled = false; btnLamMoi.Text = "Huy";
+        }
+
+        private void SetEditorsEnabled(bool enabled)
+        {
+            cboToa.Enabled        = enabled;
+            cboLoai.Enabled       = enabled;
+            cboTinhTrang.Enabled  = enabled;
+            numDienTich.Enabled   = enabled;
+            numGiaThue.Enabled    = enabled;
+            numTienCoc.Enabled    = enabled;
+            numTang.Enabled       = enabled;
+            txtSoCanHo.ReadOnly   = !enabled;
+            txtMoTa.ReadOnly      = !enabled;
+        }
+
+        // ── Helper constructors ──────────────────────────────────────────────────
 
         private MaterialTextBox CreateTextBox(string hint, bool readOnly)
         {
@@ -135,12 +219,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             return new NumericUpDown
             {
-                Dock = DockStyle.Top,
-                Height = 30,
-                Minimum = min,
-                Maximum = max,
-                DecimalPlaces = decimalPlaces,
-                ThousandsSeparator = true
+                Dock = DockStyle.Top, Height = 30, Minimum = min, Maximum = max,
+                DecimalPlaces = decimalPlaces, ThousandsSeparator = true
             };
         }
 
@@ -148,8 +228,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             parent.Controls.Add(new Label
             {
-                Text = label,
-                AutoSize = true,
+                Text = label, AutoSize = true,
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 Margin = new Padding(0, 8, 0, 2)
             });
@@ -163,15 +242,17 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             return btn;
         }
 
+        // ── Data ─────────────────────────────────────────────────────────────────
+
         private void NapComboBox()
         {
             cboToa.DisplayMember = "TenToa";
-            cboToa.ValueMember = "MaToa";
-            cboToa.DataSource = _toaSvc.LayTatCa().OrderBy(t => t.TenToa).ToList();
+            cboToa.ValueMember   = "MaToa";
+            cboToa.DataSource    = _toaSvc.LayTatCa().OrderBy(t => t.TenToa).ToList();
 
             cboLoai.DisplayMember = "TenLoai";
-            cboLoai.ValueMember = "MaLoai";
-            cboLoai.DataSource = _loaiSvc.LayTatCa().OrderBy(l => l.TenLoai).ToList();
+            cboLoai.ValueMember   = "MaLoai";
+            cboLoai.DataSource    = _loaiSvc.LayTatCa().OrderBy(l => l.TenLoai).ToList();
 
             if (cboTinhTrang.Items.Count > 0) cboTinhTrang.SelectedIndex = 0;
         }
@@ -202,14 +283,22 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             var c = dgv.CurrentRow.DataBoundItem as CanHo;
             if (c == null) return;
 
+            // Hien thi du lieu cua dong duoc chon
+            BindRowToForm(c);
+            // Bat buoc vao View mode khi chon dong
+            EnterViewMode();
+        }
+
+        private void BindRowToForm(CanHo c)
+        {
             txtMa.Text = c.MaCanHo;
             if (cboToa.Items.Count > 0) cboToa.SelectedValue = c.MaToa;
             if (cboLoai.Items.Count > 0) cboLoai.SelectedValue = c.MaLoai;
             numDienTich.Value = Clamp((decimal)c.DienTich, numDienTich.Minimum, numDienTich.Maximum);
-            numGiaThue.Value = Clamp(c.GiaThueNiemYet, numGiaThue.Minimum, numGiaThue.Maximum);
-            numTienCoc.Value = Clamp(c.TienCocNiemYet, numTienCoc.Minimum, numTienCoc.Maximum);
-            numTang.Value = Clamp(c.TangSo, numTang.Minimum, numTang.Maximum);
-            txtSoCanHo.Text = c.SoCanHo.ToString();
+            numGiaThue.Value  = Clamp(c.GiaThueNiemYet, numGiaThue.Minimum, numGiaThue.Maximum);
+            numTienCoc.Value  = Clamp(c.TienCocNiemYet, numTienCoc.Minimum, numTienCoc.Maximum);
+            numTang.Value     = Clamp(c.TangSo, numTang.Minimum, numTang.Maximum);
+            txtSoCanHo.Text   = c.SoCanHo.ToString();
             cboTinhTrang.SelectedItem = c.TinhTrang;
             txtMoTa.Text = c.MoTa;
         }
@@ -220,6 +309,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             if (value > max) return max;
             return value;
         }
+
+        // ── Validation ───────────────────────────────────────────────────────────
 
         private bool ValidateForm(out string loi)
         {
@@ -259,68 +350,104 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
             return new CanHo
             {
-                MaToa = cboToa.SelectedValue == null ? null : cboToa.SelectedValue.ToString(),
-                MaLoai = cboLoai.SelectedValue == null ? null : cboLoai.SelectedValue.ToString(),
-                MaNhanVien = SessionContext.MaNguoiDung,
-                DienTich = Convert.ToDouble(numDienTich.Value),
+                MaToa          = cboToa.SelectedValue == null ? null : cboToa.SelectedValue.ToString(),
+                MaLoai         = cboLoai.SelectedValue == null ? null : cboLoai.SelectedValue.ToString(),
+                MaNhanVien     = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null,
+                DienTich       = Convert.ToDouble(numDienTich.Value),
                 GiaThueNiemYet = numGiaThue.Value,
                 TienCocNiemYet = numTienCoc.Value,
-                TangSo = Convert.ToInt32(numTang.Value),
-                SoCanHo = soCanHo,
-                TinhTrang = cboTinhTrang.SelectedItem == null ? "Trong" : cboTinhTrang.SelectedItem.ToString(),
-                MoTa = txtMoTa.Text.Trim()
+                TangSo         = Convert.ToInt32(numTang.Value),
+                SoCanHo        = soCanHo,
+                TinhTrang      = cboTinhTrang.SelectedItem == null ? "Trong" : cboTinhTrang.SelectedItem.ToString(),
+                MoTa           = txtMoTa.Text.Trim()
             };
         }
 
+        // ── Button handlers ──────────────────────────────────────────────────────
+
         private void btnThem_Click(object sender, EventArgs e)
         {
-            string loi;
-            if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (!_canHoSvc.Them(DocForm(), out loi))
+            if (_mode == FormMode.View || _mode == FormMode.Editing)
             {
-                MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                EnterAddMode();
                 return;
             }
+            // Adding mode -> luu
+            string loi;
+            if (!ValidateForm(out loi)) { ShowError(loi); return; }
+            try
+            {
+                if (!_canHoSvc.Them(DocForm(), out loi)) { ShowError(loi); return; }
+            }
+            catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
             TaiDuLieu();
-            XoaTrong();
+            EnterAddMode();
         }
 
         private void btnSua_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtMa.Text)) { MessageBox.Show("Chon can ho can sua."); return; }
-            string loi;
-            if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-
-            var canHo = _canHoSvc.LayTheoMa(txtMa.Text);
-            if (canHo == null) return;
-            var upd = DocForm();
-            canHo.MaToa = upd.MaToa;
-            canHo.MaLoai = upd.MaLoai;
-            canHo.DienTich = upd.DienTich;
-            canHo.GiaThueNiemYet = upd.GiaThueNiemYet;
-            canHo.TienCocNiemYet = upd.TienCocNiemYet;
-            canHo.TangSo = upd.TangSo;
-            canHo.SoCanHo = upd.SoCanHo;
-            canHo.TinhTrang = upd.TinhTrang;
-            canHo.MoTa = upd.MoTa;
-            _canHoSvc.Sua(canHo);
-            TaiDuLieu();
+            if (_mode == FormMode.View)
+            {
+                if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho can sua."); return; }
+                EnterEditMode();
+                return;
+            }
+            if (_mode == FormMode.Editing)
+            {
+                string loi;
+                if (!ValidateForm(out loi)) { ShowError(loi); return; }
+                var canHo = _canHoSvc.LayTheoMa(txtMa.Text);
+                if (canHo == null) return;
+                var upd = DocForm();
+                canHo.MaToa         = upd.MaToa;
+                canHo.MaLoai        = upd.MaLoai;
+                canHo.DienTich      = upd.DienTich;
+                canHo.GiaThueNiemYet = upd.GiaThueNiemYet;
+                canHo.TienCocNiemYet = upd.TienCocNiemYet;
+                canHo.TangSo        = upd.TangSo;
+                canHo.SoCanHo       = upd.SoCanHo;
+                canHo.TinhTrang     = upd.TinhTrang;
+                canHo.MoTa          = upd.MoTa;
+                try { _canHoSvc.Sua(canHo); }
+                catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
+                TaiDuLieu();
+                EnterAddMode();
+            }
         }
 
         private void btnXoa_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtMa.Text)) { MessageBox.Show("Chon can ho can xoa."); return; }
-            if (MessageBox.Show("Xoa can ho dang chon?", "Xac nhan", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho can xoa."); return; }
+            if (MessageBox.Show("Xoa can ho dang chon?", "Xac nhan",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             try
             {
                 _canHoSvc.Xoa(_canHoSvc.LayTheoMa(txtMa.Text));
                 TaiDuLieu();
-                XoaTrong();
+                EnterAddMode();
             }
-            catch (Exception ex)
+            catch (Exception ex) { ShowError("Khong the xoa vi co du lieu lien quan: " + LayLoiSauCung(ex)); }
+        }
+
+        private void btnLamMoi_Click(object sender, EventArgs e)
+        {
+            if (_mode == FormMode.Editing)
             {
-                MessageBox.Show("Khong the xoa vi co du lieu lien quan: " + ex.Message, "Loi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Huy sua: khoi phuc du lieu goc
+                if (dgv.CurrentRow != null)
+                {
+                    var c = dgv.CurrentRow.DataBoundItem as CanHo;
+                    if (c != null) { BindRowToForm(c); EnterViewMode(); return; }
+                }
             }
+            TaiDuLieu();
+            EnterAddMode();
+        }
+
+        private static string LayLoiSauCung(Exception ex)
+        {
+            while (ex.InnerException != null) ex = ex.InnerException;
+            return ex.Message;
         }
 
         private void XoaTrong()
@@ -329,9 +456,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             txtSoCanHo.Clear();
             txtMoTa.Clear();
             numDienTich.Value = 0;
-            numGiaThue.Value = 0;
-            numTienCoc.Value = 0;
-            numTang.Value = 1;
+            numGiaThue.Value  = 0;
+            numTienCoc.Value  = 0;
+            numTang.Value     = 1;
             if (cboToa.Items.Count > 0) cboToa.SelectedIndex = 0;
             if (cboLoai.Items.Count > 0) cboLoai.SelectedIndex = 0;
             if (cboTinhTrang.Items.Count > 0) cboTinhTrang.SelectedIndex = 0;

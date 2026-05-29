@@ -19,6 +19,15 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             AddCommandButton("Lay chi so ky truoc", BtnLayChiSoCu_Click);
             AddCommandButton("Tinh dien/nuoc/dich vu", BtnTinhDichVu_Click);
             AddCommandButton("Ghi nhan thanh toan", BtnThanhToan_Click);
+            PrePopulateNhanVien();
+        }
+
+        protected override void OnAfterAdd() { PrePopulateNhanVien(); }
+
+        private void PrePopulateNhanVien()
+        {
+            SetEditorValue("MaNhanVienThu",
+                SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : "(Admin)");
         }
 
         private static IEnumerable<FieldDefinition> Fields()
@@ -65,7 +74,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         protected override bool AddItem(HoaDonThanhToan item, out string error)
         {
-            item.MaNhanVienThu = SessionContext.MaNguoiDung; // người tạo hóa đơn
+            item.MaNhanVienThu = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             return _service.TaoHoaDon(item, out error);
         }
 
@@ -73,7 +82,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         {
             error = string.Empty;
             _service.Sua(item);
-            return true;
+            return true;  // exceptions propagate to CrudFormBase catch block
         }
 
         protected override bool DeleteItem(HoaDonThanhToan item, out string error)
@@ -88,7 +97,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             var item = CurrentItem;
             if (item == null) { ShowError("Chon hoa don can thanh toan."); return; }
             string error;
-            var maNhanVien = SessionContext.MaNguoiDung;
+            var maNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             if (!_service.ThanhToan(item.MaHoaDon, item.SoTienDaTra, item.PhuongThucThanhToan, maNhanVien, out error))
             {
                 ShowError(error);
@@ -139,7 +148,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             _service.LayChiSoKyTruoc(maHopDong, out dienCu, out nuocCu);
             SetEditorValue("ChiSoDienCu", dienCu);
             SetEditorValue("ChiSoNuocCu", nuocCu);
-            ShowError(string.Format("Da lay chi so ky truoc: Dien = {0}, Nuoc = {1}.", dienCu, nuocCu));
+            ShowInfo(string.Format("Da lay chi so ky truoc: Dien = {0}, Nuoc = {1}.", dienCu, nuocCu));
         }
 
         private void BtnTinhDichVu_Click(object sender, EventArgs e)
@@ -168,7 +177,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
             SetEditorValue("SoTienPhaiTra", amount);
             SetEditorValue("SoTienDaTra", 0);
-            ShowError(string.Format("Tieu thu: Dien {0} kWh, Nuoc {1} m3. Thanh tien: {2:N0} d.",
+            ShowInfo(string.Format("Tieu thu: Dien {0} kWh, Nuoc {1} m3. Thanh tien: {2:N0} d.",
                 dienMoi - dienCu, nuocMoi - nuocCu, amount));
         }
     }

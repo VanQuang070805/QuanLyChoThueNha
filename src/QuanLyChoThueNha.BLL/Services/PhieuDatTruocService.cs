@@ -84,7 +84,8 @@ namespace QuanLyChoThueNha.BLL.Services
             catch (Exception ex)
             {
                 _uow.RollbackTransaction();
-                loi = "Loi he thong: " + ex.Message;
+                var _inner = ex; while (_inner.InnerException != null) _inner = _inner.InnerException;
+                loi = _inner.Message;
                 return false;
             }
         }
@@ -112,7 +113,8 @@ namespace QuanLyChoThueNha.BLL.Services
             catch (Exception ex)
             {
                 _uow.RollbackTransaction();
-                loi = "Loi he thong: " + ex.Message;
+                var _inner = ex; while (_inner.InnerException != null) _inner = _inner.InnerException;
+                loi = _inner.Message;
                 return false;
             }
         }

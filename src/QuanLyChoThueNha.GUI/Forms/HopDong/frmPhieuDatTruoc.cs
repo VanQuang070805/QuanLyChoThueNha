@@ -52,7 +52,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         protected override bool AddItem(PhieuDatTruoc item, out string error)
         {
-            item.MaNhanVien = SessionContext.MaNguoiDung; // mã người lập (NhanVien hoặc Admin)
+            item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             return _service.TaoPhieu(item, out error);
         }
 

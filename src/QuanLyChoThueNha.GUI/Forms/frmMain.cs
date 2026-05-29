@@ -52,7 +52,7 @@ namespace QuanLyChoThueNha.GUI.Forms
             SetVisible(tabTraNha, laAdmin || laNhanVien,
                 btnLoaiHoaDon, btnHoaDon, btnPhieuTraNha, btnViPham);
 
-            SetVisible(tabTaiKhoan, laAdmin, btnQuanLyTaiKhoan);
+            SetVisible(tabTaiKhoan, laAdmin, btnQuanLyTaiKhoan, btnQuanLyTaiKhoanKhach);
             SetVisible(tabBaoCao, laAdmin, btnBaoCao);
         }
 
@@ -107,6 +107,7 @@ namespace QuanLyChoThueNha.GUI.Forms
         private void btnViPham_Click(object sender, EventArgs e) { MoForm(new frmPhieuXuLyViPham()); }
 
         private void btnQuanLyTaiKhoan_Click(object sender, EventArgs e) { MoForm(new frmQuanLyTaiKhoan()); }
+        private void btnQuanLyTaiKhoanKhach_Click(object sender, EventArgs e) { MoForm(new frmQuanLyTaiKhoanKhach()); }
         private void btnBaoCao_Click(object sender, EventArgs e) { MoForm(new frmBaoCao()); }
 
         private void MoForm(Form form)

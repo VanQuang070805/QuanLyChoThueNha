@@ -28,5 +28,9 @@ namespace QuanLyChoThueNha.Model.Entities
         public bool TrangThai { get; set; } = true;
 
         public DateTime NgayTao { get; set; } = DateTime.Now;
+
+        // Ma cua Admin/NhanVien gan voi tai khoan nay (NotMapped - chi dung de hien thi)
+        [NotMapped]
+        public string MaNguoiDung { get; set; }
     }
 }

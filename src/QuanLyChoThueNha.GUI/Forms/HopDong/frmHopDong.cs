@@ -63,7 +63,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         protected override bool AddItem(HopDongEntity item, out string error)
         {
-            item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : item.MaNhanVien;
+            item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             return _service.KyHopDong(item, item.MaPhieuDatTruoc, out error);
         }
 
@@ -89,17 +89,28 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 if (hd == null) continue;
 
                 var status = _service.TrangThaiHienThi(hd);
-                if (Grid.Columns.Contains("TrangThai"))
-                    row.Cells["TrangThai"].Value = status;
 
+                // Tô màu dựa trên mã trạng thái nội bộ
                 if (status == "HetHan")
-                {
                     row.DefaultCellStyle.BackColor = Color.Gainsboro;
-                }
                 else if (status == "SapHetHan")
-                {
                     row.DefaultCellStyle.BackColor = Color.MistyRose;
-                }
+
+                // Hiển thị tiếng Việt trong cột TrangThai
+                if (Grid.Columns.Contains("TrangThai"))
+                    row.Cells["TrangThai"].Value = HienThiTrangThai(status);
+            }
+        }
+
+        private static string HienThiTrangThai(string ma)
+        {
+            switch (ma)
+            {
+                case "HieuLuc":   return "Hieu luc";
+                case "SapHetHan": return "Sap het han";
+                case "HetHan":    return "Da het han";
+                case "DaHuy":     return "Da huy";
+                default:          return ma;
             }
         }
     }

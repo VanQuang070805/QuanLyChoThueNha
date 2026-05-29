@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.DAL.Interfaces;
 using QuanLyChoThueNha.Model.Entities;
@@ -174,6 +175,25 @@ namespace QuanLyChoThueNha.BLL.Services
         public IEnumerable<TaiKhoan> LayTheoVaiTro(string vaiTro)
         {
             return Tim(tk => tk.VaiTro == vaiTro);
+        }
+
+        // Tra ve danh sach tai khoan Admin/NhanVien voi MaNguoiDung duoc dien san tu bang Admin/NhanVienQuanLy.
+        public IEnumerable<TaiKhoan> LayTatCaVoiMaNguoiDung()
+        {
+            var adminMap    = _uow.Admins.GetAll().ToDictionary(a => a.MaTaiKhoan, a => a.MaAdmin);
+            var nvMap       = _uow.NhanVienQuanLys.GetAll().ToDictionary(n => n.MaTaiKhoan, n => n.MaNhanVien);
+
+            var list = new List<TaiKhoan>();
+            foreach (var tk in _uow.TaiKhoans.GetAll().Where(t => t.VaiTro != "KhachThue"))
+            {
+                string ma;
+                if (tk.VaiTro == "Admin" && adminMap.TryGetValue(tk.MaTaiKhoan, out ma))
+                    tk.MaNguoiDung = ma;
+                else if (tk.VaiTro == "NhanVien" && nvMap.TryGetValue(tk.MaTaiKhoan, out ma))
+                    tk.MaNguoiDung = ma;
+                list.Add(tk);
+            }
+            return list;
         }
     }
 }

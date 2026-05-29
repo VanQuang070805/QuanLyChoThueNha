@@ -59,6 +59,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
 
     public abstract class CrudFormBase<T> : MaterialForm where T : class, new()
     {
+        private enum FormMode { View, Adding, Editing }
+
         private readonly List<FieldDefinition> _fields;
         private readonly Dictionary<string, Control> _editors = new Dictionary<string, Control>();
         private readonly FlowLayoutPanel _commandPanel = new FlowLayoutPanel();
@@ -66,6 +68,13 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         protected readonly DataGridView Grid = new DataGridView();
         protected readonly TextBox TxtSearch = new TextBox();
         protected readonly Label LblStatus = new Label();
+
+        private FormMode _mode = FormMode.View;
+        private MaterialButton _btnAdd;
+        private MaterialButton _btnUpdate;
+        private MaterialButton _btnDelete;
+        private MaterialButton _btnRefresh;
+        private Label _lblError;
 
         protected CrudFormBase(string title, IEnumerable<FieldDefinition> fields)
         {
@@ -75,7 +84,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _fields = fields.ToList();
             _errorProvider.BlinkStyle = ErrorBlinkStyle.NeverBlink;
             BuildLayout();
-            Load += delegate { ReloadData(); };
+            Load += delegate { ReloadData(); EnterAddMode(); };
         }
 
         protected abstract IEnumerable<T> GetItems();
@@ -83,9 +92,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         protected abstract bool UpdateItem(T item, out string error);
         protected abstract bool DeleteItem(T item, out string error);
 
-        protected virtual void AfterGridBound()
-        {
-        }
+        protected virtual void AfterGridBound() { }
+
+        // Goi khi vao trang thai Add (sau save thanh cong, khi bam "Them", khi form load).
+        // Override de reset ma tu sinh hoac dien san cac truong co dinh.
+        protected virtual void OnAfterAdd() { }
 
         protected void AddCommandButton(string text, EventHandler handler)
         {
@@ -194,15 +205,34 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _commandPanel.AutoSize = true;
             _commandPanel.WrapContents = true;
             _commandPanel.Margin = new Padding(0, 12, 0, 0);
-            _commandPanel.Controls.Add(CreateButton("Them", BtnAdd_Click));
-            _commandPanel.Controls.Add(CreateButton("Sua", BtnUpdate_Click));
-            _commandPanel.Controls.Add(CreateButton("Xoa", BtnDelete_Click));
-            _commandPanel.Controls.Add(CreateButton("Lam moi", delegate { ClearInputs(); ReloadData(); }));
+
+            _btnAdd     = CreateButton("Them",    BtnAdd_Click);
+            _btnUpdate  = CreateButton("Sua",     BtnUpdate_Click);
+            _btnDelete  = CreateButton("Xoa",     BtnDelete_Click);
+            _btnRefresh = CreateButton("Lam moi", BtnRefresh_Click);
+            _commandPanel.Controls.Add(_btnAdd);
+            _commandPanel.Controls.Add(_btnUpdate);
+            _commandPanel.Controls.Add(_btnDelete);
+            _commandPanel.Controls.Add(_btnRefresh);
+
             right.Controls.Add(_commandPanel);
 
             root.Controls.Add(left, 0, 0);
             root.Controls.Add(right, 1, 0);
+
+            _lblError = new Label
+            {
+                Dock = DockStyle.Bottom,
+                Height = 34,
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(10, 0, 10, 0),
+                Font = new Font("Segoe UI", 9f),
+                Visible = false
+            };
+
             Controls.Add(root);
+            Controls.Add(_lblError);
         }
 
         private Control CreateEditor(FieldDefinition field)
@@ -217,7 +247,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                     Dock = DockStyle.Top,
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     Height = 30,
-                    Enabled = !field.ReadOnly,
+                    Enabled = false,
                     DisplayMember = "Display",
                     ValueMember = "Value"
                 };
@@ -232,7 +262,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                     Dock = DockStyle.Top,
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     Height = 30,
-                    Enabled = !field.ReadOnly
+                    Enabled = false
                 };
                 combo.Items.AddRange(field.Options);
                 if (combo.Items.Count > 0) combo.SelectedIndex = 0;
@@ -241,7 +271,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
 
             if (type == typeof(bool))
             {
-                return new CheckBox { Dock = DockStyle.Top, Height = 28, Enabled = !field.ReadOnly };
+                return new CheckBox { Dock = DockStyle.Top, Height = 28, Enabled = false };
             }
 
             if (type == typeof(DateTime))
@@ -252,7 +282,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                     Format = DateTimePickerFormat.Custom,
                     CustomFormat = "dd/MM/yyyy",
                     ShowCheckBox = Nullable.GetUnderlyingType(GetProperty(field.PropertyName).PropertyType) != null,
-                    Enabled = !field.ReadOnly
+                    Enabled = false
                 };
             }
 
@@ -265,14 +295,16 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                     Minimum = -1000000000000,
                     DecimalPlaces = type == typeof(int) ? 0 : 2,
                     ThousandsSeparator = true,
-                    Enabled = !field.ReadOnly
+                    Enabled = false
                 };
             }
 
+            // TextBox: bat dau o trang thai ReadOnly=true (ca readonly lan editable)
+            // SetEditorsEnabled se doi ReadOnly=false cho cac truong editable khi vao Add/Edit mode.
             return new TextBox
             {
                 Dock = DockStyle.Top,
-                ReadOnly = field.ReadOnly,
+                ReadOnly = true,
                 Multiline = field.Multiline,
                 Height = field.Multiline ? 66 : 28,
                 ScrollBars = field.Multiline ? ScrollBars.Vertical : ScrollBars.None
@@ -291,67 +323,187 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             return btn;
         }
 
+        // ── Mode management ──────────────────────────────────────────────────────
+
+        private void EnterAddMode()
+        {
+            _mode = FormMode.Adding;
+            HideMessage();
+            ClearInputs();               // xoa trang, bo chon grid
+            SetEditorsEnabled(true);     // bat cac truong co the sua
+            _btnAdd.Text     = "Luu";    _btnAdd.Enabled    = true;
+            _btnUpdate.Text  = "Sua";    _btnUpdate.Enabled = false;
+            _btnDelete.Enabled = false;
+            _btnRefresh.Text = "Lam moi";
+            OnAfterAdd();               // reset ma tu sinh, dien san truong co dinh
+        }
+
+        private void EnterViewMode()
+        {
+            _mode = FormMode.View;
+            HideMessage();
+            SetEditorsEnabled(false);   // tat het (chi xem)
+            _btnAdd.Text     = "Them";  _btnAdd.Enabled    = true;
+            _btnUpdate.Text  = "Sua";   _btnUpdate.Enabled = true;
+            _btnDelete.Enabled = true;
+            _btnRefresh.Text = "Lam moi";
+        }
+
+        private void EnterEditMode()
+        {
+            _mode = FormMode.Editing;
+            HideMessage();
+            SetEditorsEnabled(true);    // bat cac truong duoc phep sua
+            _btnAdd.Text     = "Them";  _btnAdd.Enabled    = false;
+            _btnUpdate.Text  = "Luu";   _btnUpdate.Enabled = true;
+            _btnDelete.Enabled = false;
+            _btnRefresh.Text = "Huy";
+        }
+
+        // Bat/tat cac editor KHONG ReadOnly theo mode.
+        // Truong ReadOnly luon disabled (chi hien thi).
+        private void SetEditorsEnabled(bool enabled)
+        {
+            foreach (var field in _fields)
+            {
+                if (field.ReadOnly) continue;
+                var editor = _editors[field.PropertyName];
+                if (editor is TextBox)
+                    ((TextBox)editor).ReadOnly = !enabled;
+                else
+                    editor.Enabled = enabled;
+            }
+        }
+
+        // ── Button handlers ──────────────────────────────────────────────────────
+
         private void BtnAdd_Click(object sender, EventArgs e)
         {
+            if (_mode == FormMode.View || _mode == FormMode.Editing)
+            {
+                EnterAddMode();
+                return;
+            }
+            // Adding mode -> luu ban ghi moi
             var item = ReadInputs(new T(), false);
             if (!ValidateBeforeSave(item)) return;
             string error;
-            if (!AddItem(item, out error))
+            try
             {
-                ShowError(error);
-                return;
+                if (!AddItem(item, out error)) { ShowError(error); return; }
             }
+            catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
             ReloadData();
-            ClearInputs();
+            EnterAddMode();
         }
 
         private void BtnUpdate_Click(object sender, EventArgs e)
         {
-            var item = CurrentItem;
-            if (item == null)
+            if (_mode == FormMode.View)
             {
-                ShowError("Chon dong can sua.");
+                if (CurrentItem == null) { ShowError("Chon dong can sua."); return; }
+                EnterEditMode();
                 return;
             }
-            ReadInputs(item, true);
-            if (!ValidateBeforeSave(item)) return;
-            string error;
-            if (!UpdateItem(item, out error))
+            if (_mode == FormMode.Editing)
             {
-                ShowError(error);
-                return;
+                var item = CurrentItem;
+                if (item == null) { ShowError("Mat lua chon. Bam 'Huy' va chon lai."); return; }
+                ReadInputs(item, true);
+                if (!ValidateBeforeSave(item)) return;
+                string error;
+                try
+                {
+                    if (!UpdateItem(item, out error)) { ShowError(error); return; }
+                }
+                catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
+                ReloadData();
+                EnterAddMode();
             }
-            ReloadData();
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             var item = CurrentItem;
-            if (item == null)
-            {
-                ShowError("Chon dong can xoa.");
-                return;
-            }
+            if (item == null) { ShowError("Chon dong can xoa."); return; }
             if (MessageBox.Show("Xoa ban ghi dang chon?", "Xac nhan", MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question) != DialogResult.Yes) return;
-
             string error;
-            if (!DeleteItem(item, out error))
+            try
             {
-                ShowError(error);
+                if (!DeleteItem(item, out error)) { ShowError(error); return; }
+            }
+            catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
+            ReloadData();
+            EnterAddMode();
+        }
+
+        private void BtnRefresh_Click(object sender, EventArgs e)
+        {
+            if (_mode == FormMode.Editing)
+            {
+                // Huy sua: khoi phuc du lieu goc, quay ve xem
+                var item = CurrentItem;
+                if (item != null) BindRowToInputs(item);
+                EnterViewMode();
                 return;
             }
             ReloadData();
-            ClearInputs();
+            EnterAddMode();
+        }
+
+        // ── Data binding ─────────────────────────────────────────────────────────
+
+        private void BindCurrentToInputs()
+        {
+            var item = CurrentItem;
+            if (item == null) return;   // khong co lua chon, giu nguyen mode
+            BindRowToInputs(item);
+            EnterViewMode();            // co row duoc chon -> che do xem
+        }
+
+        private void BindRowToInputs(T item)
+        {
+            foreach (var field in _fields)
+            {
+                var property = GetProperty(field.PropertyName);
+                var value = property.GetValue(item, null);
+                var editor = _editors[field.PropertyName];
+
+                if (editor is ComboBox)
+                {
+                    var combo = (ComboBox)editor;
+                    if (combo.DataSource != null && value != null)
+                        combo.SelectedValue = value.ToString();
+                    else
+                        combo.SelectedItem = value == null ? null : value.ToString();
+                }
+                else if (editor is CheckBox)
+                {
+                    ((CheckBox)editor).Checked = value != null && (bool)value;
+                }
+                else if (editor is DateTimePicker)
+                {
+                    var picker = (DateTimePicker)editor;
+                    if (value == null) picker.Checked = false;
+                    else { picker.Checked = true; picker.Value = (DateTime)value; }
+                }
+                else if (editor is NumericUpDown)
+                {
+                    ((NumericUpDown)editor).Value = value == null ? 0 : Convert.ToDecimal(value);
+                }
+                else
+                {
+                    ((TextBox)editor).Text = value == null ? string.Empty : value.ToString();
+                }
+            }
         }
 
         private T ReadInputs(T item, bool updateMode)
         {
             foreach (var field in _fields)
             {
-                if (field.ReadOnly && !updateMode) continue;
-                if (field.ReadOnly && updateMode) continue;
-
+                if (field.ReadOnly) continue;   // luon bo qua truong ReadOnly
                 var property = GetProperty(field.PropertyName);
                 var value = ReadEditorValue(field, property.PropertyType);
                 property.SetValue(item, value, null);
@@ -389,56 +541,6 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             return ((TextBox)editor).Text.Trim();
         }
 
-        private void BindCurrentToInputs()
-        {
-            var item = CurrentItem;
-            if (item == null) return;
-            foreach (var field in _fields)
-            {
-                var property = GetProperty(field.PropertyName);
-                var value = property.GetValue(item, null);
-                var editor = _editors[field.PropertyName];
-
-                if (editor is ComboBox)
-                {
-                    var combo = (ComboBox)editor;
-                    if (combo.DataSource != null && value != null)
-                    {
-                        combo.SelectedValue = value.ToString();
-                    }
-                    else
-                    {
-                        combo.SelectedItem = value == null ? null : value.ToString();
-                    }
-                }
-                else if (editor is CheckBox)
-                {
-                    ((CheckBox)editor).Checked = value != null && (bool)value;
-                }
-                else if (editor is DateTimePicker)
-                {
-                    var picker = (DateTimePicker)editor;
-                    if (value == null)
-                    {
-                        picker.Checked = false;
-                    }
-                    else
-                    {
-                        picker.Checked = true;
-                        picker.Value = (DateTime)value;
-                    }
-                }
-                else if (editor is NumericUpDown)
-                {
-                    ((NumericUpDown)editor).Value = value == null ? 0 : Convert.ToDecimal(value);
-                }
-                else
-                {
-                    ((TextBox)editor).Text = value == null ? string.Empty : value.ToString();
-                }
-            }
-        }
-
         private void ClearInputs()
         {
             foreach (var field in _fields)
@@ -453,7 +555,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                     picker.Value = DateTime.Today;
                     picker.Checked = !picker.ShowCheckBox;
                 }
-                else if (editor is ComboBox && ((ComboBox)editor).Items.Count > 0) ((ComboBox)editor).SelectedIndex = 0;
+                else if (editor is ComboBox && ((ComboBox)editor).Items.Count > 0)
+                    ((ComboBox)editor).SelectedIndex = 0;
             }
             Grid.ClearSelection();
             ClearErrors();
@@ -466,8 +569,26 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
 
         protected void ShowError(string error)
         {
-            MessageBox.Show(string.IsNullOrWhiteSpace(error) ? "Thao tac khong thanh cong." : error,
-                "Thong bao", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _lblError.Text = string.IsNullOrWhiteSpace(error) ? "Thao tac khong thanh cong." : error;
+            _lblError.BackColor = Color.MistyRose;
+            _lblError.ForeColor = Color.DarkRed;
+            _lblError.Visible = true;
+        }
+
+        protected void ShowInfo(string msg)
+        {
+            _lblError.Text = msg;
+            _lblError.BackColor = Color.FromArgb(220, 240, 255);
+            _lblError.ForeColor = Color.Navy;
+            _lblError.Visible = true;
+        }
+
+        private void HideMessage() { _lblError.Visible = false; }
+
+        private static string LayLoiSauCung(Exception ex)
+        {
+            while (ex.InnerException != null) ex = ex.InnerException;
+            return ex.Message;
         }
 
         protected Control GetEditor(string propertyName)
@@ -496,6 +617,12 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             ClearInputs();
         }
 
+        // Cho phep subclass kich hoat Add mode (VD: nut "Tao moi" tuy chinh).
+        protected void GoToAddMode()
+        {
+            EnterAddMode();
+        }
+
         private bool ValidateBeforeSave(T item)
         {
             ClearErrors();
@@ -507,10 +634,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 .Where(r => !r.MemberNames.Any() || r.MemberNames.Any(m => _editors.ContainsKey(m)))
                 .ToList();
 
-            if (results.Count == 0)
-            {
-                return true;
-            }
+            if (results.Count == 0) return true;
 
             foreach (var result in results)
             {

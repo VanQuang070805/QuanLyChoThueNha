@@ -43,7 +43,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         protected override bool AddItem(PhieuTraNha item, out string error)
         {
             // Gán mã người lập phiếu (NhanVien hoặc Admin) từ phiên đăng nhập.
-            item.MaNhanVien = SessionContext.MaNguoiDung;
+            item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             if (item.NgayTra == DateTime.MinValue) item.NgayTra = DateTime.Today;
             // KHÔNG tự tính TienHoanCoc ở GUI nữa — toàn bộ logic hoàn cọc/khấu trừ vi phạm
             // đã được dồn về PhieuTraNhaService.LapPhieu để đảm bảo nhất quán.

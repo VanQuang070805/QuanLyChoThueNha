@@ -32,6 +32,7 @@ namespace QuanLyChoThueNha.GUI.Forms
         private MaterialSkin.Controls.MaterialButton btnPhieuTraNha;
         private MaterialSkin.Controls.MaterialButton btnViPham;
         private MaterialSkin.Controls.MaterialButton btnQuanLyTaiKhoan;
+        private MaterialSkin.Controls.MaterialButton btnQuanLyTaiKhoanKhach;
         private MaterialSkin.Controls.MaterialButton btnBaoCao;
         private MaterialSkin.Controls.MaterialButton btnDangXuat;
 
@@ -71,6 +72,7 @@ namespace QuanLyChoThueNha.GUI.Forms
             this.btnPhieuTraNha = new MaterialSkin.Controls.MaterialButton();
             this.btnViPham = new MaterialSkin.Controls.MaterialButton();
             this.btnQuanLyTaiKhoan = new MaterialSkin.Controls.MaterialButton();
+            this.btnQuanLyTaiKhoanKhach = new MaterialSkin.Controls.MaterialButton();
             this.btnBaoCao = new MaterialSkin.Controls.MaterialButton();
             this.btnDangXuat = new MaterialSkin.Controls.MaterialButton();
             this.SuspendLayout();
@@ -114,6 +116,7 @@ namespace QuanLyChoThueNha.GUI.Forms
 
             AddGroup(this.tabTaiKhoan, "QUAN TRI");
             AddButton(this.btnQuanLyTaiKhoan, "Tai khoan", new System.EventHandler(this.btnQuanLyTaiKhoan_Click));
+            AddButton(this.btnQuanLyTaiKhoanKhach, "Tai khoan khach", new System.EventHandler(this.btnQuanLyTaiKhoanKhach_Click));
 
             AddGroup(this.tabBaoCao, "BAO CAO");
             AddButton(this.btnBaoCao, "Bao cao & thong ke", new System.EventHandler(this.btnBaoCao_Click));
