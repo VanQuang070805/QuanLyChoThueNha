@@ -10,7 +10,7 @@ namespace QuanLyChoThueNha.GUI
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Forms.Auth.frmLogin());
+            Application.Run(new Forms.KhachHang.frmTimTroPublic());
         }
     }
 }

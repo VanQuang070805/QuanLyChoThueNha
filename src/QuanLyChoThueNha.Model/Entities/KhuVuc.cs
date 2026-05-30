@@ -20,5 +20,9 @@ namespace QuanLyChoThueNha.Model.Entities
 
         [MaxLength(100)]
         public string ThanhPho { get; set; }
+
+        public double? ViDo { get; set; }
+
+        public double? KinhDo { get; set; }
     }
 }

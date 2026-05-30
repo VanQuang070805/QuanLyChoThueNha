@@ -30,6 +30,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private MaterialTextBox txtTimKiem;
         private ComboBox cboThanhPho;
         private ComboBox cboQuan;
+        private NumericUpDown numViDo;
+        private NumericUpDown numKinhDo;
         private MaterialButton btnThem;
         private MaterialButton btnSua;
         private MaterialButton btnXoa;
@@ -92,12 +94,16 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             txtTen = CreateTextBox("Nhap ten khu vuc", false);
             cboThanhPho = CreateComboBox();
             cboQuan = CreateComboBox();
+            numViDo = CreateCoordinateNumber(-90, 90);
+            numKinhDo = CreateCoordinateNumber(-180, 180);
             cboThanhPho.SelectedIndexChanged += delegate { NapQuanTheoThanhPho(); };
 
             AddField(right, "Ma khu vuc", txtMa);
             AddField(right, "Ten khu vuc *", txtTen);
             AddField(right, "Thanh pho *", cboThanhPho);
             AddField(right, "Quan/Huyen *", cboQuan);
+            AddField(right, "Vi do (lat)", numViDo);
+            AddField(right, "Kinh do (lng)", numKinhDo);
 
             var commands = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true, Margin = new Padding(0, 12, 0, 0) };
             btnThem = CreateButton("Them", btnThem_Click);
@@ -120,6 +126,19 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private ComboBox CreateComboBox()
         {
             return new ComboBox { Dock = DockStyle.Top, Height = 30, DropDownStyle = ComboBoxStyle.DropDownList };
+        }
+
+        private NumericUpDown CreateCoordinateNumber(decimal min, decimal max)
+        {
+            return new NumericUpDown
+            {
+                Dock = DockStyle.Top,
+                Height = 30,
+                Minimum = min,
+                Maximum = max,
+                DecimalPlaces = 6,
+                Increment = 0.000100M
+            };
         }
 
         private void AddField(TableLayoutPanel parent, string label, Control editor)
@@ -205,6 +224,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             ChonGiaTri(cboThanhPho, kv.ThanhPho);
             NapQuanTheoThanhPho();
             ChonGiaTri(cboQuan, kv.Quan);
+            numViDo.Value = ClampCoordinate(kv.ViDo, numViDo.Minimum, numViDo.Maximum);
+            numKinhDo.Value = ClampCoordinate(kv.KinhDo, numKinhDo.Minimum, numKinhDo.Maximum);
         }
 
         private void ChonGiaTri(ComboBox combo, string value)
@@ -243,7 +264,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             string loi;
             if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (!_svc.Them(txtTen.Text, cboQuan.SelectedItem.ToString(), cboThanhPho.SelectedItem.ToString(), SessionContext.MaNguoiDung, out loi))
+            if (!_svc.Them(txtTen.Text, cboQuan.SelectedItem.ToString(), cboThanhPho.SelectedItem.ToString(),
+                    SessionContext.MaNguoiDung, out loi, (double)numViDo.Value, (double)numKinhDo.Value))
             {
                 MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -263,6 +285,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             kv.TenKhuVuc = txtTen.Text.Trim();
             kv.Quan = cboQuan.SelectedItem.ToString();
             kv.ThanhPho = cboThanhPho.SelectedItem.ToString();
+            kv.ViDo = (double)numViDo.Value;
+            kv.KinhDo = (double)numKinhDo.Value;
             _svc.Sua(kv);
             TaiDuLieu();
         }
@@ -287,10 +311,21 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             txtMa.Clear();
             txtTen.Clear();
+            numViDo.Value = 0;
+            numKinhDo.Value = 0;
             if (cboThanhPho.Items.Count > 0) cboThanhPho.SelectedIndex = 0;
             if (cboQuan.Items.Count > 0) cboQuan.SelectedIndex = 0;
             dgv.ClearSelection();
             _errors.Clear();
+        }
+
+        private decimal ClampCoordinate(double? value, decimal min, decimal max)
+        {
+            if (!value.HasValue) return 0;
+            var decimalValue = (decimal)value.Value;
+            if (decimalValue < min) return min;
+            if (decimalValue > max) return max;
+            return decimalValue;
         }
     }
 }

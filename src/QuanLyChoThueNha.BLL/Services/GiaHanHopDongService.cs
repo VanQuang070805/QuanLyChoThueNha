@@ -33,6 +33,8 @@ namespace QuanLyChoThueNha.BLL.Services
                 MaGiaHan = SinhMa(),
                 MaHopDong = maHopDong,
                 MaNhanVien = maNhanVien,
+                MaNguoiThaoTac = SessionContext.DaXacThuc ? SessionContext.MaNguoiDung : null,
+                VaiTroNguoiThaoTac = SessionContext.DaXacThuc ? SessionContext.VaiTro : null,
                 NgayKetThucCu = hd.NgayKetThuc,
                 NgayKetThucMoi = ngayKetThucMoi,
                 TrangThai = "ChoXetDuyet",
@@ -121,6 +123,7 @@ namespace QuanLyChoThueNha.BLL.Services
             hoaDon.MaHoaDon = SinhMa();
             hoaDon.TrangThai = hoaDon.SoTienDaTra >= hoaDon.SoTienPhaiTra ? "DaTra" : "ChuaTra";
             if (hoaDon.TrangThai == "DaTra" && hoaDon.NgayThanhToan == null) hoaDon.NgayThanhToan = DateTime.Now;
+            AuditHelper.GanNguoiThaoTac(hoaDon);
             base.Them(hoaDon);
             return true;
         }
@@ -184,6 +187,7 @@ namespace QuanLyChoThueNha.BLL.Services
             hd.PhuongThucThanhToan = phuongThuc;
             hd.MaNhanVienThu = maNhanVien;
             hd.TrangThai = soTienThanhToan >= hd.SoTienPhaiTra ? "DaTra" : "TraThieu";
+            AuditHelper.GanNguoiThaoTac(hd);
             Sua(hd);
             return true;
         }
@@ -268,6 +272,7 @@ namespace QuanLyChoThueNha.BLL.Services
                 phieu.MaPhieu = SinhMa();
                 phieu.TienKhauTru = tienKhauTru;
                 phieu.TienHoanCoc = tienHoanCoc;
+                AuditHelper.GanNguoiThaoTac(phieu);
                 _uow.PhieuTraNhas.Add(phieu);
 
                 // Đánh dấu các phiếu vi phạm đã được khấu trừ vào cọc + liên kết về phiếu trả nhà.
@@ -326,6 +331,7 @@ namespace QuanLyChoThueNha.BLL.Services
             phieu.MaViPham = SinhMa();
             phieu.NgayGhiNhan = DateTime.Now;
             phieu.TinhTrang = "ChoXuLy";
+            AuditHelper.GanNguoiThaoTac(phieu);
             base.Them(phieu);
             return true;
         }

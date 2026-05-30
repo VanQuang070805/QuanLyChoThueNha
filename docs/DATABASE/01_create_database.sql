@@ -61,7 +61,9 @@ CREATE TABLE KhuVuc (
     MaAdmin      VARCHAR(50)   NULL REFERENCES Admin(MaAdmin),
     TenKhuVuc    NVARCHAR(150) NOT NULL,
     Quan         NVARCHAR(100) NULL,
-    ThanhPho     NVARCHAR(100) NULL
+    ThanhPho     NVARCHAR(100) NULL,
+    ViDo         FLOAT         NULL,
+    KinhDo       FLOAT         NULL
 );
 
 -- ── 6. LoaiCanHo ────────────────────────────────────────────
@@ -88,6 +90,8 @@ CREATE TABLE CanHo (
     MaToa            VARCHAR(50)    NOT NULL REFERENCES Toa(MaToa),
     MaLoai           VARCHAR(50)    NOT NULL REFERENCES LoaiCanHo(MaLoai),
     MaNhanVien       VARCHAR(50)    NULL REFERENCES NhanVienQuanLy(MaNhanVien),
+    MaNguoiThaoTac   VARCHAR(50)    NULL,
+    VaiTroNguoiThaoTac NVARCHAR(50) NULL,
     DienTich         FLOAT          NOT NULL DEFAULT 0,
     GiaThueNiemYet   DECIMAL(18,2)  NOT NULL DEFAULT 0,
     TienCocNiemYet   DECIMAL(18,2)  NOT NULL DEFAULT 0,
@@ -142,6 +146,8 @@ CREATE TABLE PhieuDatTruoc (
     MaCanHo              VARCHAR(50)   NOT NULL REFERENCES CanHo(MaCanHo),
     MaKhach              VARCHAR(50)   NOT NULL REFERENCES KhachThue(MaKhach),
     MaNhanVien           VARCHAR(50)   NULL REFERENCES NhanVienQuanLy(MaNhanVien),
+    MaNguoiThaoTac       VARCHAR(50)   NULL,
+    VaiTroNguoiThaoTac   NVARCHAR(50)  NULL,
     SoTienDatCoc         DECIMAL(18,2) NOT NULL,
     NgayDatCoc           DATETIME      NOT NULL DEFAULT GETDATE(),
     NgayHetHan           DATETIME      NOT NULL,
@@ -158,6 +164,8 @@ CREATE TABLE HopDong (
     MaCanHo          VARCHAR(50)   NOT NULL REFERENCES CanHo(MaCanHo),
     MaKhach          VARCHAR(50)   NOT NULL REFERENCES KhachThue(MaKhach),
     MaNhanVien       VARCHAR(50)   NULL REFERENCES NhanVienQuanLy(MaNhanVien),
+    MaNguoiThaoTac   VARCHAR(50)   NULL,
+    VaiTroNguoiThaoTac NVARCHAR(50) NULL,
     NgayBatDau       DATE          NOT NULL,
     NgayKetThuc      DATE          NOT NULL,
     GiaThueChot      DECIMAL(18,2) NOT NULL,
@@ -183,6 +191,8 @@ CREATE TABLE HoaDonThanhToan (
     MaHopDong            VARCHAR(50)   NOT NULL REFERENCES HopDong(MaHopDong),
     MaLoaiHoaDon         VARCHAR(50)   NOT NULL REFERENCES LoaiHoaDon(MaLoaiHoaDon),
     MaNhanVienThu        VARCHAR(50)   NULL REFERENCES NhanVienQuanLy(MaNhanVien),
+    MaNguoiThaoTac       VARCHAR(50)   NULL,
+    VaiTroNguoiThaoTac   NVARCHAR(50)  NULL,
     MaViPham             VARCHAR(50)   NULL,  -- FK sau khi tạo bảng PhieuXuLyViPham
     KyThanhToan          NVARCHAR(20)  NULL,
     -- BO SUNG (Buoc 3): luu chi so dien/nuoc de truy vet. Tieu thu = Moi - Cu.
@@ -204,6 +214,8 @@ CREATE TABLE GiaHanHopDong (
     MaGiaHan         VARCHAR(50)  NOT NULL PRIMARY KEY,
     MaHopDong        VARCHAR(50)  NOT NULL REFERENCES HopDong(MaHopDong),
     MaNhanVien       VARCHAR(50)  NULL REFERENCES NhanVienQuanLy(MaNhanVien),
+    MaNguoiThaoTac   VARCHAR(50)  NULL,
+    VaiTroNguoiThaoTac NVARCHAR(50) NULL,
     NgayKetThucCu    DATE         NOT NULL,
     NgayKetThucMoi   DATE         NOT NULL,
     TrangThai        NVARCHAR(50) NOT NULL DEFAULT 'ChoXetDuyet'
@@ -217,6 +229,8 @@ CREATE TABLE PhieuTraNha (
     MaPhieu          VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaHopDong        VARCHAR(50)   NOT NULL UNIQUE REFERENCES HopDong(MaHopDong),
     MaNhanVien       VARCHAR(50)   NULL REFERENCES NhanVienQuanLy(MaNhanVien),
+    MaNguoiThaoTac   VARCHAR(50)   NULL,
+    VaiTroNguoiThaoTac NVARCHAR(50) NULL,
     NgayTra          DATE          NOT NULL,
     TinhTrangNha     NVARCHAR(500) NULL,
     TienHoanCoc      DECIMAL(18,2) NOT NULL DEFAULT 0,
@@ -230,6 +244,8 @@ CREATE TABLE PhieuXuLyViPham (
     MaHopDong        VARCHAR(50)   NOT NULL REFERENCES HopDong(MaHopDong),
     MaPhieuTraNha    VARCHAR(50)   NULL REFERENCES PhieuTraNha(MaPhieu),
     MaNhanVien       VARCHAR(50)   NULL REFERENCES NhanVienQuanLy(MaNhanVien),
+    MaNguoiThaoTac   VARCHAR(50)   NULL,
+    VaiTroNguoiThaoTac NVARCHAR(50) NULL,
     LoaiViPham       NVARCHAR(100) NULL,
     MoTa             NVARCHAR(500) NULL,
     PhiBoiThuong     DECIMAL(18,2) NOT NULL DEFAULT 0,

@@ -70,6 +70,7 @@ namespace QuanLyChoThueNha.BLL.Services
                 hopDong.MaPhieuDatTruoc = maPhieuDatTruoc;
                 hopDong.TrangThai = "HieuLuc";
                 hopDong.NgayTao = DateTime.Now;
+                AuditHelper.GanNguoiThaoTac(hopDong);
 
                 // ===== BỔ SUNG (Bước 1): tự động trừ tiền cọc trước vào tiền cọc hợp đồng =====
                 // Nếu có phiếu đặt trước: số tiền đã cọc trước được ghi nhận là đã trừ,

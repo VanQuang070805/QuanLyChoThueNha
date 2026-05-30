@@ -118,6 +118,7 @@ Chạy lần lượt trong SQL Server Management Studio:
 ### Trường hợp B — Đã có database cũ (giữ dữ liệu)
 Chỉ chạy thêm:
 - `docs/DATABASE/04_migration_sua_logic.sql` *(mới)* — thêm các cột mới một cách an toàn (chạy lại nhiều lần không lỗi).
+- `docs/DATABASE/08_audit_nguoi_thao_tac.sql` — thêm cột audit `MaNguoiThaoTac` và `VaiTroNguoiThaoTac` cho các bảng nghiệp vụ có `MaNhanVien`, giúp Admin thao tác không phá FK nhân viên.
 
 ### Mở dự án
 1. Mở `QuanLyChoThueNha.sln` bằng Visual Studio (2019/2022).
@@ -134,6 +135,6 @@ Chỉ chạy thêm:
 **Model:** `HopDong.cs`, `HoaDonThanhToan.cs`
 **BLL:** `Helpers/ValidationHelper.cs`, `Services/TienNghiService.cs` (chứa `KhachThueService`), `Services/HopDongService.cs`, `Services/PhieuDatTruocService.cs`, `Services/GiaHanHopDongService.cs` (chứa `HoaDonThanhToanService`, `PhieuTraNhaService`, `PhieuXuLyViPhamService`)
 **GUI:** `Forms/HopDong/frmKhachThue.cs`, `Forms/HopDong/frmPhieuDatTruoc.cs`, `Forms/HopDong/frmGiaHanHopDong.cs`, `Forms/TraNha/frmHoaDonThanhToan.cs`, `Forms/TraNha/frmPhieuTraNha.cs`, `Forms/TraNha/frmPhieuXuLyViPham.cs`, `Forms/KhachHang/frmKhachHangHome.cs`
-**SQL:** `docs/DATABASE/01_create_database.sql`, `02_seed_data.sql`, `04_migration_sua_logic.sql` (mới)
+**SQL:** `docs/DATABASE/01_create_database.sql`, `02_seed_data.sql`, `04_migration_sua_logic.sql`, `08_audit_nguoi_thao_tac.sql` (mới)
 
 Mọi thay đổi trong code đều có **comment inline tiếng Việt** đánh dấu `BỔ SUNG` / `YÊU CẦU NGHIỆP VỤ` để bạn dễ tra cứu.

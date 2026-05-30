@@ -7,6 +7,7 @@ using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Forms.Shared;
 using QuanLyChoThueNha.Model.Entities;
+using HopDongEntity = QuanLyChoThueNha.Model.Entities.HopDong;
 
 namespace QuanLyChoThueNha.GUI.Forms.TraNha
 {
@@ -33,10 +34,21 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         private static IEnumerable<FieldDefinition> Fields()
         {
             var hopDongService = new HopDongService();
+            var khachService = new KhachThueService();
+            var khachById = khachService.LayTatCa()
+                .GroupBy(k => k.MaKhach)
+                .ToDictionary(g => g.Key, g => g.First());
             var hopDongOptions = hopDongService.LayTatCa()
-                .OrderBy(h => h.MaHopDong)
+                .Where(h => h.TrangThai == "HieuLuc")
+                .OrderBy(h => LayTenKhach(h, khachById))
+                .ThenBy(h => h.MaCanHo)
                 .Select(h => new ComboOption(h.MaHopDong,
-                    string.Format("{0} - {1} - {2}", h.MaHopDong, h.MaCanHo, h.TrangThai)))
+                    string.Format("{0} | {1} | Phong {2} | {3:dd/MM/yyyy}-{4:dd/MM/yyyy}",
+                        h.MaHopDong,
+                        LayTenKhach(h, khachById),
+                        h.MaCanHo,
+                        h.NgayBatDau,
+                        h.NgayKetThuc)))
                 .ToList();
             var loaiHoaDonService = new LoaiHoaDonService();
             var loaiOptions = loaiHoaDonService.LayTatCa()
@@ -68,6 +80,17 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                     new[] { "ChuaTra", "DaTra", "TraThieu", "QuaHan" }),
                 new FieldDefinition("PhuongThucThanhToan", "Phuong thuc")
             };
+        }
+
+        private static string LayTenKhach(HopDongEntity hopDong, IDictionary<string, KhachThue> khachById)
+        {
+            if (hopDong == null || string.IsNullOrWhiteSpace(hopDong.MaKhach))
+                return "Khach khong ro";
+
+            KhachThue khach;
+            return khachById.TryGetValue(hopDong.MaKhach, out khach)
+                ? string.Format("{0} ({1})", khach.HoTen, khach.MaKhach)
+                : hopDong.MaKhach;
         }
 
         protected override IEnumerable<HoaDonThanhToan> GetItems() { return _service.LayTatCa(); }

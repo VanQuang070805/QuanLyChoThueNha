@@ -64,6 +64,7 @@
     <Compile Include="Helpers\PasswordHelper.cs" />
     <Compile Include="Helpers\MaGenerator.cs" />
     <Compile Include="Helpers\ValidationHelper.cs" />
+    <Compile Include="Helpers\AuditHelper.cs" />
     <Compile Include="SessionContext.cs" />
     <Compile Include="Services\BaseService.cs" />
     <Compile Include="Services\AuthService.cs" />

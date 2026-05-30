@@ -20,10 +20,22 @@ namespace QuanLyChoThueNha.BLL.Services
             return MaGenerator.Sinh("KV", max);
         }
 
-        public bool Them(string tenKhuVuc, string quan, string thanhPho, string maAdmin, out string loi)
+        public bool Them(string tenKhuVuc, string quan, string thanhPho, string maAdmin, out string loi,
+            double? viDo = null, double? kinhDo = null)
         {
             loi = string.Empty;
             if (!ValidationHelper.KhongRong(tenKhuVuc, "Tên khu vực", out loi)) return false;
+
+            if (viDo.HasValue && (viDo.Value < -90 || viDo.Value > 90))
+            {
+                loi = "Vi do phai nam trong khoang -90 den 90.";
+                return false;
+            }
+            if (kinhDo.HasValue && (kinhDo.Value < -180 || kinhDo.Value > 180))
+            {
+                loi = "Kinh do phai nam trong khoang -180 den 180.";
+                return false;
+            }
 
             var kv = new KhuVuc
             {
@@ -31,7 +43,9 @@ namespace QuanLyChoThueNha.BLL.Services
                 TenKhuVuc = tenKhuVuc.Trim(),
                 Quan      = quan?.Trim(),
                 ThanhPho  = thanhPho?.Trim(),
-                MaAdmin   = maAdmin
+                MaAdmin   = maAdmin,
+                ViDo      = viDo,
+                KinhDo    = kinhDo
             };
             base.Them(kv);
             return true;

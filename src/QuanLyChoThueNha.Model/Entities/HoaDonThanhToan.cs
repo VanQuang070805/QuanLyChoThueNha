@@ -20,6 +20,12 @@ namespace QuanLyChoThueNha.Model.Entities
         public string MaNhanVienThu { get; set; }
 
         [MaxLength(50)]
+        public string MaNguoiThaoTac { get; set; }
+
+        [MaxLength(50)]
+        public string VaiTroNguoiThaoTac { get; set; }
+
+        [MaxLength(50)]
         public string MaViPham { get; set; } // nullable — phiếu vi phạm nếu có
 
         [MaxLength(20)]

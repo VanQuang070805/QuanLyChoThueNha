@@ -16,6 +16,12 @@ namespace QuanLyChoThueNha.Model.Entities
         [MaxLength(50)]
         public string MaNhanVien { get; set; }
 
+        [MaxLength(50)]
+        public string MaNguoiThaoTac { get; set; }
+
+        [MaxLength(50)]
+        public string VaiTroNguoiThaoTac { get; set; }
+
         public DateTime NgayKetThucCu { get; set; }
 
         public DateTime NgayKetThucMoi { get; set; }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.DAL.Interfaces;
 using QuanLyChoThueNha.Model.Entities;
@@ -32,6 +33,7 @@ namespace QuanLyChoThueNha.BLL.Services
 
             canHo.MaCanHo = SinhMa();
             canHo.NgayTao = DateTime.Now;
+            AuditHelper.GanNguoiThaoTac(canHo);
             base.Them(canHo);
             return true;
         }
@@ -76,6 +78,14 @@ namespace QuanLyChoThueNha.BLL.Services
         public IEnumerable<TienNghiCuaCanHo> LayTienNghiCuaCanHo(string maCanHo)
         {
             return _uow.TienNghiCuaCanHos.Find(t => t.MaCanHo == maCanHo);
+        }
+
+        public HinhAnhNha LayAnhDaiDien(string maCanHo)
+        {
+            return _uow.HinhAnhNhas
+                .Find(h => h.MaCanHo == maCanHo)
+                .OrderBy(h => h.NgayTaiLen)
+                .FirstOrDefault();
         }
     }
 }

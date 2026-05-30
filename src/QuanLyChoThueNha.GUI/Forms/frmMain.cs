@@ -8,6 +8,7 @@ using QuanLyChoThueNha.GUI.Forms.Auth;
 using QuanLyChoThueNha.GUI.Forms.BaoCao;
 using QuanLyChoThueNha.GUI.Forms.HopDong;
 using QuanLyChoThueNha.GUI.Forms.KhachHang;
+using QuanLyChoThueNha.GUI.Forms.NhanVien;
 using QuanLyChoThueNha.GUI.Forms.TaiSan;
 using QuanLyChoThueNha.GUI.Forms.TraNha;
 
@@ -30,7 +31,11 @@ namespace QuanLyChoThueNha.GUI.Forms
             CauHinhMenu();
             HienThiThongTinNguoiDung();
 
-            if (SessionContext.LaKhachThue)
+            if (SessionContext.LaAdmin)
+                MoForm(new frmDashboard());
+            else if (SessionContext.LaNhanVien)
+                MoForm(new frmNhanVienHome());
+            else if (SessionContext.LaKhachThue)
                 MoForm(new frmKhachHangHome());
         }
 

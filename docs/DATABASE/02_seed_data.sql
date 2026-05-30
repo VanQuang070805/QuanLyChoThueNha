@@ -26,8 +26,10 @@ INSERT INTO NhanVienQuanLy VALUES ('NV001','TK002','Trần Thị Nhân Viên', G
 INSERT INTO KhachThue VALUES ('KH001','TK003','Lê Văn Khách','012345678','Hà Nội','1995-06-15');
 
 -- ── KhuVuc ──────────────────────────────────────────────────
-INSERT INTO KhuVuc VALUES ('KV001','AD001','Khu Cầu Giấy','Cầu Giấy','Hà Nội');
-INSERT INTO KhuVuc VALUES ('KV002','AD001','Khu Đống Đa','Đống Đa','Hà Nội');
+INSERT INTO KhuVuc (MaKhuVuc, MaAdmin, TenKhuVuc, Quan, ThanhPho, ViDo, KinhDo)
+VALUES ('KV001','AD001','Khu Cầu Giấy','Cầu Giấy','Hà Nội', 21.036237, 105.790583);
+INSERT INTO KhuVuc (MaKhuVuc, MaAdmin, TenKhuVuc, Quan, ThanhPho, ViDo, KinhDo)
+VALUES ('KV002','AD001','Khu Đống Đa','Đống Đa','Hà Nội', 21.018072, 105.829949);
 
 -- ── LoaiCanHo ───────────────────────────────────────────────
 INSERT INTO LoaiCanHo VALUES ('LC001','AD001','Studio','Căn hộ 1 phòng ngủ nhỏ gọn');

@@ -72,6 +72,7 @@ namespace QuanLyChoThueNha.BLL.Services
                 phieu.MaPhieuDatTruoc = SinhMa();
                 phieu.NgayDatCoc = DateTime.Now;
                 phieu.TrangThai = "ChoKy";
+                AuditHelper.GanNguoiThaoTac(phieu);
                 _uow.PhieuDatTruocs.Add(phieu);
 
                 canHo.TinhTrang = "DaDatCoc";

@@ -70,6 +70,14 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         protected override bool UpdateItem(HopDongEntity item, out string error)
         {
             error = string.Empty;
+            var trangThai = ChuanHoaTrangThaiLuu(item.TrangThai);
+            if (string.IsNullOrWhiteSpace(trangThai))
+            {
+                error = "Trang thai hop dong khong hop le. Chi duoc chon HieuLuc, HetHan hoac DaHuy.";
+                return false;
+            }
+
+            item.TrangThai = trangThai;
             _service.Sua(item);
             return true;
         }
@@ -98,7 +106,29 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
                 // Hiển thị tiếng Việt trong cột TrangThai
                 if (Grid.Columns.Contains("TrangThai"))
-                    row.Cells["TrangThai"].Value = HienThiTrangThai(status);
+                    row.Cells["TrangThai"].ToolTipText = HienThiTrangThai(status);
+            }
+        }
+
+        private static string ChuanHoaTrangThaiLuu(string trangThai)
+        {
+            var value = (trangThai ?? string.Empty).Trim();
+            switch (value)
+            {
+                case "HieuLuc":
+                case "HetHan":
+                case "DaHuy":
+                    return value;
+                case "Hieu luc":
+                    return "HieuLuc";
+                case "Sap het han":
+                    return "HieuLuc";
+                case "Da het han":
+                    return "HetHan";
+                case "Da huy":
+                    return "DaHuy";
+                default:
+                    return null;
             }
         }
 

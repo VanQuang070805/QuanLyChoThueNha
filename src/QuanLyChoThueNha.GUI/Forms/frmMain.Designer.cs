@@ -125,7 +125,9 @@ namespace QuanLyChoThueNha.GUI.Forms
             this.btnDangXuat.Size = new System.Drawing.Size(190, 36);
             this.btnDangXuat.Margin = new System.Windows.Forms.Padding(0, 16, 0, 0);
             this.btnDangXuat.Text = "DANG XUAT";
-            this.btnDangXuat.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined;
+            this.btnDangXuat.HighEmphasis = true;
+            this.btnDangXuat.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
+            this.btnDangXuat.UseAccentColor = true;
             this.btnDangXuat.Click += new System.EventHandler(this.btnDangXuat_Click);
             this.panelSidebar.Controls.Add(this.btnDangXuat);
 
