@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
@@ -36,6 +38,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private MaterialButton btnSua;
         private MaterialButton btnXoa;
         private MaterialButton btnLamMoi;
+        private MaterialButton btnLayToaDo;
 
         public frmKhuVuc()
         {
@@ -110,7 +113,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             btnSua = CreateButton("Sua", btnSua_Click);
             btnXoa = CreateButton("Xoa", btnXoa_Click);
             btnLamMoi = CreateButton("Lam moi", delegate { TaiDuLieu(); XoaTrong(); });
-            commands.Controls.AddRange(new Control[] { btnThem, btnSua, btnXoa, btnLamMoi });
+            btnLayToaDo = CreateButton("Lay toa do tu ban do", btnLayToaDo_Click);
+            commands.Controls.AddRange(new Control[] { btnThem, btnSua, btnXoa, btnLayToaDo, btnLamMoi });
             right.Controls.Add(commands);
 
             root.Controls.Add(left, 0, 0);
@@ -305,6 +309,51 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             {
                 MessageBox.Show("Khong the xoa vi co du lieu lien quan: " + ex.Message, "Loi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void btnLayToaDo_Click(object sender, EventArgs e)
+        {
+            var address = string.Format("{0}, {1}, {2}, Viet Nam",
+                txtTen.Text,
+                cboQuan.SelectedItem == null ? string.Empty : cboQuan.SelectedItem.ToString(),
+                cboThanhPho.SelectedItem == null ? string.Empty : cboThanhPho.SelectedItem.ToString());
+
+            try
+            {
+                using (var client = new WebClient())
+                {
+                    client.Headers[HttpRequestHeader.UserAgent] = "QuanLyChoThueNha/1.0";
+                    var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
+                        Uri.EscapeDataString(address);
+                    var json = client.DownloadString(url);
+                    var lat = DocGiaTriJson(json, "lat");
+                    var lon = DocGiaTriJson(json, "lon");
+                    if (string.IsNullOrWhiteSpace(lat) || string.IsNullOrWhiteSpace(lon))
+                    {
+                        MessageBox.Show("Khong tim thay toa do tu dia chi nay.", "Ban do",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    numViDo.Value = ClampCoordinate(double.Parse(lat, System.Globalization.CultureInfo.InvariantCulture),
+                        numViDo.Minimum, numViDo.Maximum);
+                    numKinhDo.Value = ClampCoordinate(double.Parse(lon, System.Globalization.CultureInfo.InvariantCulture),
+                        numKinhDo.Minimum, numKinhDo.Maximum);
+                    MessageBox.Show("Da lay toa do tu OpenStreetMap.", "Ban do",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Khong lay duoc toa do: " + ex.Message, "Ban do",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private string DocGiaTriJson(string json, string key)
+        {
+            var match = Regex.Match(json ?? string.Empty, "\"" + key + "\"\\s*:\\s*\"([^\"]+)\"");
+            return match.Success ? match.Groups[1].Value : string.Empty;
         }
 
         private void XoaTrong()

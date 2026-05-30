@@ -8,6 +8,7 @@ using MaterialSkin;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Forms.Auth;
+using QuanLyChoThueNha.GUI.Helpers;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.KhachHang
@@ -404,8 +405,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     MaKhach = dialog.Khach.MaKhach,
                     SoTienDatCoc = dialog.TienCoc,
                     NgayHetHan = DateTime.Today.AddDays(3),
-                    PhuongThucThanhToan = "LienHeDatTruoc",
-                    GhiChu = "Khach vang lai dang ky tu man hinh tim tro"
+                    PhuongThucThanhToan = "VietQRDatCoc",
+                    GhiChu = "Khach vang lai dang ky tu man hinh tim tro; cho xac nhan chuyen khoan dat coc"
                 };
 
                 if (!_phieuDatTruocService.TaoPhieu(phieu, out loi))
@@ -414,18 +415,38 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     return;
                 }
 
+                var noiDungChuyenKhoan = NoiDungDatCoc(phieu);
+                string emailStatus;
+                EmailNotificationHelper.GuiThongTinDatTruoc(dialog.Email, dialog.Khach.HoTen,
+                    dialog.TenDangNhap, dialog.MatKhau, phieu.MaPhieuDatTruoc, room.MaCanHo,
+                    dialog.TienCoc, phieu.NgayHetHan, noiDungChuyenKhoan, out emailStatus);
+
                 var message = new StringBuilder();
                 message.AppendLine("Da tao tai khoan va phieu dat truoc.");
                 message.AppendLine();
                 message.AppendLine("Ten dang nhap: " + dialog.TenDangNhap);
                 message.AppendLine("Mat khau tam: " + dialog.MatKhau);
                 message.AppendLine("Ma khach: " + dialog.Khach.MaKhach);
+                message.AppendLine("Ma phieu: " + phieu.MaPhieuDatTruoc);
                 message.AppendLine("Ma phong: " + room.MaCanHo);
+                message.AppendLine("Tien coc: " + dialog.TienCoc.ToString("N0"));
+                message.AppendLine("Noi dung CK: " + noiDungChuyenKhoan);
+                message.AppendLine(emailStatus);
                 Clipboard.SetText(message.ToString());
-                MessageBox.Show(message + "\nThong tin dang nhap da duoc copy de gui cho khach.",
+                MessageBox.Show(message + "\nThong tin dang nhap va dat coc da duoc copy.",
                     "Dat truoc thanh cong", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                using (var qr = new frmQrThanhToan("QR dat coc phong", phieu.MaPhieuDatTruoc,
+                    "Phong " + room.MaCanHo, dialog.TienCoc, noiDungChuyenKhoan))
+                {
+                    qr.ShowDialog(this);
+                }
                 TaiDanhSachTro();
             }
+        }
+
+        private string NoiDungDatCoc(PhieuDatTruoc phieu)
+        {
+            return string.Format("DAT COC {0} PHONG {1}", phieu.MaPhieuDatTruoc, phieu.MaCanHo);
         }
     }
 }

@@ -1,104 +1,107 @@
 -- ============================================================
 -- 02_seed_data.sql
--- Dữ liệu mẫu để chạy demo ngay.
--- Mật khẩu băm BCrypt work factor 12:
+-- Du lieu mau dung Unicode. Mat khau mau:
 --   admin / Admin@123
 --   nhanvien / Admin@123
---   khach / Admin@123
+--   khach01 / Admin@123
 -- ============================================================
 
 USE QuanLyChoThueNha;
 GO
 
--- ── TaiKhoan ────────────────────────────────────────────────
-INSERT INTO TaiKhoan VALUES
-('TK001','admin',    '$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2','admin@gmail.com',    '0901000001','Admin',    1, GETDATE()),
-('TK002','nhanvien', '$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2','nv@gmail.com',       '0901000002','NhanVien', 1, GETDATE()),
-('TK003','khach01',  '$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2','khach01@gmail.com',  '0901000003','KhachThue',1, GETDATE());
+INSERT INTO TaiKhoan
+    (MaTaiKhoan, TenDangNhap, MatKhauHash, Email, SoDienThoai, VaiTro, TrangThai, NgayTao)
+VALUES
+('TK001',N'admin',    N'$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2',N'admin@gmail.com',   '0901000001',N'Admin',     1, GETDATE()),
+('TK002',N'nhanvien', N'$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2',N'nv@gmail.com',      '0901000002',N'NhanVien',  1, GETDATE()),
+('TK003',N'khach01',  N'$2a$12$i0sWNlTL0T1.YtkCZgHx9ek8XfxBn/3UDB5YC/w/zwgj6EWQaLzM2',N'khach01@gmail.com', '0901000003',N'KhachThue', 1, GETDATE());
 
--- ── Admin ───────────────────────────────────────────────────
-INSERT INTO Admin VALUES ('AD001','TK001','Nguyễn Văn Admin');
+INSERT INTO Admin (MaAdmin, MaTaiKhoan, HoTen)
+VALUES ('AD001','TK001',N'Nguyễn Văn Admin');
 
--- ── NhanVienQuanLy ──────────────────────────────────────────
-INSERT INTO NhanVienQuanLy VALUES ('NV001','TK002','Trần Thị Nhân Viên', GETDATE());
+INSERT INTO NhanVienQuanLy (MaNhanVien, MaTaiKhoan, HoTen, NgayVaoLam)
+VALUES ('NV001','TK002',N'Trần Thị Nhân Viên', GETDATE());
 
--- ── KhachThue ───────────────────────────────────────────────
-INSERT INTO KhachThue VALUES ('KH001','TK003','Lê Văn Khách','012345678','Hà Nội','1995-06-15');
+INSERT INTO KhachThue (MaKhach, MaTaiKhoan, HoTen, SoCMND, DiaChi, NgaySinh)
+VALUES ('KH001','TK003',N'Lê Văn Khách','012345678',N'Hà Nội','1995-06-15');
 
--- ── KhuVuc ──────────────────────────────────────────────────
 INSERT INTO KhuVuc (MaKhuVuc, MaAdmin, TenKhuVuc, Quan, ThanhPho, ViDo, KinhDo)
-VALUES ('KV001','AD001','Khu Cầu Giấy','Cầu Giấy','Hà Nội', 21.036237, 105.790583);
-INSERT INTO KhuVuc (MaKhuVuc, MaAdmin, TenKhuVuc, Quan, ThanhPho, ViDo, KinhDo)
-VALUES ('KV002','AD001','Khu Đống Đa','Đống Đa','Hà Nội', 21.018072, 105.829949);
+VALUES
+('KV001','AD001',N'Khu Cầu Giấy',N'Cầu Giấy',N'Hà Nội',21.036237,105.790583),
+('KV002','AD001',N'Khu Đống Đa',N'Đống Đa',N'Hà Nội',21.018072,105.829949);
 
--- ── LoaiCanHo ───────────────────────────────────────────────
-INSERT INTO LoaiCanHo VALUES ('LC001','AD001','Studio','Căn hộ 1 phòng ngủ nhỏ gọn');
-INSERT INTO LoaiCanHo VALUES ('LC002','AD001','2 Phòng ngủ','Căn hộ 2 phòng ngủ tiêu chuẩn');
-INSERT INTO LoaiCanHo VALUES ('LC003','AD001','3 Phòng ngủ','Căn hộ 3 phòng ngủ cao cấp');
+INSERT INTO LoaiCanHo (MaLoai, MaAdmin, TenLoai, MoTa)
+VALUES
+('LC001','AD001',N'Studio',N'Căn hộ 1 phòng ngủ nhỏ gọn'),
+('LC002','AD001',N'2 Phòng ngủ',N'Căn hộ 2 phòng ngủ tiêu chuẩn'),
+('LC003','AD001',N'3 Phòng ngủ',N'Căn hộ 3 phòng ngủ cao cấp');
 
--- ── Toa ─────────────────────────────────────────────────────
-INSERT INTO Toa VALUES ('TO001','KV001','Tòa A','Số 1 Đường Nguyễn Trãi, CG, HN',15,'Tòa nhà mới xây 2020');
-INSERT INTO Toa VALUES ('TO002','KV001','Tòa B','Số 2 Đường Nguyễn Trãi, CG, HN',12,NULL);
-INSERT INTO Toa VALUES ('TO003','KV002','Tòa C','Số 5 Phố Huế, ĐĐ, HN',10,NULL);
+INSERT INTO Toa (MaToa, MaKhuVuc, TenToa, DiaChi, SoTang, MoTa)
+VALUES
+('TO001','KV001',N'Tòa A',N'Số 1 Đường Nguyễn Trãi, Cầu Giấy, Hà Nội',15,N'Tòa nhà mới xây 2020'),
+('TO002','KV001',N'Tòa B',N'Số 2 Đường Nguyễn Trãi, Cầu Giấy, Hà Nội',12,NULL),
+('TO003','KV002',N'Tòa C',N'Số 5 Phố Huế, Đống Đa, Hà Nội',10,NULL);
 
--- ── CanHo ───────────────────────────────────────────────────
-INSERT INTO CanHo VALUES ('CH001','TO001','LC001','NV001',35.0,4500000,9000000,101,1,'Trong','Studio tầng 1, ban công nhỏ',GETDATE());
-INSERT INTO CanHo VALUES ('CH002','TO001','LC002','NV001',65.5,8000000,16000000,205,2,'Trong','2PN, view đẹp',GETDATE());
-INSERT INTO CanHo VALUES ('CH003','TO001','LC003','NV001',90.0,12000000,24000000,310,3,'DangThue','3PN, full nội thất',GETDATE());
-INSERT INTO CanHo VALUES ('CH004','TO002','LC001','NV001',38.0,4800000,9600000,102,1,'Trong','Studio tầng 1',GETDATE());
-INSERT INTO CanHo VALUES ('CH005','TO003','LC002','NV001',70.0,9000000,18000000,301,3,'Trong','2PN view phố Huế',GETDATE());
+INSERT INTO CanHo
+    (MaCanHo, MaToa, MaLoai, MaNhanVien, MaNguoiThaoTac, VaiTroNguoiThaoTac,
+     DienTich, GiaThueNiemYet, TienCocNiemYet, SoCanHo, TangSo, TinhTrang, MoTa, NgayTao)
+VALUES
+('CH001','TO001','LC001','NV001',NULL,NULL,35.0,4500000, 9000000,101,1,N'Trong',N'Studio tầng 1, ban công nhỏ',GETDATE()),
+('CH002','TO001','LC002','NV001',NULL,NULL,65.5,8000000,16000000,205,2,N'Trong',N'2PN, view đẹp',GETDATE()),
+('CH003','TO001','LC003','NV001',NULL,NULL,90.0,12000000,24000000,310,3,N'DangThue',N'3PN, full nội thất',GETDATE()),
+('CH004','TO002','LC001','NV001',NULL,NULL,38.0,4800000, 9600000,102,1,N'Trong',N'Studio tầng 1',GETDATE()),
+('CH005','TO003','LC002','NV001',NULL,NULL,70.0,9000000,18000000,301,3,N'Trong',N'2PN view phố Huế',GETDATE());
 
--- ── TienNghi ────────────────────────────────────────────────
-INSERT INTO TienNghi VALUES ('TN001','AD001','Điều hòa','Điều hòa 2 chiều');
-INSERT INTO TienNghi VALUES ('TN002','AD001','Máy giặt','Máy giặt cửa trước');
-INSERT INTO TienNghi VALUES ('TN003','AD001','Internet cáp quang','Tốc độ 100Mbps');
-INSERT INTO TienNghi VALUES ('TN004','AD001','Bãi đỗ xe','Bãi xe trong tòa');
+INSERT INTO TienNghi (MaTienNghi, MaAdmin, TenTienNghi, MoTa)
+VALUES
+('TN001','AD001',N'Điều hòa',N'Điều hòa 2 chiều'),
+('TN002','AD001',N'Máy giặt',N'Máy giặt cửa trước'),
+('TN003','AD001',N'Internet cáp quang',N'Tốc độ 100Mbps'),
+('TN004','AD001',N'Bãi đỗ xe',N'Bãi xe trong tòa');
 
--- ── TienNghiCuaCanHo ────────────────────────────────────────
-INSERT INTO TienNghiCuaCanHo VALUES ('CH001','TN001',NULL);
-INSERT INTO TienNghiCuaCanHo VALUES ('CH001','TN003','Wifi miễn phí');
-INSERT INTO TienNghiCuaCanHo VALUES ('CH002','TN001',NULL);
-INSERT INTO TienNghiCuaCanHo VALUES ('CH002','TN002',NULL);
-INSERT INTO TienNghiCuaCanHo VALUES ('CH002','TN003',NULL);
-INSERT INTO TienNghiCuaCanHo VALUES ('CH003','TN001',NULL);
-INSERT INTO TienNghiCuaCanHo VALUES ('CH003','TN002',NULL);
-INSERT INTO TienNghiCuaCanHo VALUES ('CH003','TN003',NULL);
-INSERT INTO TienNghiCuaCanHo VALUES ('CH003','TN004',NULL);
+INSERT INTO TienNghiCuaCanHo (MaCanHo, MaTienNghi, GhiChu)
+VALUES
+('CH001','TN001',NULL),
+('CH001','TN003',N'Wifi miễn phí'),
+('CH002','TN001',NULL),
+('CH002','TN002',NULL),
+('CH002','TN003',NULL),
+('CH003','TN001',NULL),
+('CH003','TN002',NULL),
+('CH003','TN003',NULL),
+('CH003','TN004',NULL);
 
--- ── GiaDichVu ───────────────────────────────────────────────
-INSERT INTO GiaDichVu VALUES ('GDV001','TO001',3500,15000,50000,'2025-01-01',NULL,1);
-INSERT INTO GiaDichVu VALUES ('GDV002','TO002',3500,15000,45000,'2025-01-01',NULL,1);
-INSERT INTO GiaDichVu VALUES ('GDV003','TO003',4000,18000,60000,'2025-01-01',NULL,1);
+INSERT INTO GiaDichVu
+    (MaGiaDichVu, MaToa, DonGiaDien, DonGiaNuoc, PhiDichVu, ApDungTuNgay, ApDungDenNgay, DangApDung)
+VALUES
+('GDV001','TO001',3500,15000,50000,'2025-01-01',NULL,1),
+('GDV002','TO002',3500,15000,45000,'2025-01-01',NULL,1),
+('GDV003','TO003',4000,18000,60000,'2025-01-01',NULL,1);
 
--- ── LoaiHoaDon ──────────────────────────────────────────────
-INSERT INTO LoaiHoaDon VALUES ('LHD001','Tiền thuê','Hóa đơn tiền thuê hàng tháng');
-INSERT INTO LoaiHoaDon VALUES ('LHD002','Điện nước','Hóa đơn tiền điện nước');
-INSERT INTO LoaiHoaDon VALUES ('LHD003','Dịch vụ chung','Phí dịch vụ chung cư');
-INSERT INTO LoaiHoaDon VALUES ('LHD004','Vi phạm','Phí bồi thường vi phạm');
+INSERT INTO LoaiHoaDon (MaLoaiHoaDon, TenLoai, MoTa)
+VALUES
+('LHD001',N'Tiền thuê',N'Hóa đơn tiền thuê hàng tháng'),
+('LHD002',N'Điện nước',N'Hóa đơn tiền điện nước'),
+('LHD003',N'Dịch vụ chung',N'Phí dịch vụ chung cư'),
+('LHD004',N'Vi phạm',N'Phí bồi thường vi phạm');
 
--- ── HopDong mẫu (CH003 đang thuê) ───────────────────────────
--- Liet ke cot tuong minh de tranh loi khi schema thay doi.
 INSERT INTO HopDong
-    (MaHopDong, MaPhieuDatTruoc, MaCanHo, MaKhach, MaNhanVien,
+    (MaHopDong, MaPhieuDatTruoc, MaCanHo, MaKhach, MaNhanVien, MaNguoiThaoTac, VaiTroNguoiThaoTac,
      NgayBatDau, NgayKetThuc, GiaThueChot, TienCocChot, TienCocTruocDaTru,
      TrangThai, GhiChu, NgayTao)
-VALUES ('HD001',NULL,'CH003','KH001','NV001',
-    '2025-01-01','2025-12-31',12000000,24000000,0,'HieuLuc',NULL,GETDATE());
+VALUES ('HD001',NULL,'CH003','KH001','NV001',NULL,NULL,
+    '2025-01-01','2025-12-31',12000000,24000000,0,N'HieuLuc',NULL,GETDATE());
 
--- ── HoaDon mẫu ──────────────────────────────────────────────
 INSERT INTO HoaDonThanhToan
-    (MaHoaDon, MaHopDong, MaLoaiHoaDon, MaNhanVienThu, MaViPham, KyThanhToan,
-     ChiSoDienCu, ChiSoDienMoi, ChiSoNuocCu, ChiSoNuocMoi,
+    (MaHoaDon, MaHopDong, MaLoaiHoaDon, MaNhanVienThu, MaNguoiThaoTac, VaiTroNguoiThaoTac,
+     MaViPham, KyThanhToan, ChiSoDienCu, ChiSoDienMoi, ChiSoNuocCu, ChiSoNuocMoi,
      SoTienPhaiTra, SoTienDaTra, NgayDaoHan, NgayThanhToan, TrangThai, PhuongThucThanhToan)
-VALUES ('HOADON001','HD001','LHD001','NV001',NULL,'01/2025',
-    0,120,0,15,12000000,12000000,'2025-01-05','2025-01-03','DaTra','ChuyenKhoan');
-INSERT INTO HoaDonThanhToan
-    (MaHoaDon, MaHopDong, MaLoaiHoaDon, MaNhanVienThu, MaViPham, KyThanhToan,
-     ChiSoDienCu, ChiSoDienMoi, ChiSoNuocCu, ChiSoNuocMoi,
-     SoTienPhaiTra, SoTienDaTra, NgayDaoHan, NgayThanhToan, TrangThai, PhuongThucThanhToan)
-VALUES ('HOADON002','HD001','LHD001','NV001',NULL,'02/2025',
-    120,255,15,28,12000000,0,'2025-02-05',NULL,'ChuaTra',NULL);
+VALUES
+('HOADON001','HD001','LHD001','NV001',NULL,NULL,NULL,N'01/2025',
+    0,120,0,15,12000000,12000000,'2025-01-05','2025-01-03',N'DaTra',N'ChuyenKhoan'),
+('HOADON002','HD001','LHD001','NV001',NULL,NULL,NULL,N'02/2025',
+    120,255,15,28,12000000,0,'2025-02-05',NULL,N'ChuaTra',NULL);
 
-PRINT 'Dữ liệu mẫu đã được chèn thành công.';
-PRINT 'Tài khoản: admin / Admin@123  |  nhanvien / Admin@123  |  khach01 / Admin@123';
+PRINT N'Du lieu mau da duoc chen thanh cong.';
+PRINT N'Tai khoan: admin / Admin@123 | nhanvien / Admin@123 | khach01 / Admin@123';
 GO

@@ -84,6 +84,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="Helpers\EmailNotificationHelper.cs" />
     <Compile Include="Forms\Shared\CrudFormBase.cs" />
     <Compile Include="Forms\Auth\frmLogin.cs">
       <SubType>Form</SubType>

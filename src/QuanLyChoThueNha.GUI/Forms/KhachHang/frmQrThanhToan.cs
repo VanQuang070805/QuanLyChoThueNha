@@ -12,6 +12,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
     {
         private readonly HoaDonThanhToan _hoaDon;
         private readonly decimal _soTienCanTra;
+        private readonly string _maThanhToan;
+        private readonly string _kyThanhToan;
+        private readonly string _tieuDe;
+        private readonly string _noiDungChuyenKhoan;
         private readonly PictureBox _picture = new PictureBox();
         private readonly Label _lblInfo = new Label();
 
@@ -19,7 +23,25 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         {
             _hoaDon = hoaDon;
             _soTienCanTra = Math.Max(0, hoaDon.SoTienPhaiTra - hoaDon.SoTienDaTra);
-            Text = "QR thanh toan hoa don";
+            _maThanhToan = hoaDon.MaHoaDon;
+            _kyThanhToan = hoaDon.KyThanhToan;
+            _tieuDe = "QR thanh toan hoa don";
+            _noiDungChuyenKhoan = string.Format("Thanh toan {0} {1}", hoaDon.MaHoaDon, hoaDon.KyThanhToan);
+            Text = _tieuDe;
+            Size = new Size(520, 680);
+            StartPosition = FormStartPosition.CenterParent;
+            BuildLayout();
+            Load += delegate { LoadQr(); };
+        }
+
+        public frmQrThanhToan(string tieuDe, string maThanhToan, string kyThanhToan, decimal soTienCanTra, string noiDungChuyenKhoan)
+        {
+            _soTienCanTra = Math.Max(0, soTienCanTra);
+            _maThanhToan = maThanhToan;
+            _kyThanhToan = kyThanhToan;
+            _tieuDe = tieuDe;
+            _noiDungChuyenKhoan = noiDungChuyenKhoan;
+            Text = _tieuDe;
             Size = new Size(520, 680);
             StartPosition = FormStartPosition.CenterParent;
             BuildLayout();
@@ -40,8 +62,11 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             _lblInfo.Dock = DockStyle.Fill;
             _lblInfo.Text = string.Format(
-                "Hoa don: {0}\nKy: {1}\nSo tien can thanh toan: {2:N0}",
-                _hoaDon.MaHoaDon, _hoaDon.KyThanhToan, _soTienCanTra);
+                "{0}: {1}\nThong tin: {2}\nSo tien can thanh toan: {3:N0}",
+                _hoaDon == null ? "Ma thanh toan" : "Hoa don",
+                _maThanhToan,
+                _kyThanhToan,
+                _soTienCanTra);
             _lblInfo.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             root.Controls.Add(_lblInfo, 0, 0);
 
@@ -99,7 +124,9 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private string NoiDungChuyenKhoan()
         {
-            return string.Format("Thanh toan {0} {1}", _hoaDon.MaHoaDon, _hoaDon.KyThanhToan);
+            return string.IsNullOrWhiteSpace(_noiDungChuyenKhoan)
+                ? string.Format("Thanh toan {0} {1}", _maThanhToan, _kyThanhToan)
+                : _noiDungChuyenKhoan;
         }
 
         private string Config(string key, string fallback)

@@ -268,8 +268,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 MaKhach = SessionContext.MaNguoiDung,
                 SoTienDatCoc = tienCoc,
                 NgayHetHan = DateTime.Today.AddDays(3),
-                PhuongThucThanhToan = "KhachDatPhong",
-                GhiChu = "Khach hang dat phong tu trang ca nhan"
+                PhuongThucThanhToan = "VietQRDatCoc",
+                GhiChu = "Khach hang dat phong tu trang ca nhan; cho xac nhan chuyen khoan dat coc"
             };
 
             string loi;
@@ -279,8 +279,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 return;
             }
 
-            MessageBox.Show("Da tao phieu dat phong. Nhan vien se tiep tuc xu ly ky hop dong.",
+            var noiDungChuyenKhoan = string.Format("DAT COC {0} PHONG {1}", phieu.MaPhieuDatTruoc, room.MaCanHo);
+            MessageBox.Show("Da tao phieu dat phong. Vui long quet QR de thanh toan tien dat coc.",
                 "Thanh cong", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            using (var qr = new frmQrThanhToan("QR dat coc phong", phieu.MaPhieuDatTruoc,
+                "Phong " + room.MaCanHo, tienCoc, noiDungChuyenKhoan))
+            {
+                qr.ShowDialog(this);
+            }
             TaiDuLieu();
         }
 
