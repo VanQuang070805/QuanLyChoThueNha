@@ -39,7 +39,9 @@ namespace QuanLyChoThueNha.GUI.Helpers
 
             var host = Config("SmtpHost", string.Empty);
             var user = Config("SmtpUser", string.Empty);
-            var password = Config("SmtpPassword", string.Empty);
+            var password = Environment.GetEnvironmentVariable("SMARTAPART_SMTP_PASSWORD");
+            if (string.IsNullOrWhiteSpace(password))
+                password = Config("SmtpPassword", string.Empty);
             var from = Config("SmtpFrom", user);
             if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(from))
             {
