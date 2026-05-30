@@ -419,7 +419,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 string emailStatus;
                 EmailNotificationHelper.GuiThongTinDatTruoc(dialog.Email, dialog.Khach.HoTen,
                     dialog.TenDangNhap, dialog.MatKhau, phieu.MaPhieuDatTruoc, room.MaCanHo,
-                    dialog.TienCoc, phieu.NgayHetHan, noiDungChuyenKhoan, out emailStatus);
+                    dialog.TienCoc, phieu.NgayHetHan, noiDungChuyenKhoan, dialog.Khach.MaTaiKhoan, out emailStatus);
 
                 var message = new StringBuilder();
                 message.AppendLine("Da tao tai khoan va phieu dat truoc.");

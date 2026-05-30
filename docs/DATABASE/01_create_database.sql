@@ -151,8 +151,8 @@ CREATE TABLE PhieuDatTruoc (
     SoTienDatCoc         DECIMAL(18,2) NOT NULL,
     NgayDatCoc           DATETIME      NOT NULL DEFAULT GETDATE(),
     NgayHetHan           DATETIME      NOT NULL,
-    TrangThai            NVARCHAR(50)  NOT NULL DEFAULT 'ChoKy'
-                         CHECK (TrangThai IN ('ChoKy','DaKyHD','Huy','HetHan')),
+    TrangThai            NVARCHAR(50)  NOT NULL DEFAULT 'ChoThanhToanCoc'
+                         CHECK (TrangThai IN ('ChoThanhToanCoc','DaThanhToanCoc','ChoKy','DaKyHD','Huy','HetHan')),
     PhuongThucThanhToan  NVARCHAR(50)  NULL,
     GhiChu               NVARCHAR(500) NULL
 );
@@ -255,6 +255,21 @@ CREATE TABLE PhieuXuLyViPham (
     NgayGhiNhan      DATETIME      NOT NULL DEFAULT GETDATE()
 );
 
+-- ── 20. EmailLog ─────────────────────────────────────────────
+CREATE TABLE EmailLog (
+    MaEmailLog          VARCHAR(50)    NOT NULL PRIMARY KEY,
+    MaPhieuDatTruoc     VARCHAR(50)    NULL REFERENCES PhieuDatTruoc(MaPhieuDatTruoc),
+    MaTaiKhoan          VARCHAR(50)    NULL REFERENCES TaiKhoan(MaTaiKhoan),
+    EmailNguoiNhan      NVARCHAR(150)  NOT NULL,
+    LoaiEmail           NVARCHAR(100)  NOT NULL,
+    TieuDe              NVARCHAR(255)  NOT NULL,
+    TrangThai           NVARCHAR(50)   NOT NULL CHECK (TrangThai IN ('ThanhCong','ThatBai')),
+    ThongBao            NVARCHAR(1000) NULL,
+    NgayGui             DATETIME       NOT NULL DEFAULT GETDATE(),
+    MaNguoiThaoTac      VARCHAR(50)    NULL,
+    VaiTroNguoiThaoTac  NVARCHAR(50)   NULL
+);
+
 -- Thêm FK ngược: HoaDonThanhToan.MaViPham → PhieuXuLyViPham
 ALTER TABLE HoaDonThanhToan
     ADD CONSTRAINT FK_HoaDon_ViPham
@@ -267,6 +282,7 @@ CREATE INDEX IX_HopDong_MaKhach  ON HopDong(MaKhach);
 CREATE INDEX IX_HoaDon_TrangThai ON HoaDonThanhToan(TrangThai);
 CREATE INDEX IX_HoaDon_NgayDaoHan ON HoaDonThanhToan(NgayDaoHan);
 CREATE INDEX IX_TaiKhoan_VaiTro  ON TaiKhoan(VaiTro);
+CREATE INDEX IX_EmailLog_Phieu   ON EmailLog(MaPhieuDatTruoc);
 
 PRINT 'Tạo CSDL thành công — 19 bảng.';
 GO

@@ -149,6 +149,9 @@
     <Compile Include="Forms\NhanVien\frmNhanVienHome.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\NhanVien\frmEmailLog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\TraNha\frmHoaDonThanhToan.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -38,6 +38,7 @@ namespace QuanLyChoThueNha.DAL.Repositories
         private IRepository<HoaDonThanhToan>  _hoaDonThanhToans;
         private IRepository<PhieuTraNha>      _phieuTraNhas;
         private IRepository<PhieuXuLyViPham>  _phieuXuLyViPhams;
+        private IRepository<EmailLog>         _emailLogs;
 
         public IRepository<TaiKhoan>         TaiKhoans         => _taiKhoans         ?? (_taiKhoans         = new Repository<TaiKhoan>(_context));
         public IRepository<Admin>            Admins             => _admins             ?? (_admins             = new Repository<Admin>(_context));
@@ -58,6 +59,7 @@ namespace QuanLyChoThueNha.DAL.Repositories
         public IRepository<HoaDonThanhToan>  HoaDonThanhToans   => _hoaDonThanhToans   ?? (_hoaDonThanhToans   = new Repository<HoaDonThanhToan>(_context));
         public IRepository<PhieuTraNha>      PhieuTraNhas       => _phieuTraNhas       ?? (_phieuTraNhas       = new Repository<PhieuTraNha>(_context));
         public IRepository<PhieuXuLyViPham>  PhieuXuLyViPhams   => _phieuXuLyViPhams   ?? (_phieuXuLyViPhams   = new Repository<PhieuXuLyViPham>(_context));
+        public IRepository<EmailLog>         EmailLogs          => _emailLogs          ?? (_emailLogs          = new Repository<EmailLog>(_context));
 
         // ── Lưu & Transaction ──────────────────────────────────────────────
         public int Complete() => _context.SaveChanges();

@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
+using QuanLyChoThueNha.BLL.Services;
 
 namespace QuanLyChoThueNha.GUI.Helpers
 {
@@ -12,16 +13,27 @@ namespace QuanLyChoThueNha.GUI.Helpers
             string matKhauTam, string maPhieu, string maPhong, decimal tienCoc, DateTime ngayHetHan,
             string noiDungChuyenKhoan, out string thongBao)
         {
+            return GuiThongTinDatTruoc(email, hoTen, tenDangNhap, matKhauTam, maPhieu, maPhong,
+                tienCoc, ngayHetHan, noiDungChuyenKhoan, null, out thongBao);
+        }
+
+        public static bool GuiThongTinDatTruoc(string email, string hoTen, string tenDangNhap,
+            string matKhauTam, string maPhieu, string maPhong, decimal tienCoc, DateTime ngayHetHan,
+            string noiDungChuyenKhoan, string maTaiKhoan, out string thongBao)
+        {
             thongBao = string.Empty;
+            var subject = "Thong tin tai khoan va dat coc phong";
             if (string.IsNullOrWhiteSpace(email))
             {
                 thongBao = "Khach chua nhap email.";
+                GhiLog(maPhieu, maTaiKhoan, email, subject, false, thongBao);
                 return false;
             }
 
             if (!DocBool("EmailEnabled", false))
             {
                 thongBao = "Chua bat gui email trong App.config.";
+                GhiLog(maPhieu, maTaiKhoan, email, subject, false, thongBao);
                 return false;
             }
 
@@ -32,6 +44,7 @@ namespace QuanLyChoThueNha.GUI.Helpers
             if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(from))
             {
                 thongBao = "Thieu cau hinh SMTP trong App.config.";
+                GhiLog(maPhieu, maTaiKhoan, email, subject, false, thongBao);
                 return false;
             }
 
@@ -41,7 +54,7 @@ namespace QuanLyChoThueNha.GUI.Helpers
                 {
                     message.From = new MailAddress(from, Config("SmtpFromName", "Quan ly cho thue nha"));
                     message.To.Add(email);
-                    message.Subject = "Thong tin tai khoan va dat coc phong";
+                    message.Subject = subject;
                     message.BodyEncoding = Encoding.UTF8;
                     message.SubjectEncoding = Encoding.UTF8;
                     message.Body = TaoNoiDung(hoTen, tenDangNhap, matKhauTam, maPhieu,
@@ -58,11 +71,13 @@ namespace QuanLyChoThueNha.GUI.Helpers
                 }
 
                 thongBao = "Da gui email cho khach.";
+                GhiLog(maPhieu, maTaiKhoan, email, subject, true, thongBao);
                 return true;
             }
             catch (Exception ex)
             {
                 thongBao = "Khong gui duoc email: " + ex.Message;
+                GhiLog(maPhieu, maTaiKhoan, email, subject, false, thongBao);
                 return false;
             }
         }
@@ -107,6 +122,19 @@ namespace QuanLyChoThueNha.GUI.Helpers
         {
             bool value;
             return bool.TryParse(ConfigurationManager.AppSettings[key], out value) ? value : fallback;
+        }
+
+        private static void GhiLog(string maPhieu, string maTaiKhoan, string email,
+            string subject, bool thanhCong, string thongBao)
+        {
+            try
+            {
+                new EmailLogService().GhiLogDatTruoc(maPhieu, maTaiKhoan, email, subject, thanhCong, thongBao);
+            }
+            catch
+            {
+                // Khong de loi ghi log lam hong luong tao phieu/gui QR cho khach.
+            }
         }
     }
 }

@@ -40,7 +40,7 @@ namespace QuanLyChoThueNha.BLL.Services
             {
                 phieu = _uow.PhieuDatTruocs.GetById(maPhieuDatTruoc);
                 if (phieu == null) { loi = "Phieu dat truoc khong ton tai."; return false; }
-                if (phieu.TrangThai != "ChoKy") { loi = "Phieu dat truoc nay khong con o trang thai ChoKy."; return false; }
+                if (phieu.TrangThai != PhieuDatTruocService.ChoKy) { loi = "Phieu dat truoc nay chua du dieu kien ky hop dong."; return false; }
                 if (_uow.HopDongs.Any(h => h.MaPhieuDatTruoc == maPhieuDatTruoc))
                 {
                     loi = "Phieu dat truoc nay da duoc dung de tao hop dong.";
@@ -81,7 +81,7 @@ namespace QuanLyChoThueNha.BLL.Services
 
                 if (phieu != null)
                 {
-                    phieu.TrangThai = "DaKyHD";
+                    phieu.TrangThai = PhieuDatTruocService.DaKyHD;
                     _uow.PhieuDatTruocs.Update(phieu);
                 }
 

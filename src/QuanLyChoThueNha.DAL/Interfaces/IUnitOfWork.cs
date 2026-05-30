@@ -27,6 +27,7 @@ namespace QuanLyChoThueNha.DAL.Interfaces
         IRepository<HoaDonThanhToan>  HoaDonThanhToans   { get; }
         IRepository<PhieuTraNha>      PhieuTraNhas       { get; }
         IRepository<PhieuXuLyViPham>  PhieuXuLyViPhams   { get; }
+        IRepository<EmailLog>         EmailLogs          { get; }
 
         int Complete();                     // SaveChanges
         void BeginTransaction();

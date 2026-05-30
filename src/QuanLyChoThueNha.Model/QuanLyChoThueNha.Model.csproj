@@ -47,6 +47,7 @@
     <Compile Include="Entities\GiaHanHopDong.cs" />
     <Compile Include="Entities\PhieuTraNha.cs" />
     <Compile Include="Entities\PhieuXuLyViPham.cs" />
+    <Compile Include="Entities\EmailLog.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

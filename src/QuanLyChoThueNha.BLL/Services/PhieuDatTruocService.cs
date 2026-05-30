@@ -9,6 +9,13 @@ namespace QuanLyChoThueNha.BLL.Services
 {
     public class PhieuDatTruocService : BaseService<PhieuDatTruoc>
     {
+        public const string ChoThanhToanCoc = "ChoThanhToanCoc";
+        public const string DaThanhToanCoc = "DaThanhToanCoc";
+        public const string ChoKy = "ChoKy";
+        public const string DaKyHD = "DaKyHD";
+        public const string Huy = "Huy";
+        public const string HetHan = "HetHan";
+
         protected override IRepository<PhieuDatTruoc> Repo => _uow.PhieuDatTruocs;
 
         private string SinhMa()
@@ -25,13 +32,16 @@ namespace QuanLyChoThueNha.BLL.Services
         private void CapNhatPhieuHetHan()
         {
             var quaHan = _uow.PhieuDatTruocs
-                .Find(p => p.TrangThai == "ChoKy" && p.NgayHetHan < DateTime.Today)
+                .Find(p => (p.TrangThai == ChoThanhToanCoc ||
+                            p.TrangThai == DaThanhToanCoc ||
+                            p.TrangThai == ChoKy) &&
+                           p.NgayHetHan < DateTime.Today)
                 .ToList();
             if (quaHan.Count == 0) return;
 
             foreach (var p in quaHan)
             {
-                p.TrangThai = "HetHan";
+                p.TrangThai = HetHan;
                 _uow.PhieuDatTruocs.Update(p);
 
                 var canHo = _uow.CanHos.GetById(p.MaCanHo);
@@ -71,7 +81,7 @@ namespace QuanLyChoThueNha.BLL.Services
             {
                 phieu.MaPhieuDatTruoc = SinhMa();
                 phieu.NgayDatCoc = DateTime.Now;
-                phieu.TrangThai = "ChoKy";
+                phieu.TrangThai = ChoThanhToanCoc;
                 AuditHelper.GanNguoiThaoTac(phieu);
                 _uow.PhieuDatTruocs.Add(phieu);
 
@@ -96,12 +106,18 @@ namespace QuanLyChoThueNha.BLL.Services
             loi = string.Empty;
             var phieu = LayTheoMa(maPhieu);
             if (phieu == null) { loi = "Khong tim thay phieu."; return false; }
-            if (phieu.TrangThai != "ChoKy") { loi = "Chi huy duoc phieu o trang thai ChoKy."; return false; }
+            if (phieu.TrangThai != ChoThanhToanCoc &&
+                phieu.TrangThai != DaThanhToanCoc &&
+                phieu.TrangThai != ChoKy)
+            {
+                loi = "Chi huy duoc phieu dang cho coc hoac cho ky.";
+                return false;
+            }
 
             _uow.BeginTransaction();
             try
             {
-                phieu.TrangThai = "Huy";
+                phieu.TrangThai = Huy;
                 _uow.PhieuDatTruocs.Update(phieu);
 
                 var canHo = _uow.CanHos.GetById(phieu.MaCanHo);
@@ -118,6 +134,42 @@ namespace QuanLyChoThueNha.BLL.Services
                 loi = _inner.Message;
                 return false;
             }
+        }
+
+        public bool XacNhanDaNhanCoc(string maPhieu, out string loi)
+        {
+            loi = string.Empty;
+            var phieu = LayTheoMa(maPhieu);
+            if (phieu == null) { loi = "Khong tim thay phieu."; return false; }
+            if (phieu.TrangThai != ChoThanhToanCoc && phieu.TrangThai != DaThanhToanCoc)
+            {
+                loi = "Chi xac nhan coc cho phieu dang cho thanh toan coc.";
+                return false;
+            }
+
+            var canHo = _uow.CanHos.GetById(phieu.MaCanHo);
+            if (canHo == null) { loi = "Khong tim thay can ho cua phieu."; return false; }
+            if (canHo.TinhTrang != "DaDatCoc")
+            {
+                loi = "Phong khong con o trang thai da dat coc.";
+                return false;
+            }
+
+            phieu.TrangThai = ChoKy;
+            phieu.PhuongThucThanhToan = string.IsNullOrWhiteSpace(phieu.PhuongThucThanhToan)
+                ? "DaNhanCoc"
+                : phieu.PhuongThucThanhToan;
+            phieu.GhiChu = NoiGhiChu(phieu.GhiChu,
+                string.Format("Da xac nhan nhan coc luc {0:dd/MM/yyyy HH:mm}.", DateTime.Now));
+            _uow.PhieuDatTruocs.Update(phieu);
+            _uow.Complete();
+            return true;
+        }
+
+        private static string NoiGhiChu(string current, string note)
+        {
+            if (string.IsNullOrWhiteSpace(current)) return note;
+            return current + Environment.NewLine + note;
         }
     }
 }

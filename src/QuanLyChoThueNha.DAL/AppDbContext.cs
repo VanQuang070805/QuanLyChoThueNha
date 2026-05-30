@@ -45,6 +45,7 @@ namespace QuanLyChoThueNha.DAL
         public DbSet<HoaDonThanhToan>  HoaDonThanhToans   { get; set; }
         public DbSet<PhieuTraNha>      PhieuTraNhas       { get; set; }
         public DbSet<PhieuXuLyViPham>  PhieuXuLyViPhams   { get; set; }
+        public DbSet<EmailLog>         EmailLogs          { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {

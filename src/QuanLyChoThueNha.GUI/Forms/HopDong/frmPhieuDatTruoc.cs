@@ -14,6 +14,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         public frmPhieuDatTruoc() : base("Quan ly Phieu dat truoc", Fields())
         {
+            AddCommandButton("Xac nhan da nhan coc", BtnXacNhanCoc_Click);
             AddCommandButton("Huy phieu", BtnHuyPhieu_Click);
         }
 
@@ -42,7 +43,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 new FieldDefinition("NgayDatCoc", "Ngay dat coc", typeof(DateTime), true),
                 new FieldDefinition("NgayHetHan", "Ngay het han", typeof(DateTime)),
                 new FieldDefinition("TrangThai", "Trang thai", typeof(string), false,
-                    new[] { "ChoKy", "DaKyHD", "Huy", "HetHan" }),
+                    new[] { "ChoThanhToanCoc", "DaThanhToanCoc", "ChoKy", "DaKyHD", "Huy", "HetHan" }),
                 new FieldDefinition("PhuongThucThanhToan", "Phuong thuc"),
                 new FieldDefinition("GhiChu", "Ghi chu", typeof(string), false, null, true)
             };
@@ -68,6 +69,26 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             error = string.Empty;
             _service.Xoa(item);
             return true;
+        }
+
+        private void BtnXacNhanCoc_Click(object sender, EventArgs e)
+        {
+            var item = CurrentItem;
+            if (item == null)
+            {
+                ShowError("Chon phieu can xac nhan coc.");
+                return;
+            }
+
+            string error;
+            if (!_service.XacNhanDaNhanCoc(item.MaPhieuDatTruoc, out error))
+            {
+                ShowError(error);
+                return;
+            }
+
+            ShowInfo("Da xac nhan coc. Phieu da san sang cho buoc ky hop dong.");
+            ReloadData();
         }
 
         private void BtnHuyPhieu_Click(object sender, EventArgs e)

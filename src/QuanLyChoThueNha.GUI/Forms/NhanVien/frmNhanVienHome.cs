@@ -6,6 +6,9 @@ using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Forms.KhachHang;
+using QuanLyChoThueNha.GUI.Helpers;
+using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.NhanVien
 {
@@ -15,12 +18,17 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
         private readonly HopDongService _hopDongService = new HopDongService();
         private readonly HoaDonThanhToanService _hoaDonService = new HoaDonThanhToanService();
         private readonly CanHoService _canHoService = new CanHoService();
+        private readonly KhachThueService _khachThueService = new KhachThueService();
+        private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
 
         private readonly FlowLayoutPanel _kpiPanel = new FlowLayoutPanel();
         private readonly DataGridView _gridDatPhong = CreateGrid();
         private readonly DataGridView _gridHopDong = CreateGrid();
         private readonly DataGridView _gridHoaDon = CreateGrid();
         private readonly MaterialButton _btnLamMoi = new MaterialButton { Text = "Lam moi", AutoSize = true };
+        private readonly MaterialButton _btnXacNhanCoc = new MaterialButton { Text = "Xac nhan da nhan coc", AutoSize = true };
+        private readonly MaterialButton _btnGuiLaiEmail = new MaterialButton { Text = "Gui lai email/QR", AutoSize = true };
+        private readonly MaterialButton _btnEmailLog = new MaterialButton { Text = "Lich su email", AutoSize = true };
         private MaterialLabel _lblHeader;
 
         public frmNhanVienHome()
@@ -56,6 +64,12 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             toolbar.Controls.Add(_lblHeader);
             _btnLamMoi.Click += delegate { LoadData(); };
             toolbar.Controls.Add(_btnLamMoi);
+            _btnXacNhanCoc.Click += BtnXacNhanCoc_Click;
+            toolbar.Controls.Add(_btnXacNhanCoc);
+            _btnGuiLaiEmail.Click += BtnGuiLaiEmail_Click;
+            toolbar.Controls.Add(_btnGuiLaiEmail);
+            _btnEmailLog.Click += delegate { new frmEmailLog().ShowDialog(this); };
+            toolbar.Controls.Add(_btnEmailLog);
             root.Controls.Add(toolbar, 0, 0);
 
             _kpiPanel.Dock = DockStyle.Fill;
@@ -66,7 +80,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             var top = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            top.Controls.Add(CreateGroup("Phieu dat phong cho ky hop dong", _gridDatPhong), 0, 0);
+            top.Controls.Add(CreateGroup("Phieu dat phong can xu ly", _gridDatPhong), 0, 0);
             top.Controls.Add(CreateGroup("Hop dong sap het han", _gridHopDong), 1, 0);
             root.Controls.Add(top, 0, 2);
 
@@ -78,10 +92,16 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
         {
             _lblHeader.Text = string.Format("Cong viec cua {0} [{1}]", SessionContext.HoTen, SessionContext.MaNguoiDung);
 
-            var phieuChoKy = _phieuDatTruocService.LayTatCa()
-                .Where(p => p.TrangThai == "ChoKy")
+            var tatCaPhieu = _phieuDatTruocService.LayTatCa().ToList();
+            var phieuChoCoc = tatCaPhieu
+                .Where(p => p.TrangThai == PhieuDatTruocService.ChoThanhToanCoc)
                 .OrderBy(p => p.NgayHetHan)
                 .ToList();
+            var phieuChoKy = tatCaPhieu
+                .Where(p => p.TrangThai == PhieuDatTruocService.ChoKy)
+                .OrderBy(p => p.NgayHetHan)
+                .ToList();
+            var phieuCanXuLy = phieuChoCoc.Concat(phieuChoKy).ToList();
             var hopDongSapHetHan = _hopDongService.LayGanHetHan(30)
                 .OrderBy(h => h.NgayKetThuc)
                 .ToList();
@@ -92,11 +112,12 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
 
             _kpiPanel.Controls.Clear();
             AddKpi("Phong trong", _canHoService.LayTheoTinhTrang("Trong").Count().ToString("N0"), Color.FromArgb(0, 137, 123));
-            AddKpi("Cho ky HD", phieuChoKy.Count.ToString("N0"), Color.FromArgb(245, 124, 0));
+            AddKpi("Cho coc", phieuChoCoc.Count.ToString("N0"), Color.FromArgb(245, 124, 0));
+            AddKpi("Cho ky HD", phieuChoKy.Count.ToString("N0"), Color.FromArgb(25, 118, 210));
             AddKpi("HD sap het han", hopDongSapHetHan.Count.ToString("N0"), Color.FromArgb(123, 31, 162));
             AddKpi("Hoa don can xu ly", hoaDonCanTheoDoi.Count.ToString("N0"), Color.FromArgb(198, 40, 40));
 
-            _gridDatPhong.DataSource = new BindingList<object>(phieuChoKy.Select(p => new
+            _gridDatPhong.DataSource = new BindingList<object>(phieuCanXuLy.Select(p => new
             {
                 p.MaPhieuDatTruoc,
                 p.MaKhach,
@@ -127,6 +148,78 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 h.NgayDaoHan,
                 h.TrangThai
             }).Cast<object>().ToList());
+        }
+
+        private void BtnXacNhanCoc_Click(object sender, EventArgs e)
+        {
+            var maPhieu = LayMaPhieuDangChon();
+            if (string.IsNullOrWhiteSpace(maPhieu))
+            {
+                MessageBox.Show("Chon phieu dat truoc can xac nhan coc.", "Thong bao",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string loi;
+            if (!_phieuDatTruocService.XacNhanDaNhanCoc(maPhieu, out loi))
+            {
+                MessageBox.Show(loi, "Khong the xac nhan coc", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            MessageBox.Show("Da xac nhan nhan coc. Phieu da chuyen sang cho ky hop dong.",
+                "Thanh cong", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            LoadData();
+        }
+
+        private void BtnGuiLaiEmail_Click(object sender, EventArgs e)
+        {
+            var maPhieu = LayMaPhieuDangChon();
+            if (string.IsNullOrWhiteSpace(maPhieu))
+            {
+                MessageBox.Show("Chon phieu dat truoc can gui lai email/QR.", "Thong bao",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var phieu = _phieuDatTruocService.LayTheoMa(maPhieu);
+            if (phieu == null)
+            {
+                MessageBox.Show("Khong tim thay phieu.", "Thong bao", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var khach = _khachThueService.LayTheoMa(phieu.MaKhach);
+            TaiKhoan taiKhoan = khach == null ? null : _taiKhoanService.LayTheoMa(khach.MaTaiKhoan);
+            var email = taiKhoan == null ? string.Empty : taiKhoan.Email;
+            var tenDangNhap = taiKhoan == null ? string.Empty : taiKhoan.TenDangNhap;
+            var noiDung = NoiDungDatCoc(phieu);
+            string thongBao;
+            EmailNotificationHelper.GuiThongTinDatTruoc(email, khach == null ? string.Empty : khach.HoTen,
+                tenDangNhap, "(mat khau da cap truoc)", phieu.MaPhieuDatTruoc, phieu.MaCanHo,
+                phieu.SoTienDatCoc, phieu.NgayHetHan, noiDung, khach == null ? null : khach.MaTaiKhoan,
+                out thongBao);
+
+            MessageBox.Show(thongBao, "Gui lai email", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            using (var qr = new frmQrThanhToan("QR dat coc phong", phieu.MaPhieuDatTruoc,
+                "Phong " + phieu.MaCanHo, phieu.SoTienDatCoc, noiDung))
+            {
+                qr.ShowDialog(this);
+            }
+        }
+
+        private string LayMaPhieuDangChon()
+        {
+            if (_gridDatPhong.CurrentRow == null || !_gridDatPhong.Columns.Contains("MaPhieuDatTruoc"))
+                return string.Empty;
+
+            var value = _gridDatPhong.CurrentRow.Cells["MaPhieuDatTruoc"].Value;
+            return value == null ? string.Empty : value.ToString();
+        }
+
+        private string NoiDungDatCoc(PhieuDatTruoc phieu)
+        {
+            return string.Format("DAT COC {0} PHONG {1}", phieu.MaPhieuDatTruoc, phieu.MaCanHo);
         }
 
         private static DataGridView CreateGrid()

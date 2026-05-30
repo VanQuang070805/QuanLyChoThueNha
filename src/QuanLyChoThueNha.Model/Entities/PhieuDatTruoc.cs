@@ -33,7 +33,7 @@ namespace QuanLyChoThueNha.Model.Entities
         public DateTime NgayHetHan { get; set; }
 
         [Required, MaxLength(50)]
-        public string TrangThai { get; set; } = "ChoKy"; // ChoKy / DaKyHD / Huy / HetHan
+        public string TrangThai { get; set; } = "ChoThanhToanCoc";
 
         [MaxLength(50)]
         public string PhuongThucThanhToan { get; set; }
