@@ -103,3 +103,6 @@ ehthumbs.db
 
 # Folder config file
 Desktop.ini
+
+# Local/private files - do not commit credentials, payment QR, videos, or personal assets
+private/

@@ -1,6 +1,6 @@
 -- ============================================================
 -- 01_create_database.sql
--- Tạo CSDL QuanLyChoThueNha với 19 bảng theo biểu đồ lớp
+-- Tạo CSDL QuanLyChoThueNha với 21 bảng theo biểu đồ lớp
 -- Chạy file này đầu tiên trong SSMS
 -- ============================================================
 
@@ -45,7 +45,7 @@ CREATE TABLE NhanVienQuanLy (
     NgayVaoLam   DATETIME      NOT NULL DEFAULT GETDATE()
 );
 
--- ── 4. KhachThue ────────────────────────────────────────────
+-- ── 4. NhanVienQuyen ────────────────────────────────────────
 CREATE TABLE NhanVienQuyen (
     MaNhanVien   VARCHAR(50)  NOT NULL REFERENCES NhanVienQuanLy(MaNhanVien),
     MaChucNang   VARCHAR(50)  NOT NULL,
@@ -55,6 +55,7 @@ CREATE TABLE NhanVienQuyen (
     CONSTRAINT CK_NhanVienQuyen_ChucNang CHECK (MaChucNang IN ('Dashboard','TaiSan','HopDong','ThanhToan','BaoCao'))
 );
 
+-- ── 5. KhachThue ────────────────────────────────────────────
 CREATE TABLE KhachThue (
     MaKhach      VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaTaiKhoan   VARCHAR(50)   NOT NULL REFERENCES TaiKhoan(MaTaiKhoan),
@@ -64,7 +65,7 @@ CREATE TABLE KhachThue (
     NgaySinh     DATE          NULL
 );
 
--- ── 5. KhuVuc ───────────────────────────────────────────────
+-- ── 6. KhuVuc ───────────────────────────────────────────────
 CREATE TABLE KhuVuc (
     MaKhuVuc     VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaAdmin      VARCHAR(50)   NULL REFERENCES Admin(MaAdmin),
@@ -75,7 +76,7 @@ CREATE TABLE KhuVuc (
     KinhDo       FLOAT         NULL
 );
 
--- ── 6. LoaiCanHo ────────────────────────────────────────────
+-- ── 7. LoaiCanHo ────────────────────────────────────────────
 CREATE TABLE LoaiCanHo (
     MaLoai       VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaAdmin      VARCHAR(50)   NULL REFERENCES Admin(MaAdmin),
@@ -83,7 +84,7 @@ CREATE TABLE LoaiCanHo (
     MoTa         NVARCHAR(500) NULL
 );
 
--- ── 7. Toa ──────────────────────────────────────────────────
+-- ── 8. Toa ──────────────────────────────────────────────────
 CREATE TABLE Toa (
     MaToa        VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaKhuVuc     VARCHAR(50)   NOT NULL REFERENCES KhuVuc(MaKhuVuc),
@@ -93,7 +94,7 @@ CREATE TABLE Toa (
     MoTa         NVARCHAR(500) NULL
 );
 
--- ── 8. CanHo ────────────────────────────────────────────────
+-- ── 9. CanHo ────────────────────────────────────────────────
 CREATE TABLE CanHo (
     MaCanHo          VARCHAR(50)    NOT NULL PRIMARY KEY,
     MaToa            VARCHAR(50)    NOT NULL REFERENCES Toa(MaToa),
@@ -112,7 +113,7 @@ CREATE TABLE CanHo (
     NgayTao          DATETIME       NOT NULL DEFAULT GETDATE()
 );
 
--- ── 9. HinhAnhNha ───────────────────────────────────────────
+-- ── 10. HinhAnhNha ──────────────────────────────────────────
 CREATE TABLE HinhAnhNha (
     MaHinhAnh    VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaCanHo      VARCHAR(50)   NOT NULL REFERENCES CanHo(MaCanHo),
@@ -121,7 +122,7 @@ CREATE TABLE HinhAnhNha (
     NgayTaiLen   DATETIME      NOT NULL DEFAULT GETDATE()
 );
 
--- ── 10. TienNghi ────────────────────────────────────────────
+-- ── 11. TienNghi ────────────────────────────────────────────
 CREATE TABLE TienNghi (
     MaTienNghi   VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaAdmin      VARCHAR(50)   NULL REFERENCES Admin(MaAdmin),
@@ -129,7 +130,7 @@ CREATE TABLE TienNghi (
     MoTa         NVARCHAR(255) NULL
 );
 
--- ── 11. TienNghiCuaCanHo (khóa kết hợp) ────────────────────
+-- ── 12. TienNghiCuaCanHo (khóa kết hợp) ────────────────────
 CREATE TABLE TienNghiCuaCanHo (
     MaCanHo      VARCHAR(50)   NOT NULL REFERENCES CanHo(MaCanHo),
     MaTienNghi   VARCHAR(50)   NOT NULL REFERENCES TienNghi(MaTienNghi),
@@ -137,7 +138,7 @@ CREATE TABLE TienNghiCuaCanHo (
     CONSTRAINT PK_TienNghiCuaCanHo PRIMARY KEY (MaCanHo, MaTienNghi)
 );
 
--- ── 12. GiaDichVu ───────────────────────────────────────────
+-- ── 13. GiaDichVu ───────────────────────────────────────────
 CREATE TABLE GiaDichVu (
     MaGiaDichVu      VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaToa            VARCHAR(50)   NOT NULL REFERENCES Toa(MaToa),
@@ -149,7 +150,7 @@ CREATE TABLE GiaDichVu (
     DangApDung       BIT           NOT NULL DEFAULT 1
 );
 
--- ── 13. PhieuDatTruoc ───────────────────────────────────────
+-- ── 14. PhieuDatTruoc ───────────────────────────────────────
 CREATE TABLE PhieuDatTruoc (
     MaPhieuDatTruoc      VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaCanHo              VARCHAR(50)   NOT NULL REFERENCES CanHo(MaCanHo),
@@ -166,7 +167,7 @@ CREATE TABLE PhieuDatTruoc (
     GhiChu               NVARCHAR(500) NULL
 );
 
--- ── 14. HopDong ─────────────────────────────────────────────
+-- ── 15. HopDong ─────────────────────────────────────────────
 CREATE TABLE HopDong (
     MaHopDong        VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaPhieuDatTruoc  VARCHAR(50)   NULL REFERENCES PhieuDatTruoc(MaPhieuDatTruoc),
@@ -187,14 +188,14 @@ CREATE TABLE HopDong (
     NgayTao          DATETIME      NOT NULL DEFAULT GETDATE()
 );
 
--- ── 15. LoaiHoaDon ──────────────────────────────────────────
+-- ── 16. LoaiHoaDon ──────────────────────────────────────────
 CREATE TABLE LoaiHoaDon (
     MaLoaiHoaDon VARCHAR(50)   NOT NULL PRIMARY KEY,
     TenLoai      NVARCHAR(100) NOT NULL,
     MoTa         NVARCHAR(255) NULL
 );
 
--- ── 16. HoaDonThanhToan ─────────────────────────────────────
+-- ── 17. HoaDonThanhToan ─────────────────────────────────────
 CREATE TABLE HoaDonThanhToan (
     MaHoaDon             VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaHopDong            VARCHAR(50)   NOT NULL REFERENCES HopDong(MaHopDong),
@@ -218,7 +219,7 @@ CREATE TABLE HoaDonThanhToan (
     PhuongThucThanhToan  NVARCHAR(50)  NULL
 );
 
--- ── 17. GiaHanHopDong ───────────────────────────────────────
+-- ── 18. GiaHanHopDong ───────────────────────────────────────
 CREATE TABLE GiaHanHopDong (
     MaGiaHan         VARCHAR(50)  NOT NULL PRIMARY KEY,
     MaHopDong        VARCHAR(50)  NOT NULL REFERENCES HopDong(MaHopDong),
@@ -233,7 +234,7 @@ CREATE TABLE GiaHanHopDong (
     NgayDuyet        DATETIME     NULL
 );
 
--- ── 18. PhieuTraNha ─────────────────────────────────────────
+-- ── 19. PhieuTraNha ─────────────────────────────────────────
 CREATE TABLE PhieuTraNha (
     MaPhieu          VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaHopDong        VARCHAR(50)   NOT NULL UNIQUE REFERENCES HopDong(MaHopDong),
@@ -247,7 +248,7 @@ CREATE TABLE PhieuTraNha (
     GhiChu           NVARCHAR(500) NULL
 );
 
--- ── 19. PhieuXuLyViPham ─────────────────────────────────────
+-- ── 20. PhieuXuLyViPham ─────────────────────────────────────
 CREATE TABLE PhieuXuLyViPham (
     MaViPham         VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaHopDong        VARCHAR(50)   NOT NULL REFERENCES HopDong(MaHopDong),
@@ -264,7 +265,7 @@ CREATE TABLE PhieuXuLyViPham (
     NgayGhiNhan      DATETIME      NOT NULL DEFAULT GETDATE()
 );
 
--- ── 20. EmailLog ─────────────────────────────────────────────
+-- ── 21. EmailLog ─────────────────────────────────────────────
 CREATE TABLE EmailLog (
     MaEmailLog          VARCHAR(50)    NOT NULL PRIMARY KEY,
     MaPhieuDatTruoc     VARCHAR(50)    NULL REFERENCES PhieuDatTruoc(MaPhieuDatTruoc),
@@ -293,5 +294,5 @@ CREATE INDEX IX_HoaDon_NgayDaoHan ON HoaDonThanhToan(NgayDaoHan);
 CREATE INDEX IX_TaiKhoan_VaiTro  ON TaiKhoan(VaiTro);
 CREATE INDEX IX_EmailLog_Phieu   ON EmailLog(MaPhieuDatTruoc);
 
-PRINT 'Tạo CSDL thành công — 19 bảng.';
+PRINT 'Tạo CSDL thành công — 21 bảng.';
 GO
