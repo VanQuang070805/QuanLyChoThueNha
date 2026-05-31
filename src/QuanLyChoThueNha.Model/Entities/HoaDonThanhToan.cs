@@ -13,6 +13,9 @@ namespace QuanLyChoThueNha.Model.Entities
         [Required, MaxLength(50)]
         public string MaHopDong { get; set; }
 
+        [NotMapped]
+        public string Phong { get; set; }
+
         [Required, MaxLength(50)]
         public string MaLoaiHoaDon { get; set; }
 

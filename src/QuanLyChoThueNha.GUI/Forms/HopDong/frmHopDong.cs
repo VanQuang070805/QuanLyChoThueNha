@@ -14,9 +14,15 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
     public class frmHopDong : CrudFormBase<HopDongEntity>
     {
         private readonly HopDongService _service = new HopDongService();
+        private string _trangThaiFilter = "TatCa";
 
         public frmHopDong() : base("Quan ly Hop dong", Fields())
         {
+            AddCommandButton("Tat ca", delegate { _trangThaiFilter = "TatCa"; ReloadData(); });
+            AddCommandButton("Hieu luc", delegate { _trangThaiFilter = "HieuLuc"; ReloadData(); });
+            AddCommandButton("Sap het han", delegate { _trangThaiFilter = "SapHetHan"; ReloadData(); });
+            AddCommandButton("Het han", delegate { _trangThaiFilter = "HetHan"; ReloadData(); });
+            AddCommandButton("Da huy", delegate { _trangThaiFilter = "DaHuy"; ReloadData(); });
         }
 
         private static IEnumerable<FieldDefinition> Fields()
@@ -52,32 +58,31 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 new FieldDefinition("NgayKetThuc", "Ngay ket thuc", typeof(DateTime)),
                 new FieldDefinition("GiaThueChot", "Gia thue chot", typeof(decimal)),
                 new FieldDefinition("TienCocChot", "Tien coc chot", typeof(decimal)),
-                new FieldDefinition("TrangThai", "Trang thai", typeof(string), false,
+                new FieldDefinition("TrangThai", "Trang thai", typeof(string), true,
                     new[] { "HieuLuc", "HetHan", "DaHuy" }),
                 new FieldDefinition("GhiChu", "Ghi chu", typeof(string), false, null, true),
                 new FieldDefinition("NgayTao", "Ngay tao", typeof(DateTime), true)
             };
         }
 
-        protected override IEnumerable<HopDongEntity> GetItems() { return _service.LayTatCa(); }
+        protected override IEnumerable<HopDongEntity> GetItems()
+        {
+            var data = _service.LayTatCa();
+            if (_trangThaiFilter != "TatCa")
+                data = data.Where(h => _service.TrangThaiHienThi(h) == _trangThaiFilter);
+            return data;
+        }
 
         protected override bool AddItem(HopDongEntity item, out string error)
         {
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
+            item.TrangThai = "HieuLuc";
             return _service.KyHopDong(item, item.MaPhieuDatTruoc, out error);
         }
 
         protected override bool UpdateItem(HopDongEntity item, out string error)
         {
             error = string.Empty;
-            var trangThai = ChuanHoaTrangThaiLuu(item.TrangThai);
-            if (string.IsNullOrWhiteSpace(trangThai))
-            {
-                error = "Trang thai hop dong khong hop le. Chi duoc chon HieuLuc, HetHan hoac DaHuy.";
-                return false;
-            }
-
-            item.TrangThai = trangThai;
             _service.Sua(item);
             return true;
         }

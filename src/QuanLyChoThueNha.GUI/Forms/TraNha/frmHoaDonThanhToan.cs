@@ -14,10 +14,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
     public class frmHoaDonThanhToan : CrudFormBase<HoaDonThanhToan>
     {
         private readonly HoaDonThanhToanService _service = new HoaDonThanhToanService();
+        private readonly HopDongService _hopDongService = new HopDongService();
 
         public frmHoaDonThanhToan() : base("Quan ly Hoa don thanh toan", Fields())
         {
-            AddCommandButton("Lay chi so ky truoc", BtnLayChiSoCu_Click);
             AddCommandButton("Tinh dien/nuoc/dich vu", BtnTinhDichVu_Click);
             AddCommandButton("Ghi nhan thanh toan", BtnThanhToan_Click);
             PrePopulateNhanVien();
@@ -50,11 +50,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                         h.NgayBatDau,
                         h.NgayKetThuc)))
                 .ToList();
-            var loaiHoaDonService = new LoaiHoaDonService();
-            var loaiOptions = loaiHoaDonService.LayTatCa()
-                .OrderBy(l => l.TenLoai)
-                .Select(l => new ComboOption(l.MaLoaiHoaDon, l.TenLoai))
-                .ToList();
+            var viPhamOptions = new List<ComboOption> { new ComboOption(string.Empty, "(Khong gan vi pham)") };
+            viPhamOptions.AddRange(new PhieuXuLyViPhamService().LayTatCa()
+                .Where(v => v.TinhTrang == "ChoXuLy")
+                .OrderBy(v => v.MaViPham)
+                .Select(v => new ComboOption(v.MaViPham,
+                    string.Format("{0} | Hop dong {1} | {2:N0}", v.MaViPham, v.MaHopDong, v.PhiBoiThuong))));
             var kyOptions = Enumerable.Range(1, 12)
                 .Select(m => string.Format("{0:00}/{1}", m, DateTime.Today.Year))
                 .ToArray();
@@ -63,14 +64,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             {
                 new FieldDefinition("MaHoaDon", "Ma hoa don", typeof(string), true),
                 FieldDefinition.Lookup("MaHopDong", "Hop dong", hopDongOptions),
-                FieldDefinition.Lookup("MaLoaiHoaDon", "Loai hoa don", loaiOptions),
+                new FieldDefinition("Phong", "Phong", typeof(string), true),
                 new FieldDefinition("MaNhanVienThu", "Ma nhan vien thu", typeof(string), true),
-                new FieldDefinition("MaViPham", "Ma vi pham"),
+                FieldDefinition.Lookup("MaViPham", "Ma vi pham", viPhamOptions),
                 new FieldDefinition("KyThanhToan", "Ky thanh toan", typeof(string), false, kyOptions),
                 // BỔ SUNG (Bước 3): các trường chỉ số điện/nước. ChiSoCu tự điền, chỉ nhập ChiSoMoi.
-                new FieldDefinition("ChiSoDienCu", "Chi so dien cu", typeof(double), true),
                 new FieldDefinition("ChiSoDienMoi", "Chi so dien moi", typeof(double)),
-                new FieldDefinition("ChiSoNuocCu", "Chi so nuoc cu", typeof(double), true),
                 new FieldDefinition("ChiSoNuocMoi", "Chi so nuoc moi", typeof(double)),
                 new FieldDefinition("SoTienPhaiTra", "So tien phai tra", typeof(decimal)),
                 new FieldDefinition("SoTienDaTra", "So tien da tra", typeof(decimal)),
@@ -93,17 +92,30 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 : hopDong.MaKhach;
         }
 
-        protected override IEnumerable<HoaDonThanhToan> GetItems() { return _service.LayTatCa(); }
+        protected override IEnumerable<HoaDonThanhToan> GetItems()
+        {
+            var items = _service.LayTatCa().ToList();
+            foreach (var item in items)
+            {
+                var hopDong = _hopDongService.LayTheoMa(item.MaHopDong);
+                item.Phong = hopDong == null ? string.Empty : hopDong.MaCanHo;
+            }
+            return items;
+        }
 
         protected override bool AddItem(HoaDonThanhToan item, out string error)
         {
             item.MaNhanVienThu = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
+            item.MaViPham = string.IsNullOrWhiteSpace(item.MaViPham) ? null : item.MaViPham;
+            GanChiSoCu(item);
             return _service.TaoHoaDon(item, out error);
         }
 
         protected override bool UpdateItem(HoaDonThanhToan item, out string error)
         {
             error = string.Empty;
+            item.MaViPham = string.IsNullOrWhiteSpace(item.MaViPham) ? null : item.MaViPham;
+            GanChiSoCu(item);
             _service.Sua(item);
             return true;  // exceptions propagate to CrudFormBase catch block
         }
@@ -131,6 +143,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         protected override void AfterGridBound()
         {
+            ThemCotPhong();
+            AnCotKyThuat();
+
             foreach (DataGridViewRow row in Grid.Rows)
             {
                 var hd = row.DataBoundItem as HoaDonThanhToan;
@@ -138,6 +153,49 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                     (hd.TrangThai == "ChuaTra" && hd.NgayDaoHan < DateTime.Today)))
                 {
                     row.DefaultCellStyle.BackColor = Color.MistyRose;
+                }
+            }
+        }
+
+        private void ThemCotPhong()
+        {
+            if (!Grid.Columns.Contains("Phong"))
+            {
+                Grid.Columns.Insert(2, new DataGridViewTextBoxColumn
+                {
+                    Name = "Phong",
+                    HeaderText = "Phong",
+                    ReadOnly = true
+                });
+            }
+
+            foreach (DataGridViewRow row in Grid.Rows)
+            {
+                var hoaDon = row.DataBoundItem as HoaDonThanhToan;
+                if (hoaDon == null) continue;
+                var hopDong = _hopDongService.LayTheoMa(hoaDon.MaHopDong);
+                row.Cells["Phong"].Value = hopDong == null ? string.Empty : hopDong.MaCanHo;
+            }
+        }
+
+        private void AnCotKyThuat()
+        {
+            var hiddenColumns = new[]
+            {
+                "ChiSoDienCu",
+                "ChiSoDienMoi",
+                "ChiSoNuocCu",
+                "ChiSoNuocMoi",
+                "MaNguoiThaoTac",
+                "VaiTroNguoiThaoTac",
+                "MaLoaiHoaDon"
+            };
+
+            foreach (var columnName in hiddenColumns)
+            {
+                if (Grid.Columns.Contains(columnName))
+                {
+                    Grid.Columns[columnName].Visible = false;
                 }
             }
         }
@@ -159,19 +217,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         }
 
         // ===== BỔ SUNG (Bước 3): tự động điền chỉ số CŨ từ hóa đơn kỳ liền trước =====
-        private void BtnLayChiSoCu_Click(object sender, EventArgs e)
+        private void GanChiSoCu(HoaDonThanhToan hoaDon)
         {
-            var maHopDong = LayMaHopDongDangChon();
-            if (string.IsNullOrWhiteSpace(maHopDong))
-            {
-                ShowError("Chon hop dong truoc khi lay chi so ky truoc.");
-                return;
-            }
+            if (hoaDon == null || string.IsNullOrWhiteSpace(hoaDon.MaHopDong)) return;
+
             double dienCu, nuocCu;
-            _service.LayChiSoKyTruoc(maHopDong, out dienCu, out nuocCu);
-            SetEditorValue("ChiSoDienCu", dienCu);
-            SetEditorValue("ChiSoNuocCu", nuocCu);
-            ShowInfo(string.Format("Da lay chi so ky truoc: Dien = {0}, Nuoc = {1}.", dienCu, nuocCu));
+            _service.LayChiSoKyTruoc(hoaDon.MaHopDong, out dienCu, out nuocCu);
+            hoaDon.ChiSoDienCu = dienCu;
+            hoaDon.ChiSoNuocCu = nuocCu;
         }
 
         private void BtnTinhDichVu_Click(object sender, EventArgs e)
@@ -185,9 +238,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
             // Chỉ số cũ lấy từ form (đã điền sẵn qua nút "Lay chi so ky truoc"),
             // chỉ số mới do nhân viên nhập trực tiếp vào ô ChiSoDienMoi / ChiSoNuocMoi.
-            double dienCu = LayChiSoTuEditor("ChiSoDienCu");
+            double dienCu, nuocCu;
+            _service.LayChiSoKyTruoc(maHopDong, out dienCu, out nuocCu);
             double dienMoi = LayChiSoTuEditor("ChiSoDienMoi");
-            double nuocCu = LayChiSoTuEditor("ChiSoNuocCu");
             double nuocMoi = LayChiSoTuEditor("ChiSoNuocMoi");
 
             string error;

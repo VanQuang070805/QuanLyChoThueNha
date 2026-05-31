@@ -1,6 +1,7 @@
 using System;
 using System.Configuration;
 using System.Drawing;
+using System.IO;
 using System.Net;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
@@ -96,6 +97,15 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             try
             {
+                var customQrPath = Config("PaymentQrImagePath", string.Empty);
+                if (!string.IsNullOrWhiteSpace(customQrPath) && File.Exists(customQrPath))
+                {
+                    using (var temp = Image.FromFile(customQrPath))
+                        _picture.Image = new Bitmap(temp);
+                    _lblInfo.Text += "\nDang dung ma QR ngan hang co dinh. Vui long nhap dung so tien va noi dung chuyen khoan.";
+                    return;
+                }
+
                 var url = TaoVietQrUrl();
                 using (var client = new WebClient())
                 using (var stream = client.OpenRead(url))

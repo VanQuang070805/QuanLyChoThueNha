@@ -18,6 +18,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private readonly CanHoService _canHoSvc = new CanHoService();
         private readonly ToaService _toaSvc = new ToaService();
         private readonly LoaiCanHoService _loaiSvc = new LoaiCanHoService();
+        private readonly TienNghiService _tienNghiSvc = new TienNghiService();
         private readonly ErrorProvider _errors = new ErrorProvider();
 
         private FormMode _mode = FormMode.View;
@@ -30,10 +31,13 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private ComboBox cboToa;
         private ComboBox cboLoai;
         private ComboBox cboTinhTrang;
+        private ComboBox cboTienNghi;
         private NumericUpDown numDienTich;
         private NumericUpDown numGiaThue;
         private NumericUpDown numTienCoc;
         private NumericUpDown numTang;
+        private Label lblTienNghi;
+        private PictureBox picAnh;
 
         // Button references de doi nhan / trang thai theo mode
         private MaterialButton btnThem;
@@ -109,6 +113,16 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             txtMoTa = CreateTextBox("Ghi chu", false);
             txtMoTa.Multiline = true;
             txtMoTa.Height = 72;
+            cboTienNghi = CreateComboBox();
+            lblTienNghi = new Label { Dock = DockStyle.Top, AutoSize = false, Height = 48, BorderStyle = BorderStyle.FixedSingle };
+            picAnh = new PictureBox
+            {
+                Dock = DockStyle.Top,
+                Height = 110,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.FromArgb(236, 240, 244),
+                BorderStyle = BorderStyle.FixedSingle
+            };
 
             // Bat dau tat ca cac truong co the sua - se duoc bat khi vao Add/Edit mode
             SetEditorsEnabled(false);
@@ -123,6 +137,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             AddField(right, "So can ho", txtSoCanHo);
             AddField(right, "Tinh trang", cboTinhTrang);
             AddField(right, "Mo ta", txtMoTa);
+            AddField(right, "Tien nghi", cboTienNghi);
+            AddField(right, "Tien nghi da gan", lblTienNghi);
+            AddField(right, "Anh phong", picAnh);
 
             var commands = new FlowLayoutPanel
             {
@@ -133,10 +150,16 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             btnSua    = CreateButton("Sua",     btnSua_Click);
             btnXoa    = CreateButton("Xoa",     btnXoa_Click);
             btnLamMoi = CreateButton("Lam moi", btnLamMoi_Click);
+            var btnThemTienNghi = CreateButton("Gan tien nghi", btnThemTienNghi_Click);
+            var btnXoaTienNghi = CreateButton("Go tien nghi", btnXoaTienNghi_Click);
+            var btnThemAnh = CreateButton("Them anh", btnThemAnh_Click);
             commands.Controls.Add(btnThem);
             commands.Controls.Add(btnSua);
             commands.Controls.Add(btnXoa);
             commands.Controls.Add(btnLamMoi);
+            commands.Controls.Add(btnThemTienNghi);
+            commands.Controls.Add(btnXoaTienNghi);
+            commands.Controls.Add(btnThemAnh);
             right.Controls.Add(commands);
 
             root.Controls.Add(left, 0, 0);
@@ -254,6 +277,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             cboLoai.ValueMember   = "MaLoai";
             cboLoai.DataSource    = _loaiSvc.LayTatCa().OrderBy(l => l.TenLoai).ToList();
 
+            cboTienNghi.DisplayMember = "TenTienNghi";
+            cboTienNghi.ValueMember = "MaTienNghi";
+            cboTienNghi.DataSource = _tienNghiSvc.LayTatCa().OrderBy(t => t.TenTienNghi).ToList();
+
             if (cboTinhTrang.Items.Count > 0) cboTinhTrang.SelectedIndex = 0;
         }
 
@@ -301,6 +328,34 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             txtSoCanHo.Text   = c.SoCanHo.ToString();
             cboTinhTrang.SelectedItem = c.TinhTrang;
             txtMoTa.Text = c.MoTa;
+            NapTienNghiVaAnh(c.MaCanHo);
+        }
+
+        private void NapTienNghiVaAnh(string maCanHo)
+        {
+            var tienNghiById = _tienNghiSvc.LayTatCa()
+                .GroupBy(t => t.MaTienNghi)
+                .ToDictionary(g => g.Key, g => g.First().TenTienNghi);
+            var names = _canHoSvc.LayTienNghiCuaCanHo(maCanHo)
+                .Select(t =>
+                {
+                    string ten;
+                    return tienNghiById.TryGetValue(t.MaTienNghi, out ten) ? ten : t.MaTienNghi;
+                })
+                .ToList();
+            lblTienNghi.Text = names.Count == 0 ? "Chua gan tien nghi." : string.Join(", ", names);
+
+            if (picAnh.Image != null)
+            {
+                picAnh.Image.Dispose();
+                picAnh.Image = null;
+            }
+            var anh = _canHoSvc.LayAnhDaiDien(maCanHo);
+            if (anh != null && System.IO.File.Exists(anh.DuongDanAnh))
+            {
+                using (var temp = Image.FromFile(anh.DuongDanAnh))
+                    picAnh.Image = new Bitmap(temp);
+            }
         }
 
         private decimal Clamp(decimal value, decimal min, decimal max)
@@ -444,6 +499,38 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             EnterAddMode();
         }
 
+        private void btnThemTienNghi_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho truoc khi gan tien nghi."); return; }
+            if (cboTienNghi.SelectedValue == null) { ShowError("Chon tien nghi can gan."); return; }
+            _canHoSvc.ThemTienNghi(txtMa.Text, cboTienNghi.SelectedValue.ToString());
+            NapTienNghiVaAnh(txtMa.Text);
+            HideMsg();
+        }
+
+        private void btnXoaTienNghi_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho truoc khi go tien nghi."); return; }
+            if (cboTienNghi.SelectedValue == null) { ShowError("Chon tien nghi can go."); return; }
+            _canHoSvc.XoaTienNghi(txtMa.Text, cboTienNghi.SelectedValue.ToString());
+            NapTienNghiVaAnh(txtMa.Text);
+            HideMsg();
+        }
+
+        private void btnThemAnh_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho truoc khi them anh."); return; }
+            using (var dialog = new OpenFileDialog())
+            {
+                dialog.Title = "Chon anh phong";
+                dialog.Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp;*.gif|All files|*.*";
+                if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                _canHoSvc.ThemAnh(txtMa.Text, dialog.FileName, "Anh phong");
+                NapTienNghiVaAnh(txtMa.Text);
+            }
+            HideMsg();
+        }
+
         private static string LayLoiSauCung(Exception ex)
         {
             while (ex.InnerException != null) ex = ex.InnerException;
@@ -462,6 +549,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             if (cboToa.Items.Count > 0) cboToa.SelectedIndex = 0;
             if (cboLoai.Items.Count > 0) cboLoai.SelectedIndex = 0;
             if (cboTinhTrang.Items.Count > 0) cboTinhTrang.SelectedIndex = 0;
+            lblTienNghi.Text = "Chon can ho de xem tien nghi.";
+            if (picAnh.Image != null)
+            {
+                picAnh.Image.Dispose();
+                picAnh.Image = null;
+            }
             dgv.ClearSelection();
             _errors.Clear();
         }

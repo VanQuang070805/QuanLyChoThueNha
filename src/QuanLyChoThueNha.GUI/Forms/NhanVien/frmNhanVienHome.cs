@@ -91,6 +91,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
         private void LoadData()
         {
             _lblHeader.Text = string.Format("Cong viec cua {0} [{1}]", SessionContext.HoTen, SessionContext.MaNguoiDung);
+            GuiThongBaoPhieuHetHanMoi();
 
             var tatCaPhieu = _phieuDatTruocService.LayTatCa().ToList();
             var phieuChoCoc = tatCaPhieu
@@ -148,6 +149,24 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 h.NgayDaoHan,
                 h.TrangThai
             }).Cast<object>().ToList());
+        }
+
+        private void GuiThongBaoPhieuHetHanMoi()
+        {
+            var phieusHetHan = _phieuDatTruocService.XuLyPhieuChoCocQuaHan24h();
+            foreach (var phieu in phieusHetHan)
+            {
+                var khach = _khachThueService.LayTheoMa(phieu.MaKhach);
+                TaiKhoan taiKhoan = khach == null ? null : _taiKhoanService.LayTheoMa(khach.MaTaiKhoan);
+                string thongBao;
+                EmailNotificationHelper.GuiThongBaoHetHanDatCoc(
+                    taiKhoan == null ? string.Empty : taiKhoan.Email,
+                    khach == null ? string.Empty : khach.HoTen,
+                    phieu.MaPhieuDatTruoc,
+                    phieu.MaCanHo,
+                    khach == null ? null : khach.MaTaiKhoan,
+                    out thongBao);
+            }
         }
 
         private void BtnXacNhanCoc_Click(object sender, EventArgs e)

@@ -68,6 +68,32 @@ namespace QuanLyChoThueNha.GUI.Forms
                 control.Visible = visible;
         }
 
+        private void AddGroup(MaterialLabel label, string text)
+        {
+            label.AutoSize = false;
+            label.Depth = 0;
+            label.Font = new System.Drawing.Font("Roboto", 9F, System.Drawing.FontStyle.Bold);
+            label.ForeColor = System.Drawing.Color.FromArgb(230, 255, 255, 255);
+            label.Size = new System.Drawing.Size(110, 34);
+            label.Margin = new Padding(10, 4, 4, 0);
+            label.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            label.Text = text;
+            panelSidebar.Controls.Add(label);
+        }
+
+        private void AddButton(MaterialButton button, string text, EventHandler handler)
+        {
+            button.Depth = 0;
+            button.Size = new System.Drawing.Size(126, 34);
+            button.Margin = new Padding(4, 4, 4, 0);
+            button.Text = text;
+            button.Type = MaterialButton.MaterialButtonType.Text;
+            button.HighEmphasis = false;
+            button.UseAccentColor = false;
+            button.Click += handler;
+            panelSidebar.Controls.Add(button);
+        }
+
         private void HienThiThongTinNguoiDung()
         {
             Text = string.Format("Quan ly Cho thue Nha - {0} [{1}]", SessionContext.HoTen, SessionContext.VaiTro);

@@ -78,52 +78,52 @@ namespace QuanLyChoThueNha.GUI.Forms
             this.SuspendLayout();
 
             this.panelSidebar.BackColor = System.Drawing.Color.FromArgb(25, 118, 210);
-            this.panelSidebar.Dock = System.Windows.Forms.DockStyle.Left;
-            this.panelSidebar.Width = 220;
+            this.panelSidebar.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panelSidebar.Height = 124;
             this.panelSidebar.AutoScroll = true;
-            this.panelSidebar.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-            this.panelSidebar.WrapContents = false;
-            this.panelSidebar.Padding = new System.Windows.Forms.Padding(10, 80, 10, 12);
+            this.panelSidebar.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
+            this.panelSidebar.WrapContents = true;
+            this.panelSidebar.Padding = new System.Windows.Forms.Padding(12, 72, 12, 8);
 
             this.panelNoidung.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelNoidung.BackColor = System.Drawing.SystemColors.Control;
 
-            AddGroup(this.tabDashboard, "TONG QUAN");
-            AddButton(this.btnDashboard, "Dashboard", new System.EventHandler(this.btnDashboard_Click));
+            this.AddGroup(this.tabDashboard, "TONG QUAN");
+            this.AddButton(this.btnDashboard, "Dashboard", new System.EventHandler(this.btnDashboard_Click));
 
-            AddGroup(this.tabKhachHang, "KHACH HANG");
-            AddButton(this.btnKhachHangHome, "Trang khach hang", new System.EventHandler(this.btnKhachHangHome_Click));
+            this.AddGroup(this.tabKhachHang, "KHACH HANG");
+            this.AddButton(this.btnKhachHangHome, "Trang khach hang", new System.EventHandler(this.btnKhachHangHome_Click));
 
-            AddGroup(this.tabTaiSan, "TAI SAN & DANH MUC");
-            AddButton(this.btnKhuVuc, "Khu vuc", new System.EventHandler(this.btnKhuVuc_Click));
-            AddButton(this.btnToa, "Toa nha", new System.EventHandler(this.btnToa_Click));
-            AddButton(this.btnLoaiCanHo, "Loai can ho", new System.EventHandler(this.btnLoaiCanHo_Click));
-            AddButton(this.btnCanHo, "Can ho", new System.EventHandler(this.btnCanHo_Click));
-            AddButton(this.btnTienNghi, "Tien nghi", new System.EventHandler(this.btnTienNghi_Click));
-            AddButton(this.btnGiaDichVu, "Gia dich vu", new System.EventHandler(this.btnGiaDichVu_Click));
+            this.AddGroup(this.tabTaiSan, "TAI SAN & DANH MUC");
+            this.AddButton(this.btnKhuVuc, "Khu vuc", new System.EventHandler(this.btnKhuVuc_Click));
+            this.AddButton(this.btnToa, "Toa nha", new System.EventHandler(this.btnToa_Click));
+            this.AddButton(this.btnLoaiCanHo, "Loai can ho", new System.EventHandler(this.btnLoaiCanHo_Click));
+            this.AddButton(this.btnCanHo, "Can ho", new System.EventHandler(this.btnCanHo_Click));
+            this.AddButton(this.btnTienNghi, "Tien nghi", new System.EventHandler(this.btnTienNghi_Click));
+            this.AddButton(this.btnGiaDichVu, "Gia dich vu", new System.EventHandler(this.btnGiaDichVu_Click));
 
-            AddGroup(this.tabHopDong, "HOP DONG");
-            AddButton(this.btnKhachThue, "Khach thue", new System.EventHandler(this.btnKhachThue_Click));
-            AddButton(this.btnPhieuDatTruoc, "Dat truoc", new System.EventHandler(this.btnPhieuDatTruoc_Click));
-            AddButton(this.btnHopDong, "Hop dong", new System.EventHandler(this.btnHopDong_Click));
-            AddButton(this.btnGiaHan, "Gia han", new System.EventHandler(this.btnGiaHan_Click));
+            this.AddGroup(this.tabHopDong, "HOP DONG");
+            this.AddButton(this.btnKhachThue, "Khach thue", new System.EventHandler(this.btnKhachThue_Click));
+            this.AddButton(this.btnPhieuDatTruoc, "Dat truoc", new System.EventHandler(this.btnPhieuDatTruoc_Click));
+            this.AddButton(this.btnHopDong, "Hop dong", new System.EventHandler(this.btnHopDong_Click));
+            this.AddButton(this.btnGiaHan, "Gia han", new System.EventHandler(this.btnGiaHan_Click));
 
-            AddGroup(this.tabTraNha, "THANH TOAN & TRA NHA");
-            AddButton(this.btnLoaiHoaDon, "Loai hoa don", new System.EventHandler(this.btnLoaiHoaDon_Click));
-            AddButton(this.btnHoaDon, "Hoa don", new System.EventHandler(this.btnHoaDon_Click));
-            AddButton(this.btnPhieuTraNha, "Phieu tra nha", new System.EventHandler(this.btnPhieuTraNha_Click));
-            AddButton(this.btnViPham, "Xu ly vi pham", new System.EventHandler(this.btnViPham_Click));
+            this.AddGroup(this.tabTraNha, "THANH TOAN & TRA NHA");
+            this.AddButton(this.btnLoaiHoaDon, "Loai hoa don", new System.EventHandler(this.btnLoaiHoaDon_Click));
+            this.AddButton(this.btnHoaDon, "Hoa don", new System.EventHandler(this.btnHoaDon_Click));
+            this.AddButton(this.btnPhieuTraNha, "Phieu tra nha", new System.EventHandler(this.btnPhieuTraNha_Click));
+            this.AddButton(this.btnViPham, "Xu ly vi pham", new System.EventHandler(this.btnViPham_Click));
 
-            AddGroup(this.tabTaiKhoan, "QUAN TRI");
-            AddButton(this.btnQuanLyTaiKhoan, "Tai khoan", new System.EventHandler(this.btnQuanLyTaiKhoan_Click));
-            AddButton(this.btnQuanLyTaiKhoanKhach, "Tai khoan khach", new System.EventHandler(this.btnQuanLyTaiKhoanKhach_Click));
+            this.AddGroup(this.tabTaiKhoan, "QUAN TRI");
+            this.AddButton(this.btnQuanLyTaiKhoan, "Tai khoan", new System.EventHandler(this.btnQuanLyTaiKhoan_Click));
+            this.AddButton(this.btnQuanLyTaiKhoanKhach, "Tai khoan khach", new System.EventHandler(this.btnQuanLyTaiKhoanKhach_Click));
 
-            AddGroup(this.tabBaoCao, "BAO CAO");
-            AddButton(this.btnBaoCao, "Bao cao & thong ke", new System.EventHandler(this.btnBaoCao_Click));
+            this.AddGroup(this.tabBaoCao, "BAO CAO");
+            this.AddButton(this.btnBaoCao, "Bao cao & thong ke", new System.EventHandler(this.btnBaoCao_Click));
 
             this.btnDangXuat.Depth = 0;
-            this.btnDangXuat.Size = new System.Drawing.Size(190, 36);
-            this.btnDangXuat.Margin = new System.Windows.Forms.Padding(0, 16, 0, 0);
+            this.btnDangXuat.Size = new System.Drawing.Size(112, 34);
+            this.btnDangXuat.Margin = new System.Windows.Forms.Padding(8, 4, 0, 0);
             this.btnDangXuat.Text = "DANG XUAT";
             this.btnDangXuat.HighEmphasis = true;
             this.btnDangXuat.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
@@ -143,29 +143,5 @@ namespace QuanLyChoThueNha.GUI.Forms
             this.ResumeLayout(false);
         }
 
-        private void AddGroup(MaterialSkin.Controls.MaterialLabel label, string text)
-        {
-            label.AutoSize = false;
-            label.Depth = 0;
-            label.Font = new System.Drawing.Font("Roboto", 9F, System.Drawing.FontStyle.Bold);
-            label.ForeColor = System.Drawing.Color.FromArgb(230, 255, 255, 255);
-            label.Size = new System.Drawing.Size(190, 24);
-            label.Margin = new System.Windows.Forms.Padding(0, 12, 0, 0);
-            label.Text = text;
-            this.panelSidebar.Controls.Add(label);
-        }
-
-        private void AddButton(MaterialSkin.Controls.MaterialButton button, string text, System.EventHandler handler)
-        {
-            button.Depth = 0;
-            button.Size = new System.Drawing.Size(190, 34);
-            button.Margin = new System.Windows.Forms.Padding(0, 4, 0, 0);
-            button.Text = text;
-            button.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Text;
-            button.HighEmphasis = false;
-            button.UseAccentColor = false;
-            button.Click += handler;
-            this.panelSidebar.Controls.Add(button);
-        }
     }
 }

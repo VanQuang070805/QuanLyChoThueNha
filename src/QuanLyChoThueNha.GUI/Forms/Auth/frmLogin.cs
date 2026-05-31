@@ -29,6 +29,15 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             _portalName = portalName;
             Text = portalName;
             lblTieuDe.Text = portalName;
+            if (_allowedRoles != null)
+            {
+                lblHuongDan.Text = "Dành cho Admin/Nhân viên. Đăng nhập để xử lý phiếu đặt trước, hợp đồng, hóa đơn, email và tài khoản khách.";
+                btnThoat.Text = "ĐÓNG CỔNG";
+            }
+            else
+            {
+                lblHuongDan.Text = "Nhập tài khoản được cấp để truy cập đúng chức năng theo vai trò.";
+            }
 
             // â”€â”€ Cáº¥u hÃ¬nh MaterialSkin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var skinManager = MaterialSkinManager.Instance;
@@ -87,7 +96,10 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private void btnThoat_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            if (_allowedRoles != null)
+                Close();
+            else
+                Application.Exit();
         }
 
         // Cho phÃ©p nháº¥n Enter Ä‘á»ƒ Ä‘Äƒng nháº­p

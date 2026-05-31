@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Helpers;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.KhachHang
@@ -18,11 +19,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
         private readonly HopDongService _hopDongService = new HopDongService();
         private readonly HoaDonThanhToanService _hoaDonService = new HoaDonThanhToanService();
+        private readonly KhachThueService _khachThueService = new KhachThueService();
+        private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
 
         private ComboBox cboToa;
         private ComboBox cboLoai;
         private NumericUpDown numGiaToiDa;
         private FlowLayoutPanel roomCards;
+        private DataGridView gridPhieuDatTruoc;
         private DataGridView gridHopDong;
         private DataGridView gridHoaDon;
         private MaterialLabel lblHeader;
@@ -43,14 +47,12 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                RowCount = 5,
+                RowCount = 3,
                 Padding = new Padding(12, 76, 12, 12)
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-            root.RowStyles.Add(new RowStyle(SizeType.Percent, 40));
-            root.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
-            root.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
+            root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
             lblHeader = new MaterialLabel
             {
@@ -99,11 +101,27 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             };
             gridHopDong = CreateGrid();
             gridHoaDon = CreateGrid();
+            gridPhieuDatTruoc = CreateGrid();
 
-            root.Controls.Add(CreateGroup("Can ho dang trong", roomCards), 0, 2);
-            root.Controls.Add(CreateGroup("Hop dong cua toi", gridHopDong), 0, 3);
-            root.Controls.Add(CreateGroup("Hoa don cua toi", gridHoaDon), 0, 4);
+            var tabs = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+            };
+            tabs.TabPages.Add(CreateTab("Can ho da dat", gridPhieuDatTruoc));
+            tabs.TabPages.Add(CreateTab("Hop dong", gridHopDong));
+            tabs.TabPages.Add(CreateTab("Hoa don", gridHoaDon));
+            tabs.TabPages.Add(CreateTab("Can ho dang trong", roomCards));
+            root.Controls.Add(tabs, 0, 2);
             Controls.Add(root);
+        }
+
+        private TabPage CreateTab(string text, Control content)
+        {
+            var tab = new TabPage(text) { Padding = new Padding(8), BackColor = Color.White };
+            content.Dock = DockStyle.Fill;
+            tab.Controls.Add(content);
+            return tab;
         }
 
         private void NapBoLoc()
@@ -160,17 +178,64 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private void TaiDuLieu()
         {
-            if (roomCards == null || gridHopDong == null || gridHoaDon == null) return;
+            if (roomCards == null || gridPhieuDatTruoc == null || gridHopDong == null || gridHoaDon == null) return;
             lblHeader.Text = string.Format("Xin chao {0} [{1}]", SessionContext.HoTen, SessionContext.MaNguoiDung);
+            GuiThongBaoPhieuHetHanMoi();
+            TaiPhieuDatTruoc();
             TaiPhongTrong();
             TaiHopDongVaHoaDon();
+        }
+
+        private void TaiPhieuDatTruoc()
+        {
+            var phieus = _phieuDatTruocService.LayTatCa()
+                .Where(p => p.MaKhach == SessionContext.MaNguoiDung)
+                .OrderByDescending(p => p.NgayDatCoc)
+                .ToList();
+
+            gridPhieuDatTruoc.DataSource = new BindingList<object>(phieus.Select(p => new
+            {
+                p.MaPhieuDatTruoc,
+                p.MaCanHo,
+                p.SoTienDatCoc,
+                p.NgayDatCoc,
+                p.NgayHetHan,
+                p.TrangThai,
+                p.PhuongThucThanhToan,
+                p.GhiChu
+            }).Cast<object>().ToList());
+        }
+
+        private void GuiThongBaoPhieuHetHanMoi()
+        {
+            var phieusHetHan = _phieuDatTruocService.XuLyPhieuChoCocQuaHan24h();
+            foreach (var phieu in phieusHetHan.Where(p => p.MaKhach == SessionContext.MaNguoiDung))
+            {
+                var khach = _khachThueService.LayTheoMa(phieu.MaKhach);
+                var taiKhoan = khach == null ? null : _taiKhoanService.LayTheoMa(khach.MaTaiKhoan);
+                string thongBao;
+                EmailNotificationHelper.GuiThongBaoHetHanDatCoc(
+                    taiKhoan == null ? string.Empty : taiKhoan.Email,
+                    khach == null ? string.Empty : khach.HoTen,
+                    phieu.MaPhieuDatTruoc,
+                    phieu.MaCanHo,
+                    khach == null ? null : khach.MaTaiKhoan,
+                    out thongBao);
+            }
         }
 
         private void TaiPhongTrong()
         {
             roomCards.Controls.Clear();
 
+            var phongDangChoCoc = _phieuDatTruocService.LayTatCa()
+                .Where(p => p.TrangThai == PhieuDatTruocService.ChoThanhToanCoc ||
+                            p.TrangThai == PhieuDatTruocService.DaThanhToanCoc ||
+                            p.TrangThai == PhieuDatTruocService.ChoKy)
+                .Select(p => p.MaCanHo)
+                .ToList();
             var data = _canHoService.LayTheoTinhTrang("Trong");
+            data = data.Where(c => !phongDangChoCoc.Contains(c.MaCanHo));
             if (cboToa.SelectedValue != null)
             {
                 var maToa = cboToa.SelectedValue.ToString();
@@ -267,9 +332,9 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 MaCanHo = room.MaCanHo,
                 MaKhach = SessionContext.MaNguoiDung,
                 SoTienDatCoc = tienCoc,
-                NgayHetHan = DateTime.Today.AddDays(3),
+                NgayHetHan = DateTime.Now.AddHours(24),
                 PhuongThucThanhToan = "VietQRDatCoc",
-                GhiChu = "Khach hang dat phong tu trang ca nhan; cho xac nhan chuyen khoan dat coc"
+                GhiChu = "Khach hang dat phong tu trang ca nhan; cho xac nhan chuyen khoan dat coc trong 24h"
             };
 
             string loi;
@@ -280,6 +345,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             }
 
             var noiDungChuyenKhoan = string.Format("DAT COC {0} PHONG {1}", phieu.MaPhieuDatTruoc, room.MaCanHo);
+            GuiEmailDatCoc(phieu, noiDungChuyenKhoan);
             MessageBox.Show("Da tao phieu dat phong. Vui long quet QR de thanh toan tien dat coc.",
                 "Thanh cong", MessageBoxButtons.OK, MessageBoxIcon.Information);
             using (var qr = new frmQrThanhToan("QR dat coc phong", phieu.MaPhieuDatTruoc,
@@ -288,6 +354,25 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 qr.ShowDialog(this);
             }
             TaiDuLieu();
+        }
+
+        private void GuiEmailDatCoc(PhieuDatTruoc phieu, string noiDungChuyenKhoan)
+        {
+            var khach = _khachThueService.LayTheoMa(phieu.MaKhach);
+            var taiKhoan = khach == null ? null : _taiKhoanService.LayTheoMa(khach.MaTaiKhoan);
+            string thongBao;
+            EmailNotificationHelper.GuiThongTinDatTruoc(
+                taiKhoan == null ? string.Empty : taiKhoan.Email,
+                khach == null ? string.Empty : khach.HoTen,
+                taiKhoan == null ? string.Empty : taiKhoan.TenDangNhap,
+                "(mat khau da cap truoc)",
+                phieu.MaPhieuDatTruoc,
+                phieu.MaCanHo,
+                phieu.SoTienDatCoc,
+                phieu.NgayHetHan,
+                noiDungChuyenKhoan,
+                khach == null ? null : khach.MaTaiKhoan,
+                out thongBao);
         }
 
         private void TaiHopDongVaHoaDon()

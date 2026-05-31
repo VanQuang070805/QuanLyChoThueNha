@@ -94,6 +94,12 @@ namespace QuanLyChoThueNha.BLL.Services
         public bool TaoHoaDon(HoaDonThanhToan hoaDon, out string loi)
         {
             loi = string.Empty;
+            hoaDon.MaViPham = string.IsNullOrWhiteSpace(hoaDon.MaViPham) ? null : hoaDon.MaViPham.Trim();
+            if (string.IsNullOrWhiteSpace(hoaDon.MaLoaiHoaDon))
+            {
+                var loaiMacDinh = _uow.LoaiHoaDons.GetAll().OrderBy(l => l.MaLoaiHoaDon).FirstOrDefault();
+                if (loaiMacDinh != null) hoaDon.MaLoaiHoaDon = loaiMacDinh.MaLoaiHoaDon;
+            }
             if (!ValidationHelper.KhongRong(hoaDon.MaHopDong, "Hop dong", out loi)) return false;
             if (!ValidationHelper.KhongRong(hoaDon.MaLoaiHoaDon, "Loai hoa don", out loi)) return false;
             if (!ValidationHelper.KhongRong(hoaDon.KyThanhToan, "Ky thanh toan", out loi)) return false;
@@ -283,7 +289,7 @@ namespace QuanLyChoThueNha.BLL.Services
                     _uow.PhieuXuLyViPhams.Update(v);
                 }
 
-                hd.TrangThai = "HetHan";
+                hd.TrangThai = "DaHuy";
                 _uow.HopDongs.Update(hd);
 
                 var canHo = _uow.CanHos.GetById(hd.MaCanHo);
@@ -318,8 +324,14 @@ namespace QuanLyChoThueNha.BLL.Services
         public bool GhiNhan(PhieuXuLyViPham phieu, out string loi)
         {
             loi = string.Empty;
+            phieu.MaPhieuTraNha = string.IsNullOrWhiteSpace(phieu.MaPhieuTraNha) ? null : phieu.MaPhieuTraNha.Trim();
             if (!ValidationHelper.KhongRong(phieu.MaHopDong, "Hop dong", out loi)) return false;
             if (_uow.HopDongs.GetById(phieu.MaHopDong) == null) { loi = "Hop dong khong ton tai."; return false; }
+            if (!string.IsNullOrWhiteSpace(phieu.MaPhieuTraNha) && _uow.PhieuTraNhas.GetById(phieu.MaPhieuTraNha) == null)
+            {
+                loi = "Phieu tra nha khong ton tai.";
+                return false;
+            }
             if (!ValidationHelper.KhongRong(phieu.LoaiViPham, "Loai vi pham", out loi)) return false;
             // BỔ SUNG: nếu vi phạm bị trừ vào cọc thì bắt buộc phí bồi thường > 0.
             if (phieu.TruVaoCoc && phieu.PhiBoiThuong <= 0)

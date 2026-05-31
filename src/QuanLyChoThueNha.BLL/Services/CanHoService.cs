@@ -75,6 +75,29 @@ namespace QuanLyChoThueNha.BLL.Services
             _uow.Complete();
         }
 
+        private string SinhMaHinhAnh()
+        {
+            int max = 0;
+            foreach (var x in _uow.HinhAnhNhas.GetAll())
+                max = Math.Max(max, MaGenerator.LaySoThuTu(x.MaHinhAnh, 3));
+            return MaGenerator.Sinh("HA", max, 3);
+        }
+
+        public void ThemAnh(string maCanHo, string duongDanAnh, string moTa = null)
+        {
+            if (string.IsNullOrWhiteSpace(maCanHo) || string.IsNullOrWhiteSpace(duongDanAnh)) return;
+            if (_uow.CanHos.GetById(maCanHo) == null) return;
+            _uow.HinhAnhNhas.Add(new HinhAnhNha
+            {
+                MaHinhAnh = SinhMaHinhAnh(),
+                MaCanHo = maCanHo,
+                DuongDanAnh = duongDanAnh.Trim(),
+                MoTa = moTa,
+                NgayTaiLen = DateTime.Now
+            });
+            _uow.Complete();
+        }
+
         public IEnumerable<TienNghiCuaCanHo> LayTienNghiCuaCanHo(string maCanHo)
         {
             return _uow.TienNghiCuaCanHos.Find(t => t.MaCanHo == maCanHo);

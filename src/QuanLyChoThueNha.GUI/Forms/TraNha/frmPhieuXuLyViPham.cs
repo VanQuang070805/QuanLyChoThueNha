@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Forms.Shared;
@@ -16,11 +17,23 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         private static IEnumerable<FieldDefinition> Fields()
         {
+            var hopDongOptions = new HopDongService().LayTatCa()
+                .Where(h => h.TrangThai == "HieuLuc")
+                .OrderBy(h => h.MaHopDong)
+                .Select(h => new ComboOption(h.MaHopDong,
+                    string.Format("{0} | Khach {1} | Phong {2}", h.MaHopDong, h.MaKhach, h.MaCanHo)))
+                .ToList();
+            var phieuTraOptions = new List<ComboOption> { new ComboOption(string.Empty, "(Khong gan phieu tra nha)") };
+            phieuTraOptions.AddRange(new PhieuTraNhaService().LayTatCa()
+                .OrderBy(p => p.MaPhieu)
+                .Select(p => new ComboOption(p.MaPhieu,
+                    string.Format("{0} | Hop dong {1} | {2:dd/MM/yyyy}", p.MaPhieu, p.MaHopDong, p.NgayTra))));
+
             return new[]
             {
                 new FieldDefinition("MaViPham", "Ma vi pham", typeof(string), true),
-                new FieldDefinition("MaHopDong", "Ma hop dong"),
-                new FieldDefinition("MaPhieuTraNha", "Ma phieu tra nha"),
+                FieldDefinition.Lookup("MaHopDong", "Ma hop dong", hopDongOptions),
+                FieldDefinition.Lookup("MaPhieuTraNha", "Ma phieu tra nha", phieuTraOptions),
                 new FieldDefinition("MaNhanVien", "Ma nhan vien", typeof(string), true),
                 new FieldDefinition("LoaiViPham", "Loai vi pham"),
                 new FieldDefinition("MoTa", "Mo ta", typeof(string), false, null, true),
@@ -37,12 +50,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         protected override bool AddItem(PhieuXuLyViPham item, out string error)
         {
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
+            item.MaPhieuTraNha = string.IsNullOrWhiteSpace(item.MaPhieuTraNha) ? null : item.MaPhieuTraNha;
             return _service.GhiNhan(item, out error);
         }
 
         protected override bool UpdateItem(PhieuXuLyViPham item, out string error)
         {
             error = string.Empty;
+            item.MaPhieuTraNha = string.IsNullOrWhiteSpace(item.MaPhieuTraNha) ? null : item.MaPhieuTraNha;
             _service.Sua(item);
             return true;
         }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Forms.Shared;
@@ -15,14 +17,25 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         {
             AddCommandButton("Chap thuan", BtnChapThuan_Click);
             AddCommandButton("Tu choi", BtnTuChoi_Click);
+            var hopDongEditor = GetEditor("MaHopDong") as ComboBox;
+            if (hopDongEditor != null)
+                hopDongEditor.SelectedIndexChanged += delegate { DienNgayKetThucCu(); };
         }
 
         private static IEnumerable<FieldDefinition> Fields()
         {
+            var hopDongOptions = new HopDongService().LayTatCa()
+                .Where(h => h.TrangThai == "HieuLuc")
+                .OrderBy(h => h.NgayKetThuc)
+                .Select(h => new ComboOption(h.MaHopDong,
+                    string.Format("{0} | Khach {1} | Phong {2} | Het han {3:dd/MM/yyyy}",
+                        h.MaHopDong, h.MaKhach, h.MaCanHo, h.NgayKetThuc)))
+                .ToList();
+
             return new[]
             {
                 new FieldDefinition("MaGiaHan", "Ma gia han", typeof(string), true),
-                new FieldDefinition("MaHopDong", "Ma hop dong"),
+                FieldDefinition.Lookup("MaHopDong", "Ma hop dong", hopDongOptions),
                 new FieldDefinition("MaNhanVien", "Ma nhan vien", typeof(string), true),
                 new FieldDefinition("NgayKetThucCu", "Ngay ket thuc cu", typeof(DateTime), true),
                 new FieldDefinition("NgayKetThucMoi", "Ngay ket thuc moi", typeof(DateTime)),
@@ -31,6 +44,16 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 new FieldDefinition("NgayYeuCau", "Ngay yeu cau", typeof(DateTime), true),
                 new FieldDefinition("NgayDuyet", "Ngay duyet", typeof(DateTime?))
             };
+        }
+
+        private void DienNgayKetThucCu()
+        {
+            var hopDongEditor = GetEditor("MaHopDong") as ComboBox;
+            if (hopDongEditor == null || hopDongEditor.SelectedValue == null) return;
+
+            var hopDong = new HopDongService().LayTheoMa(hopDongEditor.SelectedValue.ToString());
+            if (hopDong != null)
+                SetEditorValue("NgayKetThucCu", hopDong.NgayKetThuc);
         }
 
         protected override IEnumerable<GiaHanHopDong> GetItems() { return _service.LayTatCa(); }

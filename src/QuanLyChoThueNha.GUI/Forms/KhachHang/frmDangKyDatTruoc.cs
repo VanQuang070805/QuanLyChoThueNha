@@ -1,8 +1,12 @@
 using System;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
+using QuanLyChoThueNha.BLL.Helpers;
+using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.KhachHang
@@ -17,6 +21,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly MaterialTextBox _txtSdt = new MaterialTextBox();
         private readonly DateTimePicker _dtpNgaySinh = new DateTimePicker();
         private readonly NumericUpDown _numTienCoc = new NumericUpDown();
+        private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
 
         public KhachThue Khach { get; private set; }
         public string TenDangNhap { get; private set; }
@@ -78,9 +83,12 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             var commands = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0, 16, 0, 0) };
             var btnOk = new MaterialButton { Text = "Tao tai khoan va dat truoc", AutoSize = true };
+            var btnCheckEmail = new MaterialButton { Text = "Kiem tra email", AutoSize = true };
             var btnCancel = new MaterialButton { Text = "Huy", AutoSize = true };
             btnOk.Click += delegate { Submit(); };
+            btnCheckEmail.Click += delegate { KiemTraEmail(true); };
             btnCancel.Click += delegate { DialogResult = DialogResult.Cancel; Close(); };
+            commands.Controls.Add(btnCheckEmail);
             commands.Controls.Add(btnOk);
             commands.Controls.Add(btnCancel);
             root.Controls.Add(commands);
@@ -124,6 +132,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            if (!KiemTraEmail(false))
+                return;
 
             Khach = new KhachThue
             {
@@ -140,15 +150,55 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private string TaoTenDangNhap(string hoTen, string cmnd)
         {
-            var letters = new string((hoTen ?? string.Empty)
-                .Where(char.IsLetterOrDigit)
-                .Select(char.ToLowerInvariant)
+            var normalized = BoDauTiengViet(hoTen ?? string.Empty).ToLowerInvariant();
+            var letters = new string(normalized
+                .Where(c => (c >= 'a' && c <= 'z') || char.IsDigit(c))
                 .ToArray());
-            if (letters.Length > 10) letters = letters.Substring(letters.Length - 10);
+            if (letters.Length > 12) letters = letters.Substring(letters.Length - 12);
             var tail = new string((cmnd ?? string.Empty).Where(char.IsDigit).Take(4).ToArray());
             if (string.IsNullOrWhiteSpace(letters)) letters = "khach";
             if (string.IsNullOrWhiteSpace(tail)) tail = DateTime.Now.ToString("HHmm");
-            return letters + tail;
+            return (letters + tail).ToLowerInvariant();
+        }
+
+        private static string BoDauTiengViet(string value)
+        {
+            var normalized = value.Normalize(NormalizationForm.FormD);
+            var builder = new StringBuilder();
+            foreach (var c in normalized)
+            {
+                var category = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (category == UnicodeCategory.NonSpacingMark) continue;
+                if (c == 'đ') builder.Append('d');
+                else if (c == 'Đ') builder.Append('D');
+                else builder.Append(c);
+            }
+            return builder.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        private bool KiemTraEmail(bool hienThongBaoThanhCong)
+        {
+            var email = Email;
+            string loi;
+            if (!ValidationHelper.EmailHopLe(email, out loi))
+            {
+                MessageBox.Show(loi, "Email khong hop le", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _txtEmail.Focus();
+                return false;
+            }
+            if (_taiKhoanService.EmailDaTon(email))
+            {
+                MessageBox.Show("Email nay da ton tai trong he thong. Vui long dung email khac hoac dang nhap tai khoan khach.",
+                    "Email da ton tai", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _txtEmail.Focus();
+                return false;
+            }
+            if (hienThongBaoThanhCong)
+            {
+                MessageBox.Show("Email dung dinh dang va chua ton tai trong he thong. He thong se xac nhan thuc te khi gui mail.",
+                    "Email hop le", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            return true;
         }
 
         private string TaoMatKhauTam()

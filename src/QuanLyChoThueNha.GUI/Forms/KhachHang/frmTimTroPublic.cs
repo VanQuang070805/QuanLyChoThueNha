@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 using MaterialSkin;
 using MaterialSkin.Controls;
+using Microsoft.Web.WebView2.WinForms;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Forms.Auth;
 using QuanLyChoThueNha.GUI.Helpers;
@@ -19,7 +21,9 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly KhuVucService _khuVucService = new KhuVucService();
         private readonly ToaService _toaService = new ToaService();
         private readonly LoaiCanHoService _loaiService = new LoaiCanHoService();
+        private readonly TienNghiService _tienNghiService = new TienNghiService();
         private readonly KhachThueService _khachThueService = new KhachThueService();
+        private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
         private readonly PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
 
         private readonly FlowLayoutPanel _roomCards = new FlowLayoutPanel();
@@ -31,6 +35,19 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly NumericUpDown _numGiaDen = new NumericUpDown();
         private readonly MaterialTextBox _txtTimKiem = new MaterialTextBox();
         private readonly MaterialLabel _lblCount = new MaterialLabel();
+        private readonly WebView2 _mapView = new WebView2();
+
+        private class FilterOption
+        {
+            public FilterOption(string value, string display)
+            {
+                Value = value;
+                Display = display;
+            }
+
+            public string Value { get; private set; }
+            public string Display { get; private set; }
+        }
 
         public frmTimTroPublic()
         {
@@ -48,17 +65,30 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             BuildLayout();
             NapBoLoc();
+            HienThiBanDoMacDinh();
             TaiDanhSachTro();
             Resize += delegate { ResizeCards(); };
         }
 
         private void BuildLayout()
         {
+            var shell = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                Padding = new Padding(0, 64, 0, 0),
+                BackColor = Color.FromArgb(248, 249, 252)
+            };
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 240));
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            shell.Controls.Add(CreateSidebar(), 0, 0);
+
             var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 RowCount = 3,
-                Padding = new Padding(16, 76, 16, 16)
+                Padding = new Padding(24),
+                BackColor = Color.FromArgb(248, 249, 252)
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
@@ -75,6 +105,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 Dock = DockStyle.Fill,
                 Text = "Tim tro dang trong",
                 Font = new Font("Roboto", 15F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39),
                 TextAlign = ContentAlignment.MiddleLeft
             };
             var btnKhach = new MaterialButton { Text = "Tai khoan khach", Dock = DockStyle.Fill };
@@ -90,7 +121,13 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             top.Controls.Add(btnNoiBo, 3, 0);
             root.Controls.Add(top, 0, 0);
 
-            var filters = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
+            var filters = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                WrapContents = false,
+                BackColor = Color.FromArgb(248, 249, 252),
+                Padding = new Padding(0, 14, 0, 0)
+            };
             _txtTimKiem.Width = 280;
             _txtTimKiem.Hint = "Tim theo ma, toa, so can";
             _txtTimKiem.TextChanged += delegate { TaiDanhSachTro(); };
@@ -134,8 +171,96 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             _roomCards.WrapContents = true;
             _roomCards.Padding = new Padding(2);
             _roomCards.BackColor = Color.White;
-            root.Controls.Add(_roomCards, 0, 2);
-            Controls.Add(root);
+
+            _mapView.Dock = DockStyle.Fill;
+            _mapView.DefaultBackgroundColor = Color.White;
+
+            var content = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical
+            };
+            content.Panel1.Controls.Add(_roomCards);
+            content.Panel2.Controls.Add(_mapView);
+            content.Panel1.BackColor = Color.White;
+            content.Panel2.BackColor = Color.White;
+            content.SizeChanged += delegate { CapNhatKhoangChia(content); };
+            root.Controls.Add(content, 0, 2);
+            shell.Controls.Add(root, 1, 0);
+            Controls.Add(shell);
+        }
+
+        private Control CreateSidebar()
+        {
+            var sidebar = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 10,
+                BackColor = Color.FromArgb(30, 42, 69),
+                Padding = new Padding(18, 18, 10, 18)
+            };
+            sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
+            for (var i = 1; i < 9; i++)
+                sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+            sidebar.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            var brand = new Label
+            {
+                Text = "SmartApart\r\nManagement Suite",
+                Dock = DockStyle.Fill,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            sidebar.Controls.Add(brand, 0, 0);
+
+            var btnTimTro = CreateSidebarButton("Tim tro", true);
+            var btnKhach = CreateSidebarButton("Tai khoan khach", false);
+            btnKhach.Click += delegate { new frmLogin(new[] { "KhachThue" }, "Dang nhap khach hang").Show(); };
+            var btnNoiBo = CreateSidebarButton("Cong noi bo", false);
+            btnNoiBo.Click += delegate { new frmLogin(new[] { "Admin", "NhanVien" }, "Dang nhap noi bo").Show(); };
+            var btnLamMoi = CreateSidebarButton("Lam moi du lieu", false);
+            btnLamMoi.Click += delegate { TaiDanhSachTro(); };
+
+            sidebar.Controls.Add(btnTimTro, 0, 1);
+            sidebar.Controls.Add(btnKhach, 0, 2);
+            sidebar.Controls.Add(btnNoiBo, 0, 3);
+            sidebar.Controls.Add(btnLamMoi, 0, 4);
+            return sidebar;
+        }
+
+        private Button CreateSidebarButton(string text, bool active)
+        {
+            var button = new Button
+            {
+                Text = text,
+                Dock = DockStyle.Fill,
+                FlatStyle = FlatStyle.Flat,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(16, 0, 0, 0),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(224, 231, 255),
+                BackColor = active ? Color.FromArgb(42, 59, 95) : Color.FromArgb(30, 42, 69),
+                Cursor = Cursors.Hand
+            };
+            button.FlatAppearance.BorderSize = active ? 1 : 0;
+            button.FlatAppearance.BorderColor = Color.FromArgb(79, 134, 247);
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(42, 59, 95);
+            return button;
+        }
+
+        private void CapNhatKhoangChia(SplitContainer content)
+        {
+            const int panel1Min = 280;
+            const int panel2Min = 260;
+            if (content.Width <= panel1Min + panel2Min + content.SplitterWidth)
+                return;
+
+            var desired = Math.Max(panel1Min,
+                Math.Min(content.Width - panel2Min - content.SplitterWidth,
+                    (int)(content.Width * 0.62)));
+            if (content.SplitterDistance != desired)
+                content.SplitterDistance = desired;
         }
 
         private Label Label(string text)
@@ -164,28 +289,45 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private void NapBoLoc()
         {
-            _cboKhuVuc.DisplayMember = "TenKhuVuc";
-            _cboKhuVuc.ValueMember = "MaKhuVuc";
-            _cboKhuVuc.DataSource = _khuVucService.LayTatCa().OrderBy(k => k.TenKhuVuc).ToList();
-            _cboKhuVuc.SelectedIndex = -1;
+            _cboKhuVuc.DisplayMember = "Display";
+            _cboKhuVuc.ValueMember = "Value";
+            var khuVucOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tat ca khu vuc") };
+            khuVucOptions.AddRange(_khuVucService.LayTatCa()
+                .OrderBy(k => k.TenKhuVuc)
+                .Select(k => new FilterOption(k.MaKhuVuc, k.TenKhuVuc)));
+            _cboKhuVuc.DataSource = khuVucOptions;
 
-            _cboToa.DisplayMember = "TenToa";
-            _cboToa.ValueMember = "MaToa";
-            _cboToa.DataSource = _toaService.LayTatCa().OrderBy(t => t.TenToa).ToList();
-            _cboToa.SelectedIndex = -1;
+            _cboToa.DisplayMember = "Display";
+            _cboToa.ValueMember = "Value";
+            var toaOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tat ca toa") };
+            toaOptions.AddRange(_toaService.LayTatCa()
+                .OrderBy(t => t.TenToa)
+                .Select(t => new FilterOption(t.MaToa, t.TenToa)));
+            _cboToa.DataSource = toaOptions;
 
-            _cboLoai.DisplayMember = "TenLoai";
-            _cboLoai.ValueMember = "MaLoai";
-            _cboLoai.DataSource = _loaiService.LayTatCa().OrderBy(l => l.TenLoai).ToList();
-            _cboLoai.SelectedIndex = -1;
+            _cboLoai.DisplayMember = "Display";
+            _cboLoai.ValueMember = "Value";
+            var loaiOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tat ca loai") };
+            loaiOptions.AddRange(_loaiService.LayTatCa()
+                .OrderBy(l => l.TenLoai)
+                .Select(l => new FilterOption(l.MaLoai, l.TenLoai)));
+            _cboLoai.DataSource = loaiOptions;
         }
 
         private void TaiDanhSachTro()
         {
             if (_roomCards == null) return;
             _roomCards.Controls.Clear();
+            GuiThongBaoPhieuHetHanMoi();
 
-            var data = _canHoService.LayTheoTinhTrang("Trong");
+            var phongDangChoCoc = _phieuDatTruocService.LayTatCa()
+                .Where(p => p.TrangThai == PhieuDatTruocService.ChoThanhToanCoc ||
+                            p.TrangThai == PhieuDatTruocService.DaThanhToanCoc ||
+                            p.TrangThai == PhieuDatTruocService.ChoKy)
+                .Select(p => p.MaCanHo)
+                .ToList();
+            var data = _canHoService.LayTheoTinhTrang("Trong")
+                .Where(c => !phongDangChoCoc.Contains(c.MaCanHo));
             var kw = (_txtTimKiem.Text ?? string.Empty).Trim().ToLowerInvariant();
             if (!string.IsNullOrWhiteSpace(kw))
             {
@@ -194,12 +336,12 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     (c.MaToa ?? string.Empty).ToLowerInvariant().Contains(kw) ||
                     c.SoCanHo.ToString().Contains(kw));
             }
-            if (_cboToa.SelectedValue != null)
+            if (_cboToa.SelectedValue != null && !string.IsNullOrWhiteSpace(_cboToa.SelectedValue.ToString()))
             {
                 var maToa = _cboToa.SelectedValue.ToString();
                 data = data.Where(c => c.MaToa == maToa);
             }
-            if (_cboLoai.SelectedValue != null)
+            if (_cboLoai.SelectedValue != null && !string.IsNullOrWhiteSpace(_cboLoai.SelectedValue.ToString()))
             {
                 var maLoai = _cboLoai.SelectedValue.ToString();
                 data = data.Where(c => c.MaLoai == maLoai);
@@ -217,7 +359,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             var khuVucs = _khuVucService.LayTatCa().ToDictionary(k => k.MaKhuVuc);
             var toas = _toaService.LayTatCa().ToDictionary(t => t.MaToa);
-            if (_cboKhuVuc.SelectedValue != null)
+            if (_cboKhuVuc.SelectedValue != null && !string.IsNullOrWhiteSpace(_cboKhuVuc.SelectedValue.ToString()))
             {
                 var selectedMaKhuVuc = _cboKhuVuc.SelectedValue.ToString();
                 KhuVuc selectedKhuVuc;
@@ -242,6 +384,24 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             foreach (var room in rooms)
                 _roomCards.Controls.Add(CreateRoomCard(room));
             ResizeCards();
+        }
+
+        private void GuiThongBaoPhieuHetHanMoi()
+        {
+            var phieusHetHan = _phieuDatTruocService.XuLyPhieuChoCocQuaHan24h();
+            foreach (var phieu in phieusHetHan)
+            {
+                var khach = _khachThueService.LayTheoMa(phieu.MaKhach);
+                var taiKhoan = khach == null ? null : _taiKhoanService.LayTheoMa(khach.MaTaiKhoan);
+                string thongBao;
+                EmailNotificationHelper.GuiThongBaoHetHanDatCoc(
+                    taiKhoan == null ? string.Empty : taiKhoan.Email,
+                    khach == null ? string.Empty : khach.HoTen,
+                    phieu.MaPhieuDatTruoc,
+                    phieu.MaCanHo,
+                    khach == null ? null : khach.MaTaiKhoan,
+                    out thongBao);
+            }
         }
 
         private Control CreateRoomCard(CanHo room)
@@ -280,13 +440,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             body.Controls.Add(new Label
             {
-                Text = string.Format("{0} - Can {1}", room.MaToa, room.SoCanHo),
+                Text = string.Format("{0} - Can {1}", LayTenToa(room.MaToa), room.SoCanHo),
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             }, 0, 0);
             body.Controls.Add(new Label
             {
-                Text = string.Format("Loai {0} | Tang {1} | {2:N1} m2", room.MaLoai, room.TangSo, room.DienTich),
+                Text = string.Format("{0} | Tang {1} | {2:N1} m2 | {3}",
+                    room.MaLoai, room.TangSo, room.DienTich, room.TinhTrang),
                 Dock = DockStyle.Fill
             }, 0, 1);
             body.Controls.Add(new Label
@@ -304,15 +465,54 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             var btnDatTruoc = new MaterialButton
             {
-                Text = "Lien he dat truoc",
+                Text = room.TinhTrang == "Trong" ? "Lien he dat truoc" : "Xem vi tri",
                 Dock = DockStyle.Left,
-                AutoSize = true
+                AutoSize = true,
+                Enabled = true
             };
-            btnDatTruoc.Click += delegate { DangKyVaDatTruoc(room); };
-            body.Controls.Add(btnDatTruoc, 0, 4);
+            btnDatTruoc.Click += delegate
+            {
+                HienThiBanDoToa(room);
+                if (room.TinhTrang == "Trong")
+                    DangKyVaDatTruoc(room);
+            };
+            var footer = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
+            footer.Controls.Add(new Label
+            {
+                Text = LayTienNghiHienThi(room.MaCanHo),
+                AutoSize = false,
+                Width = 190,
+                Height = 36,
+                AutoEllipsis = true
+            });
+            footer.Controls.Add(btnDatTruoc);
+            body.Controls.Add(footer, 0, 4);
             card.Controls.Add(body);
             body.BringToFront();
             return card;
+        }
+
+        private string LayTenToa(string maToa)
+        {
+            var toa = _toaService.LayTheoMa(maToa);
+            return toa == null || string.IsNullOrWhiteSpace(toa.TenToa) ? maToa : toa.TenToa;
+        }
+
+        private string LayTienNghiHienThi(string maCanHo)
+        {
+            var tienNghiById = _tienNghiService.LayTatCa()
+                .GroupBy(t => t.MaTienNghi)
+                .ToDictionary(g => g.Key, g => g.First().TenTienNghi);
+            var names = _canHoService.LayTienNghiCuaCanHo(maCanHo)
+                .Select(t =>
+                {
+                    string ten;
+                    return tienNghiById.TryGetValue(t.MaTienNghi, out ten) ? ten : t.MaTienNghi;
+                })
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Take(4)
+                .ToList();
+            return names.Count == 0 ? "Tien nghi: dang cap nhat" : "Tien nghi: " + string.Join(", ", names);
         }
 
         private bool TrongBanKinhKhuVuc(CanHo room, string selectedMaKhuVuc, KhuVuc selectedKhuVuc,
@@ -374,6 +574,149 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             picture.Image = bitmap;
         }
 
+        private async void HienThiBanDoMacDinh()
+        {
+            try
+            {
+                if (_mapView.CoreWebView2 == null)
+                    await _mapView.EnsureCoreWebView2Async(null);
+                _mapView.NavigateToString(TaoHtmlBanDoMacDinh());
+            }
+            catch
+            {
+                // WebView2 runtime may be missing on the machine; the room list still works.
+            }
+        }
+
+        private async void HienThiBanDoToa(CanHo room)
+        {
+            try
+            {
+                if (room == null) return;
+                Toa toa;
+                KhuVuc khuVuc;
+                var toas = _toaService.LayTatCa().ToDictionary(t => t.MaToa);
+                var khuVucs = _khuVucService.LayTatCa().ToDictionary(k => k.MaKhuVuc);
+                if (!toas.TryGetValue(room.MaToa, out toa)) return;
+                khuVucs.TryGetValue(toa.MaKhuVuc, out khuVuc);
+
+                if (_mapView.CoreWebView2 == null)
+                    await _mapView.EnsureCoreWebView2Async(null);
+                _mapView.NavigateToString(TaoHtmlBanDoToa(room, toa, khuVuc));
+            }
+            catch
+            {
+                // WebView2 runtime may be missing on the machine; booking flow still works.
+            }
+        }
+
+        private string TaoHtmlBanDoMacDinh()
+        {
+            return @"<!doctype html>
+<html>
+<head>
+  <meta charset=""utf-8"" />
+  <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+  <style>
+    html, body { height:100%; margin:0; font-family: Segoe UI, Arial, sans-serif; background:#f8f9fc; color:#1f2937; }
+    .empty { height:100%; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; text-align:center; }
+    .box { background:white; border:1px solid #e5e7eb; border-radius:8px; padding:24px; box-shadow:0 8px 24px rgba(30,42,69,.08); }
+    .title { font-weight:700; font-size:18px; color:#1E2A45; margin-bottom:8px; }
+    .text { font-size:13px; color:#6B7280; line-height:20px; }
+  </style>
+</head>
+<body>
+  <div class=""empty"">
+    <div class=""box"">
+      <div class=""title"">Ban do toa nha</div>
+      <div class=""text"">Danh sach dang hien tat ca phong. Ban do chi hien khi khach bam vao mot phong de xem/len he dat truoc.</div>
+    </div>
+  </div>
+</body>
+</html>";
+        }
+
+        private string TaoHtmlBanDoToa(CanHo room, Toa toa, KhuVuc khuVuc)
+        {
+            var address = DiaChiDayDu(toa, khuVuc);
+            var fallbackLat = khuVuc != null && khuVuc.ViDo.HasValue ? khuVuc.ViDo.Value : 10.762622;
+            var fallbackLng = khuVuc != null && khuVuc.KinhDo.HasValue ? khuVuc.KinhDo.Value : 106.660172;
+            var popup = string.Format(
+                "<b>{0} - Can {1}</b><br/>Dia chi: {2}<br/>Gia: {3:N0} d<br/>Trang thai: {4}",
+                HtmlEncode(toa.TenToa),
+                room.SoCanHo,
+                HtmlEncode(address),
+                room.GiaThueNiemYet,
+                HtmlEncode(room.TinhTrang));
+
+            return @"<!doctype html>
+<html>
+<head>
+  <meta charset=""utf-8"" />
+  <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+  <link rel=""stylesheet"" href=""https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; font-family: Segoe UI, Arial, sans-serif; }
+    .notice { position:absolute; z-index:1000; top:12px; left:12px; right:12px; background:#fff; border:1px solid #e5e7eb; padding:10px; border-radius:6px; color:#1f2937; box-shadow:0 8px 24px rgba(30,42,69,.08); }
+  </style>
+</head>
+<body>
+  <div class=""notice"">Dang hien vi tri: <b>" + HtmlEncode(toa.TenToa) + @"</b><br/>" + HtmlEncode(address) + @"</div>
+  <div id=""map""></div>
+  <script src=""https://unpkg.com/leaflet@1.9.4/dist/leaflet.js""></script>
+  <script>
+    var fallback = [" + fallbackLat.ToString(System.Globalization.CultureInfo.InvariantCulture) + @", " + fallbackLng.ToString(System.Globalization.CultureInfo.InvariantCulture) + @"];
+    var map = L.map('map').setView(fallback, 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    function addMarker(lat, lon) {
+      map.setView([lat, lon], 16);
+      L.marker([lat, lon]).addTo(map).bindPopup('" + JsString(popup) + @"').openPopup();
+    }
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent('" + JsString(address) + @"'))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.length > 0) addMarker(parseFloat(data[0].lat), parseFloat(data[0].lon));
+        else addMarker(fallback[0], fallback[1]);
+      })
+      .catch(function() { addMarker(fallback[0], fallback[1]); });
+  </script>
+</body>
+</html>";
+        }
+
+        private string DiaChiDayDu(Toa toa, KhuVuc khuVuc)
+        {
+            var parts = new[]
+            {
+                toa == null ? null : toa.DiaChi,
+                khuVuc == null ? null : khuVuc.Quan,
+                khuVuc == null ? null : khuVuc.ThanhPho
+            };
+            return string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+        }
+
+        private static string HtmlEncode(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            return value.Replace("&", "&amp;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;")
+                .Replace("\"", "&quot;")
+                .Replace("'", "&#39;");
+        }
+
+        private static string JsString(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            return value.Replace("\\", "\\\\")
+                .Replace("'", "\\'")
+                .Replace("\r", string.Empty)
+                .Replace("\n", "<br/>");
+        }
+
         private void ResizeCards()
         {
             if (_roomCards.Width <= 0) return;
@@ -404,7 +747,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     MaCanHo = room.MaCanHo,
                     MaKhach = dialog.Khach.MaKhach,
                     SoTienDatCoc = dialog.TienCoc,
-                    NgayHetHan = DateTime.Today.AddDays(3),
+                    NgayHetHan = DateTime.Now.AddHours(24),
                     PhuongThucThanhToan = "VietQRDatCoc",
                     GhiChu = "Khach vang lai dang ky tu man hinh tim tro; cho xac nhan chuyen khoan dat coc"
                 };
