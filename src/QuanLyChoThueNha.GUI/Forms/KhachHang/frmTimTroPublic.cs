@@ -317,7 +317,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             info.Controls.Add(InfoCard("Vị trí", LayDiaChiPhong(room)), 0, 1);
             info.Controls.Add(InfoCard("Thông tin phòng",
                 "Trạng thái: " + trangThaiHienThi + Environment.NewLine +
-                string.Format("Loại {0} | Tầng {1} | {2:N1} m2", room.MaLoai, room.TangSo, room.DienTich) + Environment.NewLine +
+                string.Format("Tầng {0} | {1:N1} m2 | Mã phòng {2}", room.TangSo, room.DienTich, room.MaCanHo) + Environment.NewLine +
                 string.Format("Giá {0:N0} VNĐ - Cọc {1:N0} VNĐ", room.GiaThueNiemYet, room.TienCocNiemYet)), 0, 2);
             info.Controls.Add(InfoCard("Tiện nghi và mô tả",
                 LayTienNghiHienThi(room.MaCanHo) + Environment.NewLine +
@@ -714,8 +714,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             }, 0, 0);
             body.Controls.Add(new Label
             {
-                Text = string.Format("{0} | Tầng {1} | {2:N1} m2 | {3}",
-                    room.MaLoai, room.TangSo, room.DienTich, room.MaCanHo),
+                Text = string.Format("Tầng {0} | {1:N1} m2 | {2}",
+                    room.TangSo, room.DienTich, room.MaCanHo),
                 Dock = DockStyle.Fill,
                 ForeColor = mauVien
             }, 0, 1);

@@ -340,3 +340,55 @@ Mostly fixed but needs final adjustment/manual verification: `NET-TEST-003`, `NE
 Partially fixed: `NET-TEST-001`, `NET-TEST-005`, `NET-TEST-007`, `NET-TEST-011`, `NET-TEST-012`.
 
 Still not fixed: `NET-TEST-002`, `NET-TEST-014`.
+
+## 2026-06-01 - Remaining issue fixes after merge
+
+### Context
+
+Continued from branch `codex/merge-bugfix-report-20260601-053618` after merging `codex/bugfix-report`.
+
+### Fixes applied
+
+#### NET-TEST-001
+
+- Applied accent-insensitive search to additional screens that still used `ToLowerInvariant()`:
+  - `frmKhachThue`
+  - `frmKhuVuc`
+  - `frmCanHo`
+  - `frmEmailLog`
+- Existing normalized search remains in public room search and customer account management.
+
+#### NET-TEST-002
+
+- Removed `MaLoai` from public room cards and room detail popup.
+- Removed `MaLoai` from customer home available-room card.
+- Cards now show tower/apartment/floor/area/room code instead of internal apartment type code.
+
+#### NET-TEST-005
+
+- Changed reservation `TrangThai` editor to read-only text instead of a dropdown that still listed system statuses.
+- Users can no longer pick `DaKyHD` or `HetHan` from the reservation form.
+
+#### NET-TEST-007
+
+- Added a tower filter to the contract form.
+- Apartment dropdown is now repopulated by selected tower.
+- The apartment list still only includes apartments that are `Trong` or have a valid `ChoKy` reservation.
+- Selecting an apartment continues to auto-fill the matching reservation and tenant when available.
+
+#### NET-TEST-011
+
+- Changed violation handling so `TruVaoCoc` no longer immediately sets `TinhTrang = DaKhauTru` when recording/editing a violation.
+- Violations marked for deposit deduction stay `ChoXuLy`.
+- `DaKhauTru` is still applied later when the return/deposit deduction process actually runs.
+
+#### NET-TEST-014
+
+- Removed `MaNguoiThaoTac` and `VaiTroNguoiThaoTac` from the main apartment management grid.
+- Audit data remains stored by service/model but no longer clutters the primary apartment list.
+
+### Verification
+
+- `dotnet build QuanLyChoThueNha.sln`: passed.
+- Remaining build output: 14 warnings for unresolved optional/package references related to Excel export dependencies.
+- No compile errors after the remaining issue fixes.

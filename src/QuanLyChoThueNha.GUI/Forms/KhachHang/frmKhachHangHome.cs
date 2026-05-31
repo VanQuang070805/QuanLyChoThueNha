@@ -243,13 +243,13 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             });
             card.Controls.Add(new Label
             {
-                Text = string.Format("Loai: {0} | Tang: {1}", room.MaLoai, room.TangSo),
+                Text = string.Format("Tang: {0} | Ma phong: {1}", room.TangSo, room.MaCanHo),
                 Location = new Point(10, 38),
                 AutoSize = true
             });
             card.Controls.Add(new Label
             {
-                Text = string.Format("Gia: {0:N0} | Coc: {1:N0}", room.GiaThueNiemYet, room.TienCocNiemYet),
+                Text = string.Format("Gia: {0:N0} VND | Coc: {1:N0} VND", room.GiaThueNiemYet, room.TienCocNiemYet),
                 Location = new Point(10, 62),
                 AutoSize = true
             });

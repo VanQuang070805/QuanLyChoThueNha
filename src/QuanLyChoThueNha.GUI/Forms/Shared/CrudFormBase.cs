@@ -112,6 +112,12 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _commandPanel.Controls.Add(btn);
         }
 
+        protected void AddCommandControl(Control control)
+        {
+            if (control == null) return;
+            _commandPanel.Controls.Add(control);
+        }
+
         protected T CurrentItem
         {
             get

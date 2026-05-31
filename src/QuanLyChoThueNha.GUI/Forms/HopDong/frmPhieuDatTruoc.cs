@@ -43,8 +43,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 new FieldDefinition("SoTienDatCoc", "So tien dat coc", typeof(decimal)),
                 new FieldDefinition("NgayDatCoc", "Ngay dat coc", typeof(DateTime), true),
                 new FieldDefinition("NgayHetHan", "Ngay het han", typeof(DateTime)),
-                new FieldDefinition("TrangThai", "Trang thai", typeof(string), true,
-                    new[] { "ChoThanhToanCoc", "ChoKy", "DaKyHD", "Huy", "HetHan" }),
+                new FieldDefinition("TrangThai", "Trang thai", typeof(string), true),
                 new FieldDefinition("PhuongThucThanhToan", "Phuong thuc", typeof(string), false,
                     new[] { "ChuyenKhoan", "TienMat" }),
                 new FieldDefinition("GhiChu", "Ghi chu", typeof(string), false, null, true)

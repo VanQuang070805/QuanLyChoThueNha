@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
+using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
@@ -327,8 +328,6 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             AddGridColumn("SoCanHo", "Số căn", 80);
             AddGridColumn("TangSo", "Tầng", 70);
             AddGridColumn("TinhTrang", "Tình trạng", 100);
-            AddGridColumn("MaNguoiThaoTac", "Mã người thao tác", 120);
-            AddGridColumn("VaiTroNguoiThaoTac", "Vai trò thao tác", 120);
         }
 
         private void AddGridColumn(string propertyName, string header, int minWidth, string format = null)
@@ -374,14 +373,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void TimKiem()
         {
-            string kw = txtTimKiem.Text.Trim().ToLowerInvariant();
+            string kw = TextFormatHelper.NormalizeSearch(txtTimKiem.Text);
             var data = _canHoSvc.LayTatCa();
             if (!string.IsNullOrEmpty(kw))
             {
                 data = data.Where(c =>
-                    (c.MaCanHo ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    (c.SoCanHo.ToString()).ToLowerInvariant().Contains(kw) ||
-                    (c.TinhTrang ?? string.Empty).ToLowerInvariant().Contains(kw));
+                    TextFormatHelper.ContainsNormalized(c.MaCanHo, kw) ||
+                    TextFormatHelper.ContainsNormalized(c.SoCanHo.ToString(), kw) ||
+                    TextFormatHelper.ContainsNormalized(c.TinhTrang, kw));
             }
             dgv.DataSource = new BindingList<CanHo>(data.OrderBy(c => c.MaCanHo).ToList());
         }

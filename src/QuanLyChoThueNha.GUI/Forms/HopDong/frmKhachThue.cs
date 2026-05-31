@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
+using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
@@ -306,14 +307,14 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         private void ReloadData()
         {
-            var kw = txtSearch.Text.Trim().ToLowerInvariant();
+            var kw = TextFormatHelper.NormalizeSearch(txtSearch.Text);
             var data = _service.LayTatCa();
             if (!string.IsNullOrEmpty(kw))
             {
                 data = data.Where(k =>
-                    (k.HoTen ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    (k.SoCMND ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    (k.MaTaiKhoan ?? string.Empty).ToLowerInvariant().Contains(kw));
+                    TextFormatHelper.ContainsNormalized(k.HoTen, kw) ||
+                    TextFormatHelper.ContainsNormalized(k.SoCMND, kw) ||
+                    TextFormatHelper.ContainsNormalized(k.MaTaiKhoan, kw));
             }
             grid.DataSource = new BindingList<KhachThue>(data.OrderBy(k => k.HoTen).ToList());
             RenameColumns();

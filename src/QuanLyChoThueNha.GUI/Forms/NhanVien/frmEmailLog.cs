@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
+using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.Model.Entities;
 
@@ -60,14 +61,14 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
 
         private void TaiDuLieu()
         {
-            var keyword = (_txtSearch.Text ?? string.Empty).Trim().ToLowerInvariant();
+            var keyword = TextFormatHelper.NormalizeSearch(_txtSearch.Text);
             var data = _service.LayTatCa();
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 data = data.Where(x =>
-                    (x.EmailNguoiNhan ?? string.Empty).ToLowerInvariant().Contains(keyword) ||
-                    (x.MaPhieuDatTruoc ?? string.Empty).ToLowerInvariant().Contains(keyword) ||
-                    (x.TrangThai ?? string.Empty).ToLowerInvariant().Contains(keyword));
+                    TextFormatHelper.ContainsNormalized(x.EmailNguoiNhan, keyword) ||
+                    TextFormatHelper.ContainsNormalized(x.MaPhieuDatTruoc, keyword) ||
+                    TextFormatHelper.ContainsNormalized(x.TrangThai, keyword));
             }
 
             _grid.DataSource = new BindingList<EmailLog>(data.ToList());

@@ -370,7 +370,7 @@ namespace QuanLyChoThueNha.BLL.Services
 
             phieu.MaViPham = SinhMa();
             phieu.NgayGhiNhan = DateTime.Now;
-            phieu.TinhTrang = phieu.TruVaoCoc ? "DaKhauTru" : "ChoXuLy";
+            phieu.TinhTrang = "ChoXuLy";
             AuditHelper.GanNguoiThaoTac(phieu);
             base.Them(phieu);
             return true;

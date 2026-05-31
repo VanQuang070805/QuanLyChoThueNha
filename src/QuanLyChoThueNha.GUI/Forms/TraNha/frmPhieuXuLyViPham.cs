@@ -51,7 +51,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         {
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             item.MaPhieuTraNha = string.IsNullOrWhiteSpace(item.MaPhieuTraNha) ? null : item.MaPhieuTraNha;
-            if (item.TruVaoCoc) item.TinhTrang = "DaKhauTru";
+            if (item.TruVaoCoc) item.TinhTrang = "ChoXuLy";
             return _service.GhiNhan(item, out error);
         }
 
@@ -59,7 +59,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         {
             error = string.Empty;
             item.MaPhieuTraNha = string.IsNullOrWhiteSpace(item.MaPhieuTraNha) ? null : item.MaPhieuTraNha;
-            if (item.TruVaoCoc) item.TinhTrang = "DaKhauTru";
+            if (item.TruVaoCoc) item.TinhTrang = "ChoXuLy";
             _service.Sua(item);
             return true;
         }

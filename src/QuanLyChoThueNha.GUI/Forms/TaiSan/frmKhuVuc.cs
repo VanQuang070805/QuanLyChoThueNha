@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
+using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
@@ -240,14 +241,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void TimKiem()
         {
-            string kw = txtTimKiem.Text.Trim().ToLowerInvariant();
+            string kw = TextFormatHelper.NormalizeSearch(txtTimKiem.Text);
             var data = _svc.LayTatCa();
             if (!string.IsNullOrEmpty(kw))
             {
                 data = data.Where(k =>
-                    (k.TenKhuVuc ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    (k.Quan ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    (k.ThanhPho ?? string.Empty).ToLowerInvariant().Contains(kw));
+                    TextFormatHelper.ContainsNormalized(k.TenKhuVuc, kw) ||
+                    TextFormatHelper.ContainsNormalized(k.Quan, kw) ||
+                    TextFormatHelper.ContainsNormalized(k.ThanhPho, kw));
             }
             dgv.DataSource = new BindingList<KhuVuc>(data.OrderBy(k => k.ThanhPho).ThenBy(k => k.Quan).ToList());
         }

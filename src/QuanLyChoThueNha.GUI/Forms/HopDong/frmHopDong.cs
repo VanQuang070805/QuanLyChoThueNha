@@ -14,10 +14,15 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
     public class frmHopDong : CrudFormBase<HopDongEntity>
     {
         private readonly HopDongService _service = new HopDongService();
+        private readonly CanHoService _canHoService = new CanHoService();
+        private readonly PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
+        private readonly ComboBox _cboToaFilter = new ComboBox();
         private string _trangThaiFilter = "TatCa";
+        private bool _dangNapCanHo;
 
         public frmHopDong() : base("Quan ly Hop dong", Fields())
         {
+            TaoBoLocToa();
             var canHoEditor = GetEditor("MaCanHo") as ComboBox;
             if (canHoEditor != null)
                 canHoEditor.SelectedIndexChanged += delegate { DienPhieuVaKhachTheoCanHo(); };
@@ -26,6 +31,34 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             AddCommandButton("Sap het han", delegate { _trangThaiFilter = "SapHetHan"; ReloadData(); });
             AddCommandButton("Het han", delegate { _trangThaiFilter = "HetHan"; ReloadData(); });
             AddCommandButton("Da huy", delegate { _trangThaiFilter = "DaHuy"; ReloadData(); });
+        }
+
+        private void TaoBoLocToa()
+        {
+            var label = new Label
+            {
+                Text = "Toa",
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(10, 9, 4, 0)
+            };
+            AddCommandControl(label);
+
+            var options = new List<ComboOption> { new ComboOption(string.Empty, "Tat ca toa") };
+            options.AddRange(new ToaService().LayTatCa()
+                .OrderBy(t => t.TenToa)
+                .Select(t => new ComboOption(t.MaToa, string.Format("{0} - {1}", t.TenToa, t.MaToa))));
+
+            _cboToaFilter.DropDownStyle = ComboBoxStyle.DropDownList;
+            _cboToaFilter.DisplayMember = "Display";
+            _cboToaFilter.ValueMember = "Value";
+            _cboToaFilter.Width = 180;
+            _cboToaFilter.Height = 30;
+            _cboToaFilter.Margin = new Padding(0, 5, 8, 0);
+            _cboToaFilter.DataSource = options;
+            _cboToaFilter.SelectedIndexChanged += delegate { NapCanHoTheoToa(); };
+            AddCommandControl(_cboToaFilter);
+            NapCanHoTheoToa();
         }
 
         private static IEnumerable<FieldDefinition> Fields()
@@ -120,10 +153,11 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         private void DienPhieuVaKhachTheoCanHo()
         {
+            if (_dangNapCanHo) return;
             var canHoEditor = GetEditor("MaCanHo") as ComboBox;
             if (canHoEditor == null || canHoEditor.SelectedValue == null) return;
             var maCanHo = canHoEditor.SelectedValue.ToString();
-            var phieu = new PhieuDatTruocService().LayTatCa()
+            var phieu = _phieuDatTruocService.LayTatCa()
                 .Where(p => p.MaCanHo == maCanHo && p.TrangThai == PhieuDatTruocService.ChoKy)
                 .OrderByDescending(p => p.NgayDatCoc)
                 .FirstOrDefault();
@@ -139,6 +173,35 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             SetEditorValue("MaPhieuDatTruoc", string.Empty);
             var freeKhachEditor = GetEditor("MaKhach");
             if (freeKhachEditor != null) freeKhachEditor.Enabled = true;
+        }
+
+        private void NapCanHoTheoToa()
+        {
+            var canHoEditor = GetEditor("MaCanHo") as ComboBox;
+            if (canHoEditor == null) return;
+
+            var selectedToa = _cboToaFilter.SelectedValue == null ? string.Empty : _cboToaFilter.SelectedValue.ToString();
+            var canHoCoPhieuChoKy = _phieuDatTruocService.LayTatCa()
+                .Where(p => p.TrangThai == PhieuDatTruocService.ChoKy)
+                .Select(p => p.MaCanHo)
+                .ToList();
+
+            var options = _canHoService.LayTatCa()
+                .Where(c => string.IsNullOrWhiteSpace(selectedToa) || c.MaToa == selectedToa)
+                .Where(c => c.TinhTrang == "Trong" || canHoCoPhieuChoKy.Contains(c.MaCanHo))
+                .OrderBy(c => c.MaToa)
+                .ThenBy(c => c.SoCanHo)
+                .Select(c => new ComboOption(c.MaCanHo,
+                    string.Format("{0} - Toa {1} - Tang {2} - {3}", c.MaCanHo, c.MaToa, c.TangSo, c.TinhTrang)))
+                .ToList();
+
+            _dangNapCanHo = true;
+            canHoEditor.DataSource = options;
+            canHoEditor.DisplayMember = "Display";
+            canHoEditor.ValueMember = "Value";
+            if (options.Count > 0) canHoEditor.SelectedIndex = 0;
+            _dangNapCanHo = false;
+            DienPhieuVaKhachTheoCanHo();
         }
 
         protected override void AfterGridBound()
