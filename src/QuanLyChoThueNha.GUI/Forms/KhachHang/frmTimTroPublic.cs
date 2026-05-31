@@ -113,7 +113,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var btnNoiBo = new MaterialButton { Text = "Cong noi bo", Dock = DockStyle.Fill };
             btnNoiBo.Click += delegate { new frmLogin(new[] { "Admin", "NhanVien" }, "Dang nhap noi bo").Show(); };
             var btnLamMoi = new MaterialButton { Text = "Lam moi", Dock = DockStyle.Fill };
-            btnLamMoi.Click += delegate { TaiDanhSachTro(); };
+            btnLamMoi.Click += delegate { LamMoiDuLieu(); };
 
             top.Controls.Add(title, 0, 0);
             top.Controls.Add(btnLamMoi, 1, 0);
@@ -220,7 +220,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var btnNoiBo = CreateSidebarButton("Cong noi bo", false);
             btnNoiBo.Click += delegate { new frmLogin(new[] { "Admin", "NhanVien" }, "Dang nhap noi bo").Show(); };
             var btnLamMoi = CreateSidebarButton("Lam moi du lieu", false);
-            btnLamMoi.Click += delegate { TaiDanhSachTro(); };
+            btnLamMoi.Click += delegate { LamMoiDuLieu(); };
 
             sidebar.Controls.Add(btnTimTro, 0, 1);
             sidebar.Controls.Add(btnKhach, 0, 2);
@@ -289,6 +289,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private void NapBoLoc()
         {
+            var selectedKhuVuc = _cboKhuVuc.SelectedValue == null ? string.Empty : _cboKhuVuc.SelectedValue.ToString();
+            var selectedToa = _cboToa.SelectedValue == null ? string.Empty : _cboToa.SelectedValue.ToString();
+            var selectedLoai = _cboLoai.SelectedValue == null ? string.Empty : _cboLoai.SelectedValue.ToString();
+
             _cboKhuVuc.DisplayMember = "Display";
             _cboKhuVuc.ValueMember = "Value";
             var khuVucOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tat ca khu vuc") };
@@ -296,6 +300,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .OrderBy(k => k.TenKhuVuc)
                 .Select(k => new FilterOption(k.MaKhuVuc, k.TenKhuVuc)));
             _cboKhuVuc.DataSource = khuVucOptions;
+            _cboKhuVuc.SelectedValue = khuVucOptions.Any(x => x.Value == selectedKhuVuc) ? selectedKhuVuc : string.Empty;
 
             _cboToa.DisplayMember = "Display";
             _cboToa.ValueMember = "Value";
@@ -304,6 +309,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .OrderBy(t => t.TenToa)
                 .Select(t => new FilterOption(t.MaToa, t.TenToa)));
             _cboToa.DataSource = toaOptions;
+            _cboToa.SelectedValue = toaOptions.Any(x => x.Value == selectedToa) ? selectedToa : string.Empty;
 
             _cboLoai.DisplayMember = "Display";
             _cboLoai.ValueMember = "Value";
@@ -312,6 +318,13 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .OrderBy(l => l.TenLoai)
                 .Select(l => new FilterOption(l.MaLoai, l.TenLoai)));
             _cboLoai.DataSource = loaiOptions;
+            _cboLoai.SelectedValue = loaiOptions.Any(x => x.Value == selectedLoai) ? selectedLoai : string.Empty;
+        }
+
+        private void LamMoiDuLieu()
+        {
+            NapBoLoc();
+            TaiDanhSachTro();
         }
 
         private void TaiDanhSachTro()
@@ -326,15 +339,30 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                             p.TrangThai == PhieuDatTruocService.ChoKy)
                 .Select(p => p.MaCanHo)
                 .ToList();
-            var data = _canHoService.LayTheoTinhTrang("Trong")
-                .Where(c => !phongDangChoCoc.Contains(c.MaCanHo));
+            var data = _canHoService.LayTatCa();
+            var khuVucs = _khuVucService.LayTatCa().ToDictionary(k => k.MaKhuVuc);
+            var toas = _toaService.LayTatCa().ToDictionary(t => t.MaToa);
             var kw = (_txtTimKiem.Text ?? string.Empty).Trim().ToLowerInvariant();
             if (!string.IsNullOrWhiteSpace(kw))
             {
                 data = data.Where(c =>
-                    (c.MaCanHo ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    (c.MaToa ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    c.SoCanHo.ToString().Contains(kw));
+                {
+                    Toa toa;
+                    KhuVuc khuVuc = null;
+                    toas.TryGetValue(c.MaToa, out toa);
+                    if (toa != null) khuVucs.TryGetValue(toa.MaKhuVuc, out khuVuc);
+
+                    return (c.MaCanHo ?? string.Empty).ToLowerInvariant().Contains(kw) ||
+                           (c.MaToa ?? string.Empty).ToLowerInvariant().Contains(kw) ||
+                           c.SoCanHo.ToString().Contains(kw) ||
+                           (toa != null && (
+                               (toa.TenToa ?? string.Empty).ToLowerInvariant().Contains(kw) ||
+                               (toa.DiaChi ?? string.Empty).ToLowerInvariant().Contains(kw))) ||
+                           (khuVuc != null && (
+                               (khuVuc.TenKhuVuc ?? string.Empty).ToLowerInvariant().Contains(kw) ||
+                               (khuVuc.Quan ?? string.Empty).ToLowerInvariant().Contains(kw) ||
+                               (khuVuc.ThanhPho ?? string.Empty).ToLowerInvariant().Contains(kw)));
+                });
             }
             if (_cboToa.SelectedValue != null && !string.IsNullOrWhiteSpace(_cboToa.SelectedValue.ToString()))
             {
@@ -357,8 +385,6 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 data = data.Where(c => c.GiaThueNiemYet <= giaDen);
             }
 
-            var khuVucs = _khuVucService.LayTatCa().ToDictionary(k => k.MaKhuVuc);
-            var toas = _toaService.LayTatCa().ToDictionary(t => t.MaToa);
             if (_cboKhuVuc.SelectedValue != null && !string.IsNullOrWhiteSpace(_cboKhuVuc.SelectedValue.ToString()))
             {
                 var selectedMaKhuVuc = _cboKhuVuc.SelectedValue.ToString();
@@ -367,7 +393,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 data = data.Where(c => TrongBanKinhKhuVuc(c, selectedMaKhuVuc, selectedKhuVuc, toas, khuVucs));
             }
 
-            var rooms = data.OrderBy(c => c.MaToa).ThenBy(c => c.SoCanHo).ToList();
+            var rooms = data.OrderBy(c => c.TinhTrang == "Trong" && !phongDangChoCoc.Contains(c.MaCanHo) ? 0 : 1)
+                .ThenBy(c => c.MaToa)
+                .ThenBy(c => c.SoCanHo)
+                .ToList();
             _lblCount.Text = string.Format("{0:N0} phong", rooms.Count);
 
             if (rooms.Count == 0)
@@ -382,7 +411,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             }
 
             foreach (var room in rooms)
-                _roomCards.Controls.Add(CreateRoomCard(room));
+                _roomCards.Controls.Add(CreateRoomCard(room, phongDangChoCoc.Contains(room.MaCanHo)));
             ResizeCards();
         }
 
@@ -404,15 +433,26 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             }
         }
 
-        private Control CreateRoomCard(CanHo room)
+        private Control CreateRoomCard(CanHo room, bool dangChoCoc)
         {
+            var coTheDat = room.TinhTrang == "Trong" && !dangChoCoc;
+            var mauNen = coTheDat ? Color.White :
+                room.TinhTrang == "DangThue" ? Color.FromArgb(255, 247, 237) :
+                Color.FromArgb(239, 246, 255);
+            var mauVien = coTheDat ? Color.FromArgb(229, 231, 235) :
+                room.TinhTrang == "DangThue" ? Color.FromArgb(251, 146, 60) :
+                Color.FromArgb(96, 165, 250);
+            var trangThaiHienThi = dangChoCoc ? "Dang cho coc" :
+                room.TinhTrang == "Trong" ? "Con trong" :
+                room.TinhTrang == "DangThue" ? "Dang cho thue" : room.TinhTrang;
+
             var card = new Panel
             {
                 Height = 330,
                 Width = 330,
                 Margin = new Padding(4, 4, 12, 12),
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.White,
+                BackColor = mauNen,
                 Tag = "room-card"
             };
 
@@ -447,8 +487,9 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             body.Controls.Add(new Label
             {
                 Text = string.Format("{0} | Tang {1} | {2:N1} m2 | {3}",
-                    room.MaLoai, room.TangSo, room.DienTich, room.TinhTrang),
-                Dock = DockStyle.Fill
+                    room.MaLoai, room.TangSo, room.DienTich, trangThaiHienThi),
+                Dock = DockStyle.Fill,
+                ForeColor = mauVien
             }, 0, 1);
             body.Controls.Add(new Label
             {
@@ -465,7 +506,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             var btnDatTruoc = new MaterialButton
             {
-                Text = room.TinhTrang == "Trong" ? "Lien he dat truoc" : "Xem vi tri",
+                Text = coTheDat ? "Lien he dat truoc" : "Xem vi tri",
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 Enabled = true
@@ -473,7 +514,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             btnDatTruoc.Click += delegate
             {
                 HienThiBanDoToa(room);
-                if (room.TinhTrang == "Trong")
+                if (coTheDat)
                     DangKyVaDatTruoc(room);
             };
             var footer = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };

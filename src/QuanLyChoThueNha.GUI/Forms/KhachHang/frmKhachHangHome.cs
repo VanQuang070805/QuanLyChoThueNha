@@ -74,7 +74,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 ThousandsSeparator = true
             };
             var btnLamMoi = new MaterialButton { Text = "Lam moi", AutoSize = true };
-            btnLamMoi.Click += delegate { TaiDuLieu(); };
+            btnLamMoi.Click += delegate { LamMoiDuLieu(); };
             btnQrThanhToan = new MaterialButton { Text = "Hien QR hoa don", AutoSize = true };
             btnQrThanhToan.Click += BtnQrThanhToan_Click;
             cboToa.SelectedIndexChanged += delegate { TaiDuLieu(); };
@@ -126,15 +126,28 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private void NapBoLoc()
         {
+            var selectedToa = cboToa.SelectedValue == null ? null : cboToa.SelectedValue.ToString();
+            var selectedLoai = cboLoai.SelectedValue == null ? null : cboLoai.SelectedValue.ToString();
+
             cboToa.DisplayMember = "TenToa";
             cboToa.ValueMember = "MaToa";
-            cboToa.DataSource = _toaService.LayTatCa().OrderBy(t => t.TenToa).ToList();
-            cboToa.SelectedIndex = -1;
+            var toas = _toaService.LayTatCa().OrderBy(t => t.TenToa).ToList();
+            cboToa.DataSource = toas;
+            cboToa.SelectedValue = toas.Any(t => t.MaToa == selectedToa) ? selectedToa : null;
+            if (selectedToa == null) cboToa.SelectedIndex = -1;
 
             cboLoai.DisplayMember = "TenLoai";
             cboLoai.ValueMember = "MaLoai";
-            cboLoai.DataSource = _loaiService.LayTatCa().OrderBy(l => l.TenLoai).ToList();
-            cboLoai.SelectedIndex = -1;
+            var loais = _loaiService.LayTatCa().OrderBy(l => l.TenLoai).ToList();
+            cboLoai.DataSource = loais;
+            cboLoai.SelectedValue = loais.Any(l => l.MaLoai == selectedLoai) ? selectedLoai : null;
+            if (selectedLoai == null) cboLoai.SelectedIndex = -1;
+        }
+
+        private void LamMoiDuLieu()
+        {
+            NapBoLoc();
+            TaiDuLieu();
         }
 
         private ComboBox CreateComboBox(int width)
