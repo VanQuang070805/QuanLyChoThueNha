@@ -392,3 +392,36 @@ Continued from branch `codex/merge-bugfix-report-20260601-053618` after merging 
 - `dotnet build QuanLyChoThueNha.sln`: passed.
 - Remaining build output: 14 warnings for unresolved optional/package references related to Excel export dependencies.
 - No compile errors after the remaining issue fixes.
+
+## 2026-06-01 - Build warning cleanup
+
+### Context
+
+After fixing the remaining workflow issues, `dotnet build QuanLyChoThueNha.sln` still passed but showed 14 warnings because GUI referenced package DLLs that were listed in `packages.config` but missing from the local `packages` folder.
+
+### Cause
+
+The solution uses legacy `packages.config`; `dotnet restore` does not restore these packages. The missing references were dependencies used by ClosedXML/export code, such as:
+
+- `ExcelNumberFormat`
+- `Irony`
+- `SixLabors.Fonts`
+- `System.IO.Packaging`
+- `XLParser`
+- several `System.*` support assemblies
+
+NuGet also reported `System.IO.Packaging 6.0.0` has known high severity vulnerabilities.
+
+### Fix
+
+- Restored `packages.config` dependencies using `nuget.exe restore`.
+- Upgraded GUI reference from `System.IO.Packaging 6.0.0` to `8.0.1`.
+- Updated:
+  - `src/QuanLyChoThueNha.GUI/QuanLyChoThueNha.GUI.csproj`
+  - `src/QuanLyChoThueNha.GUI/packages.config`
+  - `src/QuanLyChoThueNha.GUI/App.config`
+
+### Verification
+
+- `nuget.exe restore QuanLyChoThueNha.sln -PackagesDirectory packages`: passed, no vulnerability warning after the package update.
+- `dotnet build QuanLyChoThueNha.sln`: passed with `0 Warning(s)` and `0 Error(s)`.
