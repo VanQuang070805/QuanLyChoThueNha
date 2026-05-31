@@ -1,0 +1,76 @@
+# Error handled
+
+## 2026-06-01 - SQL sandbox run from scratch
+
+### Context
+
+Created and ran a sandbox database from `docs/DATABASE/01_create_database.sql` through `docs/DATABASE/13_nhanvien_phanquyen.sql`.
+
+Sandbox database:
+
+```text
+QuanLyChoThueNha_Sandbox_Codex
+```
+
+### Error
+
+The first run failed at:
+
+```text
+docs/DATABASE/02_seed_data.sql
+```
+
+SQL Server reported invalid column names in table `GiaDichVu`:
+
+```text
+DonGiaDien
+DonGiaNuoc
+PhiDichVu
+ApDungTuNgay
+ApDungDenNgay
+```
+
+### Cause
+
+`01_create_database.sql` creates `GiaDichVu` with the current schema:
+
+```text
+GiaDien
+GiaNuoc
+GiaDichVuChung
+NgayApDung
+NgayKetThuc
+```
+
+`02_seed_data.sql` was still inserting data using the old column names.
+
+### Fix
+
+Updated `docs/DATABASE/02_seed_data.sql` to insert into the current columns:
+
+```text
+GiaDien
+GiaNuoc
+GiaDichVuChung
+NgayApDung
+NgayKetThuc
+```
+
+### Verification
+
+After the fix:
+
+- Full sandbox run from `01` to `13`: passed.
+- Migration rerun from `04` to `13`: passed.
+- Sandbox table count: `21`.
+- Sample row counts:
+
+```text
+TaiKhoan: 7
+CanHo: 5
+HopDong: 1
+HoaDonThanhToan: 2
+NhanVienQuyen: 10
+```
+
+No additional SQL error was found in the sandbox process.

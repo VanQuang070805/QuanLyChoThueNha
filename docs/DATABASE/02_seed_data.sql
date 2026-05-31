@@ -72,7 +72,7 @@ VALUES
 ('CH003','TN004',NULL);
 
 INSERT INTO GiaDichVu
-    (MaGiaDichVu, MaToa, DonGiaDien, DonGiaNuoc, PhiDichVu, ApDungTuNgay, ApDungDenNgay, DangApDung)
+    (MaGiaDichVu, MaToa, GiaDien, GiaNuoc, GiaDichVuChung, NgayApDung, NgayKetThuc, DangApDung)
 VALUES
 ('GDV001','TO001',3500,15000,50000,'2025-01-01',NULL,1),
 ('GDV002','TO002',3500,15000,45000,'2025-01-01',NULL,1),
