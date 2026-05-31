@@ -10,6 +10,7 @@ using QuanLyChoThueNha.GUI.Forms.BaoCao;
 using QuanLyChoThueNha.GUI.Forms.HopDong;
 using QuanLyChoThueNha.GUI.Forms.KhachHang;
 using QuanLyChoThueNha.GUI.Forms.NhanVien;
+using QuanLyChoThueNha.GUI.Forms.Shared;
 using QuanLyChoThueNha.GUI.Forms.TaiSan;
 using QuanLyChoThueNha.GUI.Forms.TraNha;
 
@@ -93,6 +94,8 @@ namespace QuanLyChoThueNha.GUI.Forms
 
             panelSidebar.Controls.Add(_menuGroups);
             panelSidebar.Controls.Add(_menuItems);
+
+            AddGuideButton();
 
             if (!laKhach && (laAdmin || qDashboard))
                 AddMenuGroup("dashboard", "Tong quan", new[] { new MenuItemInfo("Dashboard", btnDashboard_Click) });
@@ -218,9 +221,22 @@ namespace QuanLyChoThueNha.GUI.Forms
         private void AddLogoutButton()
         {
             var button = CreateMenuButton("Dang xuat", true);
+            button.Text = "Đăng xuất";
             button.Width = 112;
             button.BackColor = Color.FromArgb(198, 40, 40);
             button.Click += btnDangXuat_Click;
+            _menuGroups.Controls.Add(button);
+        }
+
+        private void AddGuideButton()
+        {
+            var button = CreateMenuButton("Hướng dẫn tôi", true);
+            button.Text = "Hướng dẫn tôi";
+            button.Width = 132;
+            button.BackColor = Color.FromArgb(14, 165, 233);
+            button.ForeColor = Color.White;
+            button.FlatAppearance.BorderColor = Color.FromArgb(186, 230, 253);
+            button.Click += delegate { new frmHuongDanSuDung().ShowDialog(this); };
             _menuGroups.Controls.Add(button);
         }
 

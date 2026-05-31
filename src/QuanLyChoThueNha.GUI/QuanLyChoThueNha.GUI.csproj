@@ -105,6 +105,9 @@
     <Compile Include="Controls\PlaceholderTextBox.cs" />
     <Compile Include="Helpers\EmailNotificationHelper.cs" />
     <Compile Include="Forms\Shared\CrudFormBase.cs" />
+    <Compile Include="Forms\Shared\frmHuongDanSuDung.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\Auth\frmLogin.cs">
       <SubType>Form</SubType>
     </Compile>

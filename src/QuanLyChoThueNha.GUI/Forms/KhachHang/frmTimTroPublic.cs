@@ -11,6 +11,7 @@ using Microsoft.Web.WebView2.WinForms;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.GUI.Forms.Auth;
+using QuanLyChoThueNha.GUI.Forms.Shared;
 using QuanLyChoThueNha.GUI.Helpers;
 using QuanLyChoThueNha.Model.Entities;
 
@@ -106,10 +107,12 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 Padding = new Padding(0, 0, 0, 8),
                 BackColor = Color.FromArgb(248, 249, 252)
             };
+            var btnHuongDan = new MaterialButton { Text = "Hướng dẫn tôi", AutoSize = false, Width = 146, Height = 42, Margin = new Padding(0, 8, 8, 4) };
+            btnHuongDan.Click += delegate { new frmHuongDanSuDung("Public").ShowDialog(this); };
             var title = new MaterialLabel
             {
                 Text = "Tìm trọ đang trống",
-                Width = 360,
+                Width = 300,
                 Height = 52,
                 Font = new Font("Roboto", 15F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
@@ -123,6 +126,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var btnLamMoi = new MaterialButton { Text = "Làm mới", AutoSize = false, Width = 118, Height = 42, Margin = new Padding(0, 8, 8, 4) };
             btnLamMoi.Click += delegate { LamMoiDuLieu(); };
 
+            top.Controls.Add(btnHuongDan);
             top.Controls.Add(title);
             top.Controls.Add(btnLamMoi);
             top.Controls.Add(btnKhach);

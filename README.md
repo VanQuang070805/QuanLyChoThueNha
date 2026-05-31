@@ -169,6 +169,53 @@ dotnet build QuanLyChoThueNha.sln
 
 Nếu build lỗi vì file `.exe` đang bị khóa, đóng ứng dụng đang chạy Debug rồi build lại.
 
+## Hướng dẫn chạy từ đầu cho người mới
+
+Thực hiện theo đúng thứ tự dưới đây trên một máy mới:
+
+1. Cài SQL Server hoặc SQL Server Express.
+2. Cài Visual Studio với workload `.NET desktop development`.
+3. Cài .NET Framework 4.8 Developer Pack.
+4. Cài WebView2 Runtime nếu máy chưa có.
+5. Mở SQL Server Management Studio và chạy script tạo database:
+
+```text
+docs/DATABASE/01_create_database.sql
+docs/DATABASE/02_seed_data.sql
+docs/DATABASE/03_stored_procedures.sql
+docs/DATABASE/05_loai_hoadon_seed.sql
+docs/DATABASE/07_test_accounts.sql
+```
+
+6. Mở `src/QuanLyChoThueNha.GUI/App.config` và `src/QuanLyChoThueNha.DAL/App.config`.
+7. Sửa connection string cho đúng SQL Server trên máy.
+8. Mở `QuanLyChoThueNha.sln` trong Visual Studio.
+9. Restore NuGet packages nếu Visual Studio yêu cầu.
+10. Chọn project `QuanLyChoThueNha.GUI` làm Startup Project.
+11. Build solution.
+12. Run ứng dụng.
+
+Sau khi chạy được, đăng nhập thử bằng tài khoản test:
+
+```text
+admin_test / Admin@123
+nv_test    / Admin@123
+khach_test / Admin@123
+```
+
+Nếu muốn kiểm tra cổng khách trước, mở app và dùng màn hình `Tìm trọ`; khách có thể xem phòng mà chưa cần tài khoản.
+
+## Hướng dẫn sử dụng trong ứng dụng
+
+Ứng dụng có nút `Hướng dẫn tôi` ở góc trên bên trái:
+
+- Tại cổng tìm trọ: hiển thị hướng dẫn cho khách mới, gồm tìm phòng, đặt trước và đăng nhập khách hàng.
+- Sau khi Admin đăng nhập: hiển thị hướng dẫn khởi tạo dữ liệu, phân quyền, báo cáo và kiểm tra audit.
+- Sau khi Nhân viên đăng nhập: hiển thị hướng dẫn xử lý cọc, ký hợp đồng, lập hóa đơn, trả nhà và vi phạm.
+- Sau khi Khách đăng nhập: hiển thị hướng dẫn xem phiếu đặt, hợp đồng, hóa đơn và QR thanh toán.
+
+Mỗi hướng dẫn được hiển thị thành thẻ message riêng. Người dùng chỉ cần đọc thẻ đúng nghiệp vụ đang làm và thao tác theo từng bước từ trên xuống.
+
 ## Luồng nghiệp vụ chính
 
 ### Khách hàng
