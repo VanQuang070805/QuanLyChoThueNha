@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.TaiSan
@@ -29,7 +30,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private DataGridView dgv;
         private MaterialTextBox txtMa;
         private MaterialTextBox txtTen;
-        private MaterialTextBox txtTimKiem;
+        private PlaceholderTextBox txtTimKiem;
         private ComboBox cboThanhPho;
         private ComboBox cboQuan;
         private NumericUpDown numViDo;
@@ -63,12 +64,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32));
 
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
-            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            txtTimKiem = new MaterialTextBox { Dock = DockStyle.Fill, Hint = "Tim theo ten khu vuc, quan/huyen, thanh pho" };
+            var searchPanel = CreateSearchPanel("Tìm kiếm", "Tìm theo tên khu vực, quận/huyện, thành phố");
             txtTimKiem.TextChanged += delegate { TimKiem(); };
-            left.Controls.Add(txtTimKiem, 0, 0);
+            left.Controls.Add(searchPanel, 0, 0);
 
             dgv = new DataGridView
             {
@@ -125,6 +126,40 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private MaterialTextBox CreateTextBox(string hint, bool readOnly)
         {
             return new MaterialTextBox { Dock = DockStyle.Top, Hint = hint, ReadOnly = readOnly };
+        }
+
+        private Control CreateSearchPanel(string label, string placeholder)
+        {
+            var panel = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 12,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                Padding = new Padding(12, 5, 12, 6),
+                BackColor = Color.White
+            };
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = Color.White };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.Controls.Add(new Label
+            {
+                Text = label,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                TextAlign = ContentAlignment.MiddleLeft
+            }, 0, 0);
+            txtTimKiem = new PlaceholderTextBox
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.White,
+                Font = new Font("Segoe UI", 10.5F),
+                Placeholder = placeholder
+            };
+            layout.Controls.Add(txtTimKiem, 0, 1);
+            panel.Controls.Add(layout);
+            return panel;
         }
 
         private ComboBox CreateComboBox()

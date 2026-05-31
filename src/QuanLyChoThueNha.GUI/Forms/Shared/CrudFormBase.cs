@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
+using QuanLyChoThueNha.GUI.Controls;
 
 namespace QuanLyChoThueNha.GUI.Forms.Shared
 {
@@ -66,7 +67,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         private readonly FlowLayoutPanel _commandPanel = new FlowLayoutPanel();
         private readonly ErrorProvider _errorProvider = new ErrorProvider();
         protected readonly DataGridView Grid = new DataGridView();
-        protected readonly TextBox TxtSearch = new TextBox();
+        protected readonly TextBox TxtSearch = new PlaceholderTextBox();
         protected readonly Label LblStatus = new Label();
 
         private FormMode _mode = FormMode.View;
@@ -93,6 +94,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         protected abstract bool DeleteItem(T item, out string error);
 
         protected virtual void AfterGridBound() { }
+
+        protected virtual IEnumerable<string> GridColumnNames()
+        {
+            return _fields.Select(f => f.PropertyName);
+        }
 
         // Goi khi vao trang thai Add (sau save thanh cong, khi bam "Them", khi form load).
         // Override de reset ma tu sinh hoac dien san cac truong co dinh.
@@ -147,31 +153,68 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 RowCount = 1,
-                Padding = new Padding(12, 76, 12, 12)
+                Padding = new Padding(12, 18, 12, 12)
             };
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32));
 
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3 };
-            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             left.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
 
+            var searchBox = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 12,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                Padding = new Padding(12, 4, 12, 6),
+                BackColor = Color.White
+            };
+            var searchLayout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = Color.White };
+            searchLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+            searchLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            searchLayout.Controls.Add(new Label
+            {
+                Text = "Tìm kiếm",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                TextAlign = ContentAlignment.MiddleLeft
+            }, 0, 0);
             TxtSearch.Dock = DockStyle.Fill;
+            TxtSearch.BorderStyle = BorderStyle.None;
+            TxtSearch.Font = new Font("Segoe UI", 10.5F);
+            TxtSearch.BackColor = Color.White;
+            var placeholder = TxtSearch as PlaceholderTextBox;
+            if (placeholder != null) placeholder.Placeholder = "Nhập từ khóa tìm kiếm...";
             TxtSearch.TextChanged += delegate { ReloadData(); };
-            left.Controls.Add(TxtSearch, 0, 0);
+            searchLayout.Controls.Add(TxtSearch, 0, 1);
+            searchBox.Controls.Add(searchLayout);
+            left.Controls.Add(searchBox, 0, 0);
 
             Grid.Dock = DockStyle.Fill;
-            Grid.AutoGenerateColumns = true;
+            Grid.AutoGenerateColumns = false;
             Grid.AllowUserToAddRows = false;
             Grid.AllowUserToDeleteRows = false;
             Grid.ReadOnly = true;
             Grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             Grid.MultiSelect = false;
             Grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            Grid.BackgroundColor = Color.White;
+            Grid.BorderStyle = BorderStyle.FixedSingle;
+            Grid.EnableHeadersVisualStyles = false;
+            Grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(239, 246, 255);
+            Grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(30, 64, 175);
+            Grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            Grid.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
+            Grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            Grid.DefaultCellStyle.SelectionForeColor = Color.FromArgb(17, 24, 39);
+            Grid.RowTemplate.Height = 30;
             Grid.RowHeadersVisible = false;
             Grid.DataBindingComplete += delegate { Grid.ClearSelection(); };
             Grid.SelectionChanged += delegate { BindCurrentToInputs(); };
+            TaoCotGrid();
             left.Controls.Add(Grid, 0, 1);
 
             LblStatus.Dock = DockStyle.Fill;
@@ -185,6 +228,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 ColumnCount = 1,
                 Padding = new Padding(10)
             };
+            right.TabStop = true;
+            right.MouseEnter += delegate { right.Focus(); };
 
             foreach (var field in _fields)
             {
@@ -198,6 +243,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
 
                 var editor = CreateEditor(field);
                 _editors[field.PropertyName] = editor;
+                editor.MouseEnter += delegate { right.Focus(); };
                 right.Controls.Add(editor);
             }
 
@@ -309,6 +355,38 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 Height = field.Multiline ? 66 : 28,
                 ScrollBars = field.Multiline ? ScrollBars.Vertical : ScrollBars.None
             };
+        }
+
+        private void TaoCotGrid()
+        {
+            Grid.Columns.Clear();
+            var fieldByName = _fields.ToDictionary(f => f.PropertyName);
+            foreach (var propertyName in GridColumnNames())
+            {
+                FieldDefinition field;
+                if (!fieldByName.TryGetValue(propertyName, out field)) continue;
+
+                var column = new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = field.PropertyName,
+                    Name = field.PropertyName,
+                    HeaderText = field.Caption,
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                    MinimumWidth = 90
+                };
+
+                var type = Nullable.GetUnderlyingType(field.ValueType ?? GetProperty(field.PropertyName).PropertyType)
+                    ?? (field.ValueType ?? GetProperty(field.PropertyName).PropertyType);
+                if (type == typeof(DateTime))
+                    column.DefaultCellStyle.Format = "dd/MM/yyyy";
+                else if (type == typeof(decimal) || type == typeof(float) || type == typeof(double))
+                {
+                    column.DefaultCellStyle.Format = "N0";
+                    column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+
+                Grid.Columns.Add(column);
+            }
         }
 
         private MaterialButton CreateButton(string text, EventHandler handler = null)

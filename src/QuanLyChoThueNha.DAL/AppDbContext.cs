@@ -23,6 +23,7 @@ namespace QuanLyChoThueNha.DAL
         public DbSet<TaiKhoan>         TaiKhoans         { get; set; }
         public DbSet<Admin>            Admins             { get; set; }
         public DbSet<NhanVienQuanLy>   NhanVienQuanLys    { get; set; }
+        public DbSet<NhanVienQuyen>    NhanVienQuyens     { get; set; }
         public DbSet<KhachThue>        KhachThues         { get; set; }
 
         // ── Tài sản & danh mục ──────────────────────────────────

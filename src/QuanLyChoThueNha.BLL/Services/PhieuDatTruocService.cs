@@ -199,8 +199,10 @@ namespace QuanLyChoThueNha.BLL.Services
                 : phieu.PhuongThucThanhToan;
             phieu.GhiChu = NoiGhiChu(phieu.GhiChu,
                 string.Format("Da xac nhan nhan coc luc {0:dd/MM/yyyy HH:mm}.", DateTime.Now));
+            AuditHelper.GanNguoiThaoTac(phieu);
             _uow.PhieuDatTruocs.Update(phieu);
             canHo.TinhTrang = "DaDatCoc";
+            AuditHelper.GanNguoiThaoTac(canHo);
             _uow.CanHos.Update(canHo);
             _uow.Complete();
             return true;

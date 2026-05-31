@@ -11,6 +11,7 @@ namespace QuanLyChoThueNha.DAL.Interfaces
         IRepository<TaiKhoan>         TaiKhoans         { get; }
         IRepository<Admin>            Admins             { get; }
         IRepository<NhanVienQuanLy>   NhanVienQuanLys    { get; }
+        IRepository<NhanVienQuyen>    NhanVienQuyens     { get; }
         IRepository<KhachThue>        KhachThues         { get; }
         IRepository<KhuVuc>           KhuVucs            { get; }
         IRepository<LoaiCanHo>        LoaiCanHos         { get; }

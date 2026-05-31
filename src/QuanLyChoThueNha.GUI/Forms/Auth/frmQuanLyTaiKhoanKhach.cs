@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.Auth
@@ -39,7 +40,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         private FormMode _mode = FormMode.View;
 
         private DataGridView grid;
-        private MaterialTextBox txtSearch;
+        private PlaceholderTextBox txtSearch;
         private Label lblStatus;
 
         private MaterialTextBox txtMaKhach;
@@ -63,7 +64,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         public frmQuanLyTaiKhoanKhach()
         {
-            Text = "Quan ly Tai khoan Khach thue";
+            Text = "Quản lý tài khoản khách thuê";
             Size = new Size(1180, 700);
             StartPosition = FormStartPosition.CenterScreen;
             BuildLayout();
@@ -77,20 +78,47 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill, ColumnCount = 2,
-                Padding = new Padding(12, 76, 12, 12)
+                Padding = new Padding(12, 18, 12, 12)
             };
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
 
             // Left: search + grid + status
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3 };
-            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             left.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
 
-            txtSearch = new MaterialTextBox { Dock = DockStyle.Fill, Hint = "Tim theo ho ten, CMND, ten dang nhap" };
+            var searchPanel = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 14,
+                BackColor = Color.White,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                Padding = new Padding(14, 8, 14, 8)
+            };
+            var searchLayout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = Color.White };
+            searchLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
+            searchLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            searchLayout.Controls.Add(new Label
+            {
+                Text = "Tìm kiếm",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99)
+            }, 0, 0);
+            txtSearch = new PlaceholderTextBox
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.White,
+                Font = new Font("Segoe UI", 11F),
+                Placeholder = "Tìm theo họ tên, CMND, tên đăng nhập"
+            };
             txtSearch.TextChanged += delegate { FilterGrid(); };
-            left.Controls.Add(txtSearch, 0, 0);
+            searchLayout.Controls.Add(txtSearch, 0, 1);
+            searchPanel.Controls.Add(searchLayout);
+            left.Controls.Add(searchPanel, 0, 0);
 
             grid = new DataGridView
             {
@@ -114,12 +142,12 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                 Padding = new Padding(12, 0, 0, 0)
             };
 
-            txtMaKhach     = Txt("(tu sinh)", true);
-            txtMaTaiKhoan  = Txt("(tu sinh)", true);
-            txtTenDangNhap = Txt("Ten dang nhap", true);  // khong cho doi TDN o day
-            txtHoTen       = Txt("Ho ten", false);
+            txtMaKhach     = Txt("(tự sinh)", true);
+            txtMaTaiKhoan  = Txt("(tự sinh)", true);
+            txtTenDangNhap = Txt("Tên đăng nhập", true);  // khong cho doi TDN o day
+            txtHoTen       = Txt("Họ tên", false);
             txtCmnd        = Txt("CMND/CCCD", false);
-            txtDiaChi      = Txt("Dia chi", false);
+            txtDiaChi      = Txt("Địa chỉ", false);
             dtpNgaySinh    = new DateTimePicker
             {
                 Dock = DockStyle.Top, Format = DateTimePickerFormat.Custom,
@@ -127,35 +155,35 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                 Value = DateTime.Today.AddYears(-18), Enabled = false
             };
             txtEmail = Txt("Email", false);
-            txtSdt   = Txt("So dien thoai", false);
+            txtSdt   = Txt("Số điện thoại", false);
             chkTrangThai = new CheckBox
             {
-                Dock = DockStyle.Top, Text = "Hoat dong", Height = 28, Enabled = false
+                Dock = DockStyle.Top, Text = "Hoạt động", Height = 28, Enabled = false
             };
 
             // Bat dau o View mode - tat tat ca truong sua
             SetEditorsEnabled(false);
 
-            AddField(right, "Ma khach",      txtMaKhach);
-            AddField(right, "Ma tai khoan",  txtMaTaiKhoan);
-            AddField(right, "Ten dang nhap", txtTenDangNhap);
-            AddField(right, "Ho ten *",      txtHoTen);
+            AddField(right, "Mã khách",      txtMaKhach);
+            AddField(right, "Mã tài khoản",  txtMaTaiKhoan);
+            AddField(right, "Tên đăng nhập", txtTenDangNhap);
+            AddField(right, "Họ tên *",      txtHoTen);
             AddField(right, "CMND/CCCD *",   txtCmnd);
-            AddField(right, "Dia chi",       txtDiaChi);
-            AddField(right, "Ngay sinh",     dtpNgaySinh);
+            AddField(right, "Địa chỉ",       txtDiaChi);
+            AddField(right, "Ngày sinh",     dtpNgaySinh);
             AddField(right, "Email",         txtEmail);
-            AddField(right, "So dien thoai", txtSdt);
-            AddField(right, "Trang thai",    chkTrangThai);
+            AddField(right, "Số điện thoại", txtSdt);
+            AddField(right, "Trạng thái",    chkTrangThai);
 
             var commands = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top, AutoSize = true, WrapContents = true,
                 Margin = new Padding(0, 12, 0, 0)
             };
-            btnSua    = Btn("Sua thong tin", BtnSua_Click);
-            btnLamMoi = Btn("Lam moi",       BtnLamMoi_Click);
-            btnKhoa   = Btn("Khoa",          BtnKhoa_Click);
-            btnMoKhoa = Btn("Mo khoa",       BtnMoKhoa_Click);
+            btnSua    = Btn("Sửa thông tin", BtnSua_Click);
+            btnLamMoi = Btn("Làm mới",       BtnLamMoi_Click);
+            btnKhoa   = Btn("Khóa",          BtnKhoa_Click);
+            btnMoKhoa = Btn("Mở khóa",       BtnMoKhoa_Click);
             commands.Controls.Add(btnSua);
             commands.Controls.Add(btnLamMoi);
             commands.Controls.Add(btnKhoa);
@@ -192,8 +220,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         {
             _mode = FormMode.View;
             HideMsg(); SetEditorsEnabled(false);
-            btnSua.Text    = "Sua thong tin";
-            btnLamMoi.Text = "Lam moi";
+            btnSua.Text    = "Sửa thông tin";
+            btnLamMoi.Text = "Làm mới";
             UpdateActionButtons();
         }
 
@@ -208,8 +236,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             txtEmail.ReadOnly    = false;
             txtSdt.ReadOnly      = false;
             dtpNgaySinh.Enabled  = true;
-            btnSua.Text    = "Luu";
-            btnLamMoi.Text = "Huy";
+            btnSua.Text    = "Lưu";
+            btnLamMoi.Text = "Hủy";
             btnKhoa.Enabled   = false;
             btnMoKhoa.Enabled = false;
         }
@@ -239,16 +267,16 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         {
             if (_mode == FormMode.View)
             {
-                if (CurrentVM() == null) { ShowMsg("Chon khach can sua."); return; }
+                if (CurrentVM() == null) { ShowMsg("Chọn khách cần sửa."); return; }
                 EnterEditMode();
                 return;
             }
             // Edit mode -> luu
             var vm = CurrentVM();
-            if (vm == null) { ShowMsg("Mat lua chon. Bam 'Huy' va chon lai."); return; }
+            if (vm == null) { ShowMsg("Mất lựa chọn. Bấm 'Hủy' và chọn lại."); return; }
             var khach = _khachSvc.LayTheoMa(vm.MaKhach);
             if (khach == null) return;
-            if (string.IsNullOrWhiteSpace(txtHoTen.Text)) { ShowMsg("Ho ten khong duoc de trong."); return; }
+            if (string.IsNullOrWhiteSpace(txtHoTen.Text)) { ShowMsg("Họ tên không được để trống."); return; }
             khach.HoTen  = txtHoTen.Text.Trim();
             khach.SoCMND = txtCmnd.Text.Trim();
             khach.DiaChi = txtDiaChi.Text.Trim();
@@ -270,7 +298,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             {
                 var inner = ex;
                 while (inner.InnerException != null) inner = inner.InnerException;
-                ShowMsg("Loi luu du lieu: " + inner.Message);
+                ShowMsg("Lỗi lưu dữ liệu: " + inner.Message);
                 return;
             }
 
@@ -304,7 +332,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         private void ChangeStatus(bool status)
         {
             var vm = CurrentVM();
-            if (vm == null) { ShowMsg("Chon tai khoan."); return; }
+            if (vm == null) { ShowMsg("Chọn tài khoản."); return; }
             string loi;
             try
             {
@@ -365,7 +393,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                     (v.TenDangNhap ?? string.Empty).ToLowerInvariant().Contains(kw)).ToList();
 
             grid.DataSource = new BindingList<KhachTaiKhoanVM>(data);
-            lblStatus.Text = string.Format("So dong: {0}", data.Count);
+            RenameColumns();
+            lblStatus.Text = string.Format("Số dòng: {0}", data.Count);
 
             // To mau dong bi khoa
             foreach (DataGridViewRow row in grid.Rows)
@@ -377,6 +406,24 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
             grid.ClearSelection();
             ClearForm();
+        }
+
+        private void RenameColumns()
+        {
+            Rename("MaKhach", "Mã khách");
+            Rename("MaTaiKhoan", "Mã tài khoản");
+            Rename("TenDangNhap", "Tên đăng nhập");
+            Rename("HoTen", "Họ tên");
+            Rename("SoCMND", "CMND/CCCD");
+            Rename("DiaChi", "Địa chỉ");
+            Rename("NgaySinh", "Ngày sinh");
+            Rename("SoDienThoai", "Số điện thoại");
+            Rename("TrangThai", "Trạng thái");
+        }
+
+        private void Rename(string columnName, string header)
+        {
+            if (grid.Columns.Contains(columnName)) grid.Columns[columnName].HeaderText = header;
         }
 
         private void Grid_SelectionChanged(object sender, EventArgs e)

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
+using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.DAL.Interfaces;
 using QuanLyChoThueNha.DAL.Repositories;
 
@@ -33,12 +35,14 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public virtual void Them(T entity)
         {
+            GanAuditNeuCo(entity);
             Repo.Add(entity);
             _uow.Complete();
         }
 
         public virtual void Sua(T entity)
         {
+            GanAuditNeuCo(entity);
             Repo.Update(entity);
             _uow.Complete();
         }
@@ -50,5 +54,20 @@ namespace QuanLyChoThueNha.BLL.Services
         }
 
         public virtual int DemTatCa() => Repo.Count();
+
+        private static void GanAuditNeuCo(T entity)
+        {
+            if (entity == null || !SessionContext.DaXacThuc) return;
+
+            SetIfExists(entity, "MaNguoiThaoTac", SessionContext.MaNguoiDung);
+            SetIfExists(entity, "VaiTroNguoiThaoTac", SessionContext.VaiTro);
+        }
+
+        private static void SetIfExists(T entity, string propertyName, string value)
+        {
+            var property = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (property == null || !property.CanWrite || property.PropertyType != typeof(string)) return;
+            property.SetValue(entity, value, null);
+        }
     }
 }

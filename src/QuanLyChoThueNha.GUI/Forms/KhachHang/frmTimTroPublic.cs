@@ -9,6 +9,7 @@ using MaterialSkin;
 using MaterialSkin.Controls;
 using Microsoft.Web.WebView2.WinForms;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.GUI.Forms.Auth;
 using QuanLyChoThueNha.GUI.Helpers;
 using QuanLyChoThueNha.Model.Entities;
@@ -33,9 +34,11 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly NumericUpDown _numBanKinh = new NumericUpDown();
         private readonly NumericUpDown _numGiaTu = new NumericUpDown();
         private readonly NumericUpDown _numGiaDen = new NumericUpDown();
-        private readonly MaterialTextBox _txtTimKiem = new MaterialTextBox();
+        private readonly PlaceholderTextBox _txtTimKiem = new PlaceholderTextBox();
         private readonly MaterialLabel _lblCount = new MaterialLabel();
         private readonly WebView2 _mapView = new WebView2();
+        private Panel _detailOverlay;
+        private Panel _detailPopup;
 
         private class FilterOption
         {
@@ -51,7 +54,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         public frmTimTroPublic()
         {
-            Text = "Tim tro";
+            Text = "Tìm trọ";
             Size = new Size(1220, 820);
             StartPosition = FormStartPosition.CenterScreen;
 
@@ -65,9 +68,12 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             BuildLayout();
             NapBoLoc();
-            HienThiBanDoMacDinh();
             TaiDanhSachTro();
-            Resize += delegate { ResizeCards(); };
+            Resize += delegate
+            {
+                ResizeCards();
+                ResizeDetailPopup();
+            };
         }
 
         private void BuildLayout()
@@ -75,71 +81,68 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var shell = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
+                ColumnCount = 1,
                 Padding = new Padding(0, 64, 0, 0),
                 BackColor = Color.FromArgb(248, 249, 252)
             };
-            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 240));
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            shell.Controls.Add(CreateSidebar(), 0, 0);
 
             var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 RowCount = 3,
-                Padding = new Padding(24),
+                Padding = new Padding(20),
                 BackColor = Color.FromArgb(248, 249, 252)
             };
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 70));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 104));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            var top = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4 };
-            top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
-            top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170));
-            top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
-
+            var top = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                WrapContents = true,
+                AutoScroll = false,
+                Padding = new Padding(0, 0, 0, 8),
+                BackColor = Color.FromArgb(248, 249, 252)
+            };
             var title = new MaterialLabel
             {
-                Dock = DockStyle.Fill,
-                Text = "Tim tro dang trong",
+                Text = "Tìm trọ đang trống",
+                Width = 360,
+                Height = 52,
                 Font = new Font("Roboto", 15F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
-                TextAlign = ContentAlignment.MiddleLeft
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(0, 4, 16, 4)
             };
-            var btnKhach = new MaterialButton { Text = "Tai khoan khach", Dock = DockStyle.Fill };
-            btnKhach.Click += delegate { new frmLogin(new[] { "KhachThue" }, "Dang nhap khach hang").Show(); };
-            var btnNoiBo = new MaterialButton { Text = "Cong noi bo", Dock = DockStyle.Fill };
-            btnNoiBo.Click += delegate { new frmLogin(new[] { "Admin", "NhanVien" }, "Dang nhap noi bo").Show(); };
-            var btnLamMoi = new MaterialButton { Text = "Lam moi", Dock = DockStyle.Fill };
+            var btnKhach = new MaterialButton { Text = "Tài khoản khách", AutoSize = false, Width = 168, Height = 42, Margin = new Padding(0, 8, 8, 4) };
+            btnKhach.Click += delegate { new frmLogin(new[] { "KhachThue" }, "Đăng nhập khách hàng").Show(); };
+            var btnNoiBo = new MaterialButton { Text = "Cổng nội bộ", AutoSize = false, Width = 146, Height = 42, Margin = new Padding(0, 8, 8, 4) };
+            btnNoiBo.Click += delegate { new frmLogin(new[] { "Admin", "NhanVien" }, "Đăng nhập nội bộ").Show(); };
+            var btnLamMoi = new MaterialButton { Text = "Làm mới", AutoSize = false, Width = 118, Height = 42, Margin = new Padding(0, 8, 8, 4) };
             btnLamMoi.Click += delegate { LamMoiDuLieu(); };
 
-            top.Controls.Add(title, 0, 0);
-            top.Controls.Add(btnLamMoi, 1, 0);
-            top.Controls.Add(btnKhach, 2, 0);
-            top.Controls.Add(btnNoiBo, 3, 0);
+            top.Controls.Add(title);
+            top.Controls.Add(btnLamMoi);
+            top.Controls.Add(btnKhach);
+            top.Controls.Add(btnNoiBo);
             root.Controls.Add(top, 0, 0);
 
-            var filters = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                WrapContents = false,
-                BackColor = Color.FromArgb(248, 249, 252),
-                Padding = new Padding(0, 14, 0, 0)
-            };
-            _txtTimKiem.Width = 280;
-            _txtTimKiem.Hint = "Tim theo ma, toa, so can";
+            _txtTimKiem.Placeholder = "Tìm theo địa chỉ, khu vực, tòa, mã phòng...";
+            _txtTimKiem.BorderStyle = BorderStyle.None;
+            _txtTimKiem.Font = new Font("Segoe UI", 11F);
+            _txtTimKiem.BackColor = Color.White;
             _txtTimKiem.TextChanged += delegate { TaiDanhSachTro(); };
 
-            SetupCombo(_cboToa, 180);
-            SetupCombo(_cboKhuVuc, 210);
-            SetupCombo(_cboLoai, 180);
+            SetupCombo(_cboToa, 0);
+            SetupCombo(_cboKhuVuc, 0);
+            SetupCombo(_cboLoai, 0);
             _cboKhuVuc.SelectedIndexChanged += delegate { TaiDanhSachTro(); };
             _cboToa.SelectedIndexChanged += delegate { TaiDanhSachTro(); };
             _cboLoai.SelectedIndexChanged += delegate { TaiDanhSachTro(); };
 
-            _numBanKinh.Width = 90;
+            _numBanKinh.Width = 0;
             _numBanKinh.Minimum = 1;
             _numBanKinh.Maximum = 100;
             _numBanKinh.Value = 3;
@@ -150,21 +153,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             _numGiaTu.ValueChanged += delegate { TaiDanhSachTro(); };
             _numGiaDen.ValueChanged += delegate { TaiDanhSachTro(); };
 
-            filters.Controls.Add(_txtTimKiem);
-            filters.Controls.Add(Label("Khu vuc"));
-            filters.Controls.Add(_cboKhuVuc);
-            filters.Controls.Add(Label("Ban kinh km"));
-            filters.Controls.Add(_numBanKinh);
-            filters.Controls.Add(Label("Toa"));
-            filters.Controls.Add(_cboToa);
-            filters.Controls.Add(Label("Loai"));
-            filters.Controls.Add(_cboLoai);
-            filters.Controls.Add(Label("Gia tu"));
-            filters.Controls.Add(_numGiaTu);
-            filters.Controls.Add(Label("Gia den"));
-            filters.Controls.Add(_numGiaDen);
-            filters.Controls.Add(_lblCount);
-            root.Controls.Add(filters, 0, 1);
+            root.Controls.Add(CreateFilterPanel(), 0, 1);
 
             _roomCards.Dock = DockStyle.Fill;
             _roomCards.AutoScroll = true;
@@ -175,19 +164,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             _mapView.Dock = DockStyle.Fill;
             _mapView.DefaultBackgroundColor = Color.White;
 
-            var content = new SplitContainer
-            {
-                Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical
-            };
-            content.Panel1.Controls.Add(_roomCards);
-            content.Panel2.Controls.Add(_mapView);
-            content.Panel1.BackColor = Color.White;
-            content.Panel2.BackColor = Color.White;
-            content.SizeChanged += delegate { CapNhatKhoangChia(content); };
-            root.Controls.Add(content, 0, 2);
-            shell.Controls.Add(root, 1, 0);
+            root.Controls.Add(_roomCards, 0, 2);
+            shell.Controls.Add(root, 0, 0);
             Controls.Add(shell);
+            CreateDetailOverlay();
         }
 
         private Control CreateSidebar()
@@ -249,18 +229,240 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             return button;
         }
 
-        private void CapNhatKhoangChia(SplitContainer content)
+        private void CreateDetailOverlay()
         {
-            const int panel1Min = 280;
-            const int panel2Min = 260;
-            if (content.Width <= panel1Min + panel2Min + content.SplitterWidth)
-                return;
+            _detailOverlay = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(245, 247, 250),
+                Visible = false
+            };
+            _detailOverlay.Click += delegate { CloseDetailPopup(); };
+            Controls.Add(_detailOverlay);
+            _detailOverlay.BringToFront();
+        }
 
-            var desired = Math.Max(panel1Min,
-                Math.Min(content.Width - panel2Min - content.SplitterWidth,
-                    (int)(content.Width * 0.62)));
-            if (content.SplitterDistance != desired)
-                content.SplitterDistance = desired;
+        private void ResizeDetailPopup()
+        {
+            if (_detailPopup == null || !_detailPopup.Visible) return;
+            var width = Math.Min(1040, Math.Max(680, ClientSize.Width - 120));
+            var height = Math.Min(560, Math.Max(420, ClientSize.Height - 150));
+            _detailPopup.Size = new Size(width, height);
+            _detailPopup.Location = new Point((ClientSize.Width - width) / 2, (ClientSize.Height - height) / 2 + 28);
+        }
+
+        private void CloseDetailPopup()
+        {
+            if (_detailOverlay == null) return;
+            if (_mapView.Parent != null)
+                _mapView.Parent.Controls.Remove(_mapView);
+            _detailOverlay.Controls.Clear();
+            _detailPopup = null;
+            _detailOverlay.Visible = false;
+        }
+
+        private void ShowDetailPopup(CanHo room, bool dangChoCoc)
+        {
+            if (_detailOverlay == null) return;
+            if (_mapView.Parent != null)
+                _mapView.Parent.Controls.Remove(_mapView);
+            _detailOverlay.Controls.Clear();
+            _detailOverlay.Visible = true;
+            _detailOverlay.BringToFront();
+
+            var coTheDat = room.TinhTrang == "Trong" && !dangChoCoc;
+            var trangThaiHienThi = dangChoCoc ? "Đang chờ cọc" :
+                room.TinhTrang == "Trong" ? "Còn trống" :
+                room.TinhTrang == "DangThue" ? "Đang cho thuê" : room.TinhTrang;
+
+            _detailPopup = new Panel
+            {
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            _detailPopup.Click += delegate { };
+            _detailOverlay.Controls.Add(_detailPopup);
+
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                Padding = new Padding(18),
+                BackColor = Color.White
+            };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
+            _detailPopup.Controls.Add(layout);
+
+            var info = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 6, BackColor = Color.White };
+            info.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            info.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
+            info.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
+            info.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            info.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
+            info.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+
+            info.Controls.Add(new Label
+            {
+                Text = string.Format("{0} - Căn {1}", LayTenToa(room.MaToa), room.SoCanHo),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39)
+            }, 0, 0);
+            info.Controls.Add(InfoCard("Vị trí", LayDiaChiPhong(room)), 0, 1);
+            info.Controls.Add(InfoCard("Thông tin phòng",
+                "Trạng thái: " + trangThaiHienThi + Environment.NewLine +
+                string.Format("Loại {0} | Tầng {1} | {2:N1} m2", room.MaLoai, room.TangSo, room.DienTich) + Environment.NewLine +
+                string.Format("Giá {0:N0} VNĐ - Cọc {1:N0} VNĐ", room.GiaThueNiemYet, room.TienCocNiemYet)), 0, 2);
+            info.Controls.Add(InfoCard("Tiện nghi và mô tả",
+                LayTienNghiHienThi(room.MaCanHo) + Environment.NewLine +
+                (string.IsNullOrWhiteSpace(room.MoTa) ? "Phòng đang sẵn sàng cho thuê." : room.MoTa)), 0, 3);
+
+            var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = false };
+            var btnDat = new MaterialButton { Text = coTheDat ? "Đặt trước" : "Chưa thể đặt", AutoSize = false, Width = 130, Height = 42, Enabled = coTheDat };
+            btnDat.Click += delegate
+            {
+                CloseDetailPopup();
+                DangKyVaDatTruoc(room);
+            };
+            var btnDong = new MaterialButton { Text = "Đóng", AutoSize = false, Width = 90, Height = 42 };
+            btnDong.Click += delegate { CloseDetailPopup(); };
+            actions.Controls.Add(btnDat);
+            actions.Controls.Add(btnDong);
+            info.Controls.Add(actions, 0, 4);
+            info.Controls.Add(new Label { Text = "Bấm bên ngoài khung để đóng chi tiết.", Dock = DockStyle.Fill, ForeColor = Color.FromArgb(107, 114, 128) }, 0, 5);
+
+            var mapBox = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(248, 249, 252), Padding = new Padding(0) };
+            mapBox.Controls.Add(_mapView);
+            layout.Controls.Add(info, 0, 0);
+            layout.Controls.Add(mapBox, 1, 0);
+            ResizeDetailPopup();
+            HienThiBanDoToa(room);
+        }
+
+        private Control InfoCard(string title, string content)
+        {
+            var card = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 12,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(12),
+                Margin = new Padding(0, 0, 12, 10)
+            };
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = card.BackColor };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.Controls.Add(new Label
+            {
+                Text = title,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(37, 99, 235)
+            }, 0, 0);
+            layout.Controls.Add(new Label
+            {
+                Text = content,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9.5F),
+                ForeColor = Color.FromArgb(30, 41, 59),
+                AutoEllipsis = true
+            }, 0, 1);
+            card.Controls.Add(layout);
+            return card;
+        }
+
+        private Control CreateFilterPanel()
+        {
+            var card = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Padding = new Padding(14, 8, 14, 8),
+                Margin = new Padding(0, 4, 0, 10),
+                Radius = 14,
+                BorderColor = Color.FromArgb(226, 232, 240)
+            };
+
+            var grid = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 8,
+                RowCount = 2,
+                BackColor = Color.White
+            };
+            grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+            grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 13));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 124));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 124));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 82));
+
+            AddFilterCell(grid, "Tìm kiếm", _txtTimKiem, 0);
+            AddFilterCell(grid, "Khu vực", _cboKhuVuc, 1);
+            AddFilterCell(grid, "Bán kính", _numBanKinh, 2);
+            AddFilterCell(grid, "Tòa", _cboToa, 3);
+            AddFilterCell(grid, "Loại phòng", _cboLoai, 4);
+            AddFilterCell(grid, "Giá từ", _numGiaTu, 5);
+            AddFilterCell(grid, "Giá đến", _numGiaDen, 6);
+
+            grid.Controls.Add(new Label
+            {
+                Text = "Kết quả",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                TextAlign = ContentAlignment.MiddleLeft
+            }, 7, 0);
+            _lblCount.Dock = DockStyle.Fill;
+            _lblCount.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            _lblCount.ForeColor = Color.FromArgb(4, 86, 197);
+            _lblCount.TextAlign = ContentAlignment.MiddleLeft;
+            grid.Controls.Add(_lblCount, 7, 1);
+
+            card.Controls.Add(grid);
+            return card;
+        }
+
+        private void AddFilterCell(TableLayoutPanel grid, string label, Control editor, int column)
+        {
+            grid.Controls.Add(new Label
+            {
+                Text = label,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(0, 0, 10, 0)
+            }, column, 0);
+            var inputShell = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 9,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                BorderThickness = 1,
+                BackColor = Color.White,
+                Padding = new Padding(10, 3, 10, 3),
+                Margin = new Padding(0, 0, 12, 0)
+            };
+            editor.Dock = DockStyle.Fill;
+            editor.Margin = new Padding(0);
+            if (editor is ComboBox)
+            {
+                ((ComboBox)editor).FlatStyle = FlatStyle.Flat;
+                editor.BackColor = Color.White;
+            }
+            if (editor is NumericUpDown)
+            {
+                editor.BackColor = Color.White;
+            }
+            inputShell.Controls.Add(editor);
+            grid.Controls.Add(inputShell, column, 1);
         }
 
         private Label Label(string text)
@@ -295,7 +497,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             _cboKhuVuc.DisplayMember = "Display";
             _cboKhuVuc.ValueMember = "Value";
-            var khuVucOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tat ca khu vuc") };
+            var khuVucOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tất cả khu vực") };
             khuVucOptions.AddRange(_khuVucService.LayTatCa()
                 .OrderBy(k => k.TenKhuVuc)
                 .Select(k => new FilterOption(k.MaKhuVuc, k.TenKhuVuc)));
@@ -304,7 +506,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             _cboToa.DisplayMember = "Display";
             _cboToa.ValueMember = "Value";
-            var toaOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tat ca toa") };
+            var toaOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tất cả tòa") };
             toaOptions.AddRange(_toaService.LayTatCa()
                 .OrderBy(t => t.TenToa)
                 .Select(t => new FilterOption(t.MaToa, t.TenToa)));
@@ -313,7 +515,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             _cboLoai.DisplayMember = "Display";
             _cboLoai.ValueMember = "Value";
-            var loaiOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tat ca loai") };
+            var loaiOptions = new List<FilterOption> { new FilterOption(string.Empty, "Tất cả loại") };
             loaiOptions.AddRange(_loaiService.LayTatCa()
                 .OrderBy(l => l.TenLoai)
                 .Select(l => new FilterOption(l.MaLoai, l.TenLoai)));
@@ -397,13 +599,13 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .ThenBy(c => c.MaToa)
                 .ThenBy(c => c.SoCanHo)
                 .ToList();
-            _lblCount.Text = string.Format("{0:N0} phong", rooms.Count);
+            _lblCount.Text = string.Format("{0:N0} phòng", rooms.Count);
 
             if (rooms.Count == 0)
             {
                 _roomCards.Controls.Add(new Label
                 {
-                    Text = "Khong co phong phu hop.",
+                    Text = "Không có phòng phù hợp.",
                     AutoSize = true,
                     Padding = new Padding(16)
                 });
@@ -439,21 +641,27 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var mauNen = coTheDat ? Color.White :
                 room.TinhTrang == "DangThue" ? Color.FromArgb(255, 247, 237) :
                 Color.FromArgb(239, 246, 255);
-            var mauVien = coTheDat ? Color.FromArgb(229, 231, 235) :
+            var mauVien = coTheDat ? Color.FromArgb(34, 197, 94) :
                 room.TinhTrang == "DangThue" ? Color.FromArgb(251, 146, 60) :
                 Color.FromArgb(96, 165, 250);
-            var trangThaiHienThi = dangChoCoc ? "Dang cho coc" :
-                room.TinhTrang == "Trong" ? "Con trong" :
-                room.TinhTrang == "DangThue" ? "Dang cho thue" : room.TinhTrang;
+            var mauTag = coTheDat ? Color.FromArgb(22, 163, 74) :
+                room.TinhTrang == "DangThue" ? Color.FromArgb(234, 88, 12) :
+                Color.FromArgb(37, 99, 235);
+            var trangThaiHienThi = dangChoCoc ? "Đang chờ cọc" :
+                room.TinhTrang == "Trong" ? "Còn trống" :
+                room.TinhTrang == "DangThue" ? "Đang cho thuê" : room.TinhTrang;
 
-            var card = new Panel
+            var card = new RoundedPanel
             {
                 Height = 330,
                 Width = 330,
-                Margin = new Padding(4, 4, 12, 12),
-                BorderStyle = BorderStyle.FixedSingle,
+                Margin = new Padding(4, 4, 18, 18),
                 BackColor = mauNen,
-                Tag = "room-card"
+                Tag = "room-card",
+                Radius = 14,
+                BorderColor = coTheDat ? Color.FromArgb(148, 163, 184) : mauVien,
+                BorderThickness = 2,
+                Padding = new Padding(2)
             };
 
             var image = new PictureBox
@@ -465,6 +673,22 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             };
             GanAnh(image, room.MaCanHo);
             card.Controls.Add(image);
+
+            var status = new Label
+            {
+                Text = trangThaiHienThi,
+                AutoSize = false,
+                Width = 104,
+                Height = 26,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = mauTag,
+                Location = new Point(card.Width - 116, 10),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            card.Controls.Add(status);
+            status.BringToFront();
 
             var body = new TableLayoutPanel
             {
@@ -486,57 +710,105 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             }, 0, 0);
             body.Controls.Add(new Label
             {
-                Text = string.Format("{0} | Tang {1} | {2:N1} m2 | {3}",
-                    room.MaLoai, room.TangSo, room.DienTich, trangThaiHienThi),
+                Text = string.Format("{0} | Tầng {1} | {2:N1} m2 | {3}",
+                    room.MaLoai, room.TangSo, room.DienTich, room.MaCanHo),
                 Dock = DockStyle.Fill,
                 ForeColor = mauVien
             }, 0, 1);
             body.Controls.Add(new Label
             {
-                Text = string.Format("Gia {0:N0} - Coc {1:N0}", room.GiaThueNiemYet, room.TienCocNiemYet),
+                Text = string.Format("Giá {0:N0} VNĐ - Cọc {1:N0} VNĐ", room.GiaThueNiemYet, room.TienCocNiemYet),
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(0, 105, 92)
             }, 0, 2);
             body.Controls.Add(new Label
             {
-                Text = string.IsNullOrWhiteSpace(room.MoTa) ? "Phong dang san sang cho thue." : room.MoTa,
+                Text = string.IsNullOrWhiteSpace(room.MoTa) ? "Phòng đang sẵn sàng cho thuê." : room.MoTa,
                 Dock = DockStyle.Fill,
                 AutoEllipsis = true
             }, 0, 3);
 
-            var btnDatTruoc = new MaterialButton
+            var btnDatTruoc = new RoundedButton
             {
-                Text = coTheDat ? "Lien he dat truoc" : "Xem vi tri",
-                Dock = DockStyle.Left,
-                AutoSize = true,
-                Enabled = true
+                Text = "Chi tiết",
+                Width = 104,
+                Height = 38,
+                Enabled = true,
+                Radius = 10,
+                BackColor = Color.FromArgb(37, 99, 235),
+                BorderColor = Color.FromArgb(37, 99, 235)
             };
-            btnDatTruoc.Click += delegate
-            {
-                HienThiBanDoToa(room);
-                if (coTheDat)
-                    DangKyVaDatTruoc(room);
-            };
-            var footer = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
+            btnDatTruoc.Click += delegate { ShowDetailPopup(room, dangChoCoc); };
+            var footer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
+            footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, coTheDat ? 232 : 112));
             footer.Controls.Add(new Label
             {
                 Text = LayTienNghiHienThi(room.MaCanHo),
                 AutoSize = false,
-                Width = 190,
-                Height = 36,
+                Dock = DockStyle.Fill,
                 AutoEllipsis = true
-            });
-            footer.Controls.Add(btnDatTruoc);
+            }, 0, 0);
+            var actionPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Margin = new Padding(0)
+            };
+            actionPanel.Controls.Add(btnDatTruoc);
+            if (coTheDat)
+            {
+                var btnDatNhanh = new RoundedButton
+                {
+                    Text = "Đặt nhanh",
+                    Width = 108,
+                    Height = 38,
+                    Radius = 10,
+                    BackColor = Color.FromArgb(22, 163, 74),
+                    BorderColor = Color.FromArgb(22, 163, 74),
+                    Margin = new Padding(0, 0, 8, 0)
+                };
+                btnDatNhanh.Click += delegate { DangKyVaDatTruoc(room); };
+                actionPanel.Controls.Add(btnDatNhanh);
+            }
+            footer.Controls.Add(actionPanel, 1, 0);
             body.Controls.Add(footer, 0, 4);
             card.Controls.Add(body);
             body.BringToFront();
+            status.BringToFront();
+            WireDetailClick(card, room, dangChoCoc, actionPanel);
             return card;
+        }
+
+        private void WireDetailClick(Control parent, CanHo room, bool dangChoCoc, Control excluded)
+        {
+            foreach (Control child in parent.Controls)
+            {
+                if (child == excluded) continue;
+                child.Cursor = Cursors.Hand;
+                child.Click += delegate { ShowDetailPopup(room, dangChoCoc); };
+                WireDetailClick(child, room, dangChoCoc, excluded);
+            }
+            parent.Cursor = Cursors.Hand;
+            parent.Click += delegate { ShowDetailPopup(room, dangChoCoc); };
         }
 
         private string LayTenToa(string maToa)
         {
             var toa = _toaService.LayTheoMa(maToa);
             return toa == null || string.IsNullOrWhiteSpace(toa.TenToa) ? maToa : toa.TenToa;
+        }
+
+        private string LayDiaChiPhong(CanHo room)
+        {
+            if (room == null) return "Đang cập nhật vị trí.";
+            var toa = _toaService.LayTheoMa(room.MaToa);
+            KhuVuc khuVuc = null;
+            if (toa != null && !string.IsNullOrWhiteSpace(toa.MaKhuVuc))
+                khuVuc = _khuVucService.LayTheoMa(toa.MaKhuVuc);
+            var address = DiaChiDayDu(toa, khuVuc);
+            return string.IsNullOrWhiteSpace(address) ? "Đang cập nhật vị trí." : address;
         }
 
         private string LayTienNghiHienThi(string maCanHo)
@@ -553,7 +825,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .Where(t => !string.IsNullOrWhiteSpace(t))
                 .Take(4)
                 .ToList();
-            return names.Count == 0 ? "Tien nghi: dang cap nhat" : "Tien nghi: " + string.Join(", ", names);
+            return names.Count == 0 ? "Tiện nghi: đang cập nhật" : "Tiện nghi: " + string.Join(", ", names);
         }
 
         private bool TrongBanKinhKhuVuc(CanHo room, string selectedMaKhuVuc, KhuVuc selectedKhuVuc,
@@ -607,7 +879,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 using (var brush = new SolidBrush(Color.FromArgb(80, 98, 112)))
                 using (var font = new Font("Segoe UI", 16F, FontStyle.Bold))
                 {
-                    var text = "NHA TRO";
+                    var text = "NHÀ TRỌ";
                     var size = g.MeasureString(text, font);
                     g.DrawString(text, font, brush, (bitmap.Width - size.Width) / 2, (bitmap.Height - size.Height) / 2);
                 }
@@ -669,8 +941,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 <body>
   <div class=""empty"">
     <div class=""box"">
-      <div class=""title"">Ban do toa nha</div>
-      <div class=""text"">Danh sach dang hien tat ca phong. Ban do chi hien khi khach bam vao mot phong de xem/len he dat truoc.</div>
+      <div class=""title"">Bản đồ tòa nhà</div>
+      <div class=""text"">Danh sách đang hiển thị tất cả phòng. Bản đồ chỉ hiện khi khách bấm vào một phòng để xem chi tiết hoặc đặt trước.</div>
     </div>
   </div>
 </body>
@@ -683,7 +955,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var fallbackLat = khuVuc != null && khuVuc.ViDo.HasValue ? khuVuc.ViDo.Value : 10.762622;
             var fallbackLng = khuVuc != null && khuVuc.KinhDo.HasValue ? khuVuc.KinhDo.Value : 106.660172;
             var popup = string.Format(
-                "<b>{0} - Can {1}</b><br/>Dia chi: {2}<br/>Gia: {3:N0} d<br/>Trang thai: {4}",
+                "<b>{0} - Căn {1}</b><br/>Địa chỉ: {2}<br/>Giá: {3:N0} đ<br/>Trạng thái: {4}",
                 HtmlEncode(toa.TenToa),
                 room.SoCanHo,
                 HtmlEncode(address),
@@ -702,7 +974,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
   </style>
 </head>
 <body>
-  <div class=""notice"">Dang hien vi tri: <b>" + HtmlEncode(toa.TenToa) + @"</b><br/>" + HtmlEncode(address) + @"</div>
+  <div class=""notice"">Đang hiển thị vị trí: <b>" + HtmlEncode(toa.TenToa) + @"</b><br/>" + HtmlEncode(address) + @"</div>
   <div id=""map""></div>
   <script src=""https://unpkg.com/leaflet@1.9.4/dist/leaflet.js""></script>
   <script>
@@ -761,13 +1033,23 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private void ResizeCards()
         {
             if (_roomCards.Width <= 0) return;
-            var columns = Math.Max(1, _roomCards.ClientSize.Width / 340);
-            var width = Math.Max(280, (_roomCards.ClientSize.Width - (columns * 18)) / columns);
+            var cardCount = _roomCards.Controls.Cast<Control>().Count(c => (c.Tag as string) == "room-card");
+            if (cardCount == 0) return;
+
+            var scrollbar = _roomCards.VerticalScroll.Visible ? SystemInformation.VerticalScrollBarWidth : 0;
+            var available = Math.Max(320, _roomCards.ClientSize.Width - scrollbar - 18);
+            var minCardWidth = 318;
+            var gap = 18;
+            var columns = Math.Max(1, available / minCardWidth);
+            columns = Math.Min(columns, cardCount);
+            var width = Math.Max(300, (available - ((columns - 1) * gap)) / columns - 6);
+
             foreach (Control control in _roomCards.Controls)
             {
                 if ((control.Tag as string) == "room-card")
                     control.Width = width;
             }
+            _roomCards.PerformLayout();
         }
 
         private void DangKyVaDatTruoc(CanHo room)
@@ -779,7 +1061,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 if (!_khachThueService.TaoKhachKemTaiKhoan(dialog.Khach, dialog.TenDangNhap,
                         dialog.MatKhau, dialog.Email, dialog.SoDienThoai, out loi))
                 {
-                    MessageBox.Show(loi, "Khong the tao tai khoan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(loi, "Không thể tạo tài khoản", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -795,7 +1077,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
                 if (!_phieuDatTruocService.TaoPhieu(phieu, out loi))
                 {
-                    MessageBox.Show(loi, "Khong the tao phieu dat truoc", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(loi, "Không thể tạo phiếu đặt trước", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -808,19 +1090,19 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 var message = new StringBuilder();
                 message.AppendLine("Da tao tai khoan va phieu dat truoc.");
                 message.AppendLine();
-                message.AppendLine("Ten dang nhap: " + dialog.TenDangNhap);
-                message.AppendLine("Mat khau tam: " + dialog.MatKhau);
-                message.AppendLine("Ma khach: " + dialog.Khach.MaKhach);
-                message.AppendLine("Ma phieu: " + phieu.MaPhieuDatTruoc);
-                message.AppendLine("Ma phong: " + room.MaCanHo);
-                message.AppendLine("Tien coc: " + dialog.TienCoc.ToString("N0"));
-                message.AppendLine("Noi dung CK: " + noiDungChuyenKhoan);
+                message.AppendLine("Tên đăng nhập: " + dialog.TenDangNhap);
+                message.AppendLine("Mật khẩu tạm: " + dialog.MatKhau);
+                message.AppendLine("Mã khách: " + dialog.Khach.MaKhach);
+                message.AppendLine("Mã phiếu: " + phieu.MaPhieuDatTruoc);
+                message.AppendLine("Mã phòng: " + room.MaCanHo);
+                message.AppendLine("Tiền cọc: " + dialog.TienCoc.ToString("N0"));
+                message.AppendLine("Nội dung CK: " + noiDungChuyenKhoan);
                 message.AppendLine(emailStatus);
                 Clipboard.SetText(message.ToString());
-                MessageBox.Show(message + "\nThong tin dang nhap va dat coc da duoc copy.",
-                    "Dat truoc thanh cong", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                using (var qr = new frmQrThanhToan("QR dat coc phong", phieu.MaPhieuDatTruoc,
-                    "Phong " + room.MaCanHo, dialog.TienCoc, noiDungChuyenKhoan))
+                MessageBox.Show(message + "\nThông tin đăng nhập và đặt cọc đã được copy.",
+                    "Đặt trước thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                using (var qr = new frmQrThanhToan("QR đặt cọc phòng", phieu.MaPhieuDatTruoc,
+                    "Phòng " + room.MaCanHo, dialog.TienCoc, noiDungChuyenKhoan))
                 {
                     qr.ShowDialog(this);
                 }

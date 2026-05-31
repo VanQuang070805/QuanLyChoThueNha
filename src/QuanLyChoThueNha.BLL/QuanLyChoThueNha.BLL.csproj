@@ -78,6 +78,7 @@
     <Compile Include="Services\PhieuDatTruocService.cs" />
     <Compile Include="Services\HopDongService.cs" />
     <Compile Include="Services\EmailLogService.cs" />
+    <Compile Include="Services\NhanVienPhanQuyenService.cs" />
     <Compile Include="Services\BaoCaoService.cs" />
   </ItemGroup>
   <ItemGroup>

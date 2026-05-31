@@ -79,11 +79,11 @@ namespace QuanLyChoThueNha.GUI.Forms
 
             this.panelSidebar.BackColor = System.Drawing.Color.FromArgb(25, 118, 210);
             this.panelSidebar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panelSidebar.Height = 124;
+            this.panelSidebar.Height = 88;
             this.panelSidebar.AutoScroll = true;
             this.panelSidebar.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
             this.panelSidebar.WrapContents = true;
-            this.panelSidebar.Padding = new System.Windows.Forms.Padding(12, 72, 12, 8);
+            this.panelSidebar.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
 
             this.panelNoidung.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelNoidung.BackColor = System.Drawing.SystemColors.Control;

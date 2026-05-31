@@ -110,6 +110,7 @@ docs/DATABASE/09_khuvuc_toado.sql
 docs/DATABASE/10_unicode_text_columns.sql
 docs/DATABASE/11_phieu_dat_truoc_coc_email_log.sql
 docs/DATABASE/12_repair_unicode_seed_data.sql
+docs/DATABASE/13_nhanvien_phanquyen.sql
 ```
 
 ### Cap nhat database cu
@@ -123,6 +124,7 @@ docs/DATABASE/09_khuvuc_toado.sql
 docs/DATABASE/10_unicode_text_columns.sql
 docs/DATABASE/11_phieu_dat_truoc_coc_email_log.sql
 docs/DATABASE/12_repair_unicode_seed_data.sql
+docs/DATABASE/13_nhanvien_phanquyen.sql
 ```
 
 ## Cau hinh email va thanh toan
@@ -251,4 +253,3 @@ Kiem thu thu cong nen di qua cac buoc:
 - Khong commit app password, token SMTP, thong tin ngan hang ca nhan hoac file rieng tu.
 - Thu muc `private/` chi nen dung cho cau hinh local.
 - Neu da tung commit thong tin nhay cam, can rotate/revoke thong tin do tren nha cung cap.
-

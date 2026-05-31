@@ -31,7 +31,10 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             lblTieuDe.Text = portalName;
             if (_allowedRoles != null)
             {
-                lblHuongDan.Text = "Dành cho Admin/Nhân viên. Đăng nhập để xử lý phiếu đặt trước, hợp đồng, hóa đơn, email và tài khoản khách.";
+                if (_allowedRoles.Length == 1 && _allowedRoles[0] == "KhachThue")
+                    lblHuongDan.Text = "Dành cho khách thuê. Đăng nhập để xem phiếu đặt trước, hợp đồng và hóa đơn của bạn.";
+                else
+                    lblHuongDan.Text = "Dành cho Admin/Nhân viên. Đăng nhập để xử lý phiếu đặt trước, hợp đồng, hóa đơn, email và tài khoản khách.";
                 btnThoat.Text = "ĐÓNG CỔNG";
             }
             else

@@ -76,6 +76,12 @@
     <Reference Include="ClosedXML">
       <HintPath>..\packages\ClosedXML.0.102.2\lib\netstandard2.0\ClosedXML.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="DocumentFormat.OpenXml">
+      <HintPath>..\..\packages\DocumentFormat.OpenXml.2.19.0\lib\net46\DocumentFormat.OpenXml.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -94,6 +100,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="Controls\RoundedPanel.cs" />
+    <Compile Include="Controls\RoundedButton.cs" />
+    <Compile Include="Controls\PlaceholderTextBox.cs" />
     <Compile Include="Helpers\EmailNotificationHelper.cs" />
     <Compile Include="Forms\Shared\CrudFormBase.cs" />
     <Compile Include="Forms\Auth\frmLogin.cs">
@@ -106,6 +115,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\Auth\frmQuanLyTaiKhoanKhach.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Auth\frmPhanQuyenNhanVien.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\frmMain.cs">

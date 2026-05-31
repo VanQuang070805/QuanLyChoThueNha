@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.HopDong
@@ -18,7 +19,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         private FormMode _mode = FormMode.View;
 
         private DataGridView grid;
-        private MaterialTextBox txtSearch;
+        private PlaceholderTextBox txtSearch;
         private MaterialTextBox txtMaKhach;
         private MaterialTextBox txtMaTaiKhoan;
         private MaterialTextBox txtHoTen;
@@ -37,7 +38,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         public frmKhachThue()
         {
-            Text = "Quan ly Khach thue";
+            Text = "Quản lý khách thuê";
             Size = new Size(1180, 700);
             StartPosition = FormStartPosition.CenterParent;
             _errors.BlinkStyle = ErrorBlinkStyle.NeverBlink;
@@ -51,22 +52,45 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill, ColumnCount = 2,
-                Padding = new Padding(12, 76, 12, 12)
+                Padding = new Padding(12, 18, 12, 12)
             };
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
 
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
-            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            txtSearch = new MaterialTextBox
+            var searchPanel = new RoundedPanel
             {
                 Dock = DockStyle.Fill,
-                Hint = "Tim theo ho ten, CMND/CCCD, tai khoan"
+                Radius = 14,
+                BackColor = Color.White,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                Padding = new Padding(14, 8, 14, 8)
+            };
+            var searchLayout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = Color.White };
+            searchLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
+            searchLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            searchLayout.Controls.Add(new Label
+            {
+                Text = "Tìm kiếm",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99)
+            }, 0, 0);
+            txtSearch = new PlaceholderTextBox
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.White,
+                Font = new Font("Segoe UI", 11F),
+                Placeholder = "Tìm theo họ tên, CMND/CCCD, tài khoản"
             };
             txtSearch.TextChanged += delegate { ReloadData(); };
-            left.Controls.Add(txtSearch, 0, 0);
+            searchLayout.Controls.Add(txtSearch, 0, 1);
+            searchPanel.Controls.Add(searchLayout);
+            left.Controls.Add(searchPanel, 0, 0);
 
             grid = new DataGridView
             {
@@ -89,16 +113,16 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 Padding = new Padding(12, 0, 0, 0)
             };
 
-            txtMaKhach    = Txt("(tu sinh)", true);
-            txtMaTaiKhoan = Txt("(tu sinh)", true);
-            txtHoTen      = Txt("Ho ten khach", false);
-            txtCmnd       = Txt("9 hoac 12 so", false);
-            txtDiaChi     = Txt("Dia chi", false);
-            txtTenDangNhap = Txt("Ten dang nhap", false);
-            txtMatKhau    = Txt("Mat khau", false);
+            txtMaKhach    = Txt("(tự sinh)", true);
+            txtMaTaiKhoan = Txt("(tự sinh)", true);
+            txtHoTen      = Txt("Họ tên khách", false);
+            txtCmnd       = Txt("9 hoặc 12 số", false);
+            txtDiaChi     = Txt("Địa chỉ", false);
+            txtTenDangNhap = Txt("Tên đăng nhập", false);
+            txtMatKhau    = Txt("Mật khẩu", false);
             txtMatKhau.Password = true;
             txtEmail      = Txt("Email", false);
-            txtSdt        = Txt("So dien thoai", false);
+            txtSdt        = Txt("Số điện thoại", false);
 
             dtpNgaySinh = new DateTimePicker
             {
@@ -112,25 +136,25 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             // Bat dau tat ca truong co the sua (se duoc bat khi vao Add/Edit mode)
             SetEditorsEnabled(false);
 
-            AddField(right, "Ma khach",              txtMaKhach);
-            AddField(right, "Ma tai khoan",           txtMaTaiKhoan);
-            AddField(right, "Ho ten *",               txtHoTen);
+            AddField(right, "Mã khách",              txtMaKhach);
+            AddField(right, "Mã tài khoản",           txtMaTaiKhoan);
+            AddField(right, "Họ tên *",               txtHoTen);
             AddField(right, "CMND/CCCD *",            txtCmnd);
-            AddField(right, "Dia chi",                txtDiaChi);
-            AddField(right, "Ngay sinh",              dtpNgaySinh);
-            AddField(right, "Ten dang nhap * (moi)",  txtTenDangNhap);
-            AddField(right, "Mat khau * (moi)",       txtMatKhau);
+            AddField(right, "Địa chỉ",                txtDiaChi);
+            AddField(right, "Ngày sinh",              dtpNgaySinh);
+            AddField(right, "Tên đăng nhập * (mới)",  txtTenDangNhap);
+            AddField(right, "Mật khẩu * (mới)",       txtMatKhau);
             AddField(right, "Email",                  txtEmail);
-            AddField(right, "So dien thoai",          txtSdt);
+            AddField(right, "Số điện thoại",          txtSdt);
 
             var commands = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top, AutoSize = true, WrapContents = true,
                 Margin = new Padding(0, 12, 0, 0)
             };
-            btnThem   = Btn("Them khach",  BtnThem_Click);
-            btnSua    = Btn("Sua thong tin", BtnSua_Click);
-            btnLamMoi = Btn("Lam moi",      BtnLamMoi_Click);
+            btnThem   = Btn("Thêm khách",  BtnThem_Click);
+            btnSua    = Btn("Sửa thông tin", BtnSua_Click);
+            btnLamMoi = Btn("Làm mới",      BtnLamMoi_Click);
             commands.Controls.Add(btnThem);
             commands.Controls.Add(btnSua);
             commands.Controls.Add(btnLamMoi);
@@ -168,9 +192,9 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             // Tat cac truong chi dung khi them moi
             txtTenDangNhap.ReadOnly = false;
             txtMatKhau.ReadOnly     = false;
-            btnThem.Text   = "Luu";   btnThem.Enabled  = true;
-            btnSua.Text    = "Sua thong tin"; btnSua.Enabled   = false;
-            btnLamMoi.Text = "Lam moi";
+            btnThem.Text   = "Lưu";   btnThem.Enabled  = true;
+            btnSua.Text    = "Sửa thông tin"; btnSua.Enabled   = false;
+            btnLamMoi.Text = "Làm mới";
             // Pre-populate ma tu sinh de nguoi dung thay duoc
             txtMaKhach.Text    = _service.LayMaKhachTiepTheo();
             txtMaTaiKhoan.Text = _service.LayMaTaiKhoanTiepTheo();
@@ -181,9 +205,9 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         {
             _mode = FormMode.View;
             SetEditorsEnabled(false);
-            btnThem.Text   = "Them khach"; btnThem.Enabled  = true;
-            btnSua.Text    = "Sua thong tin"; btnSua.Enabled   = true;
-            btnLamMoi.Text = "Lam moi";
+            btnThem.Text   = "Thêm khách"; btnThem.Enabled  = true;
+            btnSua.Text    = "Sửa thông tin"; btnSua.Enabled   = true;
+            btnLamMoi.Text = "Làm mới";
         }
 
         private void EnterEditMode()
@@ -197,9 +221,9 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             // Ten dang nhap va mat khau khong doi qua form nay
             txtTenDangNhap.ReadOnly = true;
             txtMatKhau.ReadOnly     = true;
-            btnThem.Text   = "Them khach"; btnThem.Enabled  = false;
-            btnSua.Text    = "Luu";        btnSua.Enabled   = true;
-            btnLamMoi.Text = "Huy";
+            btnThem.Text   = "Thêm khách"; btnThem.Enabled  = false;
+            btnSua.Text    = "Lưu";        btnSua.Enabled   = true;
+            btnLamMoi.Text = "Hủy";
         }
 
         private void SetEditorsEnabled(bool enabled)
@@ -237,7 +261,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         {
             if (_mode == FormMode.View)
             {
-                if (string.IsNullOrWhiteSpace(txtMaKhach.Text)) { ShowError("Chon khach thue can sua."); return; }
+                if (string.IsNullOrWhiteSpace(txtMaKhach.Text)) { ShowError("Chọn khách thuê cần sửa."); return; }
                 EnterEditMode();
                 return;
             }
@@ -292,7 +316,23 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                     (k.MaTaiKhoan ?? string.Empty).ToLowerInvariant().Contains(kw));
             }
             grid.DataSource = new BindingList<KhachThue>(data.OrderBy(k => k.HoTen).ToList());
+            RenameColumns();
             grid.ClearSelection();
+        }
+
+        private void RenameColumns()
+        {
+            Rename("MaKhach", "Mã khách");
+            Rename("MaTaiKhoan", "Mã tài khoản");
+            Rename("HoTen", "Họ tên");
+            Rename("SoCMND", "CMND/CCCD");
+            Rename("DiaChi", "Địa chỉ");
+            Rename("NgaySinh", "Ngày sinh");
+        }
+
+        private void Rename(string columnName, string header)
+        {
+            if (grid.Columns.Contains(columnName)) grid.Columns[columnName].HeaderText = header;
         }
 
         private void Grid_SelectionChanged(object sender, EventArgs e)
@@ -328,25 +368,25 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             loi = string.Empty;
             if (string.IsNullOrWhiteSpace(txtHoTen.Text))
             {
-                loi = "Ho ten khong duoc de trong.";
+                loi = "Họ tên không được để trống.";
                 _errors.SetError(txtHoTen, loi);
                 return false;
             }
             if (string.IsNullOrWhiteSpace(txtCmnd.Text))
             {
-                loi = "CMND/CCCD khong duoc de trong.";
+                loi = "CMND/CCCD không được để trống.";
                 _errors.SetError(txtCmnd, loi);
                 return false;
             }
             if (addMode && string.IsNullOrWhiteSpace(txtTenDangNhap.Text))
             {
-                loi = "Ten dang nhap khong duoc de trong.";
+                loi = "Tên đăng nhập không được để trống.";
                 _errors.SetError(txtTenDangNhap, loi);
                 return false;
             }
             if (addMode && string.IsNullOrWhiteSpace(txtMatKhau.Text))
             {
-                loi = "Mat khau khong duoc de trong.";
+                loi = "Mật khẩu không được để trống.";
                 _errors.SetError(txtMatKhau, loi);
                 return false;
             }

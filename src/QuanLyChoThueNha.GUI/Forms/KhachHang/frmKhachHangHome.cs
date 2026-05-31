@@ -40,6 +40,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             BuildLayout();
             NapBoLoc();
             Load += delegate { TaiDuLieu(); };
+            Resize += delegate { ResizeRoomCards(); };
         }
 
         private void BuildLayout()
@@ -48,10 +49,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             {
                 Dock = DockStyle.Fill,
                 RowCount = 3,
-                Padding = new Padding(12, 76, 12, 12)
+                Padding = new Padding(16, 76, 16, 14)
             };
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
             lblHeader = new MaterialLabel
@@ -63,7 +64,12 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             };
             root.Controls.Add(lblHeader, 0, 0);
 
-            var filters = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
+            var filters = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                WrapContents = true,
+                Padding = new Padding(0, 8, 0, 0)
+            };
             cboToa = CreateComboBox(190);
             cboLoai = CreateComboBox(190);
             numGiaToiDa = new NumericUpDown
@@ -279,17 +285,19 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             foreach (var room in rooms)
                 roomCards.Controls.Add(CreateRoomCard(room));
+            ResizeRoomCards();
         }
 
         private Control CreateRoomCard(CanHo room)
         {
             var card = new Panel
             {
-                Width = 250,
-                Height = 142,
-                Margin = new Padding(4, 4, 10, 10),
+                Width = 280,
+                Height = 154,
+                Margin = new Padding(4, 4, 12, 12),
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.White
+                BackColor = Color.White,
+                Tag = "room-card"
             };
 
             card.Controls.Add(new Label
@@ -321,6 +329,22 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             btnDatPhong.Click += delegate { DatPhong(room); };
             card.Controls.Add(btnDatPhong);
             return card;
+        }
+
+        private void ResizeRoomCards()
+        {
+            if (roomCards == null || roomCards.Width <= 0) return;
+            var available = Math.Max(260, roomCards.ClientSize.Width - 12);
+            var columns = Math.Max(1, available / 300);
+            if (available >= 1180) columns = Math.Max(columns, 4);
+            else if (available >= 860) columns = Math.Max(columns, 3);
+            else if (available >= 560) columns = Math.Max(columns, 2);
+            var width = Math.Max(250, (available - (columns * 16)) / columns);
+            foreach (Control control in roomCards.Controls)
+            {
+                if ((control.Tag as string) == "room-card")
+                    control.Width = width;
+            }
         }
 
         private void DatPhong(CanHo room)

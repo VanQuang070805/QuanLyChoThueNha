@@ -73,6 +73,21 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             return data;
         }
 
+        protected override IEnumerable<string> GridColumnNames()
+        {
+            return new[]
+            {
+                "MaHopDong",
+                "MaCanHo",
+                "MaKhach",
+                "NgayBatDau",
+                "NgayKetThuc",
+                "GiaThueChot",
+                "TienCocChot",
+                "TrangThai"
+            };
+        }
+
         protected override bool AddItem(HopDongEntity item, out string error)
         {
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;

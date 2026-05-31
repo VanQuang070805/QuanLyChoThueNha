@@ -46,6 +46,15 @@ CREATE TABLE NhanVienQuanLy (
 );
 
 -- ── 4. KhachThue ────────────────────────────────────────────
+CREATE TABLE NhanVienQuyen (
+    MaNhanVien   VARCHAR(50)  NOT NULL REFERENCES NhanVienQuanLy(MaNhanVien),
+    MaChucNang   VARCHAR(50)  NOT NULL,
+    DuocTruyCap  BIT          NOT NULL DEFAULT 0,
+    NgayCapNhat  DATETIME     NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT PK_NhanVienQuyen PRIMARY KEY (MaNhanVien, MaChucNang),
+    CONSTRAINT CK_NhanVienQuyen_ChucNang CHECK (MaChucNang IN ('Dashboard','TaiSan','HopDong','ThanhToan','BaoCao'))
+);
+
 CREATE TABLE KhachThue (
     MaKhach      VARCHAR(50)   NOT NULL PRIMARY KEY,
     MaTaiKhoan   VARCHAR(50)   NOT NULL REFERENCES TaiKhoan(MaTaiKhoan),

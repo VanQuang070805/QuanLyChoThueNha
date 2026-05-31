@@ -47,6 +47,7 @@ namespace QuanLyChoThueNha.GUI.Forms
 
             CauHinhMenu();
             HienThiThongTinNguoiDung();
+            Resize += delegate { CapNhatKichThuocMenu(); };
 
             if (SessionContext.LaAdmin)
                 MoForm(new frmDashboard());
@@ -61,16 +62,21 @@ namespace QuanLyChoThueNha.GUI.Forms
             bool laAdmin = SessionContext.LaAdmin;
             bool laNhanVien = SessionContext.LaNhanVien;
             bool laKhach = SessionContext.LaKhachThue;
+            bool qDashboard = CoQuyenNhanVien(NhanVienPhanQuyenService.Dashboard);
+            bool qTaiSan = CoQuyenNhanVien(NhanVienPhanQuyenService.TaiSan);
+            bool qHopDong = CoQuyenNhanVien(NhanVienPhanQuyenService.HopDong);
+            bool qThanhToan = CoQuyenNhanVien(NhanVienPhanQuyenService.ThanhToan);
+            bool qBaoCao = CoQuyenNhanVien(NhanVienPhanQuyenService.BaoCao);
 
             panelSidebar.Controls.Clear();
-            panelSidebar.Height = 150;
-            panelSidebar.Padding = new Padding(12, 72, 12, 8);
+            panelSidebar.Height = 88;
+            panelSidebar.Padding = new Padding(12, 6, 12, 6);
             panelSidebar.FlowDirection = FlowDirection.TopDown;
             panelSidebar.WrapContents = false;
 
             _menuGroups = new FlowLayoutPanel
             {
-                Width = Math.Max(900, ClientSize.Width - 32),
+                Width = Math.Max(900, ClientSize.Width - 24),
                 Height = 34,
                 WrapContents = false,
                 BackColor = Color.FromArgb(25, 118, 210),
@@ -78,7 +84,7 @@ namespace QuanLyChoThueNha.GUI.Forms
             };
             _menuItems = new FlowLayoutPanel
             {
-                Width = Math.Max(900, ClientSize.Width - 32),
+                Width = Math.Max(900, ClientSize.Width - 24),
                 Height = 34,
                 WrapContents = false,
                 BackColor = Color.FromArgb(21, 101, 192),
@@ -88,11 +94,11 @@ namespace QuanLyChoThueNha.GUI.Forms
             panelSidebar.Controls.Add(_menuGroups);
             panelSidebar.Controls.Add(_menuItems);
 
-            if (!laKhach)
+            if (!laKhach && (laAdmin || qDashboard))
                 AddMenuGroup("dashboard", "Tong quan", new[] { new MenuItemInfo("Dashboard", btnDashboard_Click) });
             if (laKhach)
                 AddMenuGroup("khach", "Khach hang", new[] { new MenuItemInfo("Trang khach hang", btnKhachHangHome_Click) });
-            if (laAdmin || laNhanVien)
+            if (laAdmin || (laNhanVien && qTaiSan))
                 AddMenuGroup("taisan", "Tai san", new[]
                 {
                     new MenuItemInfo("Khu vuc", btnKhuVuc_Click),
@@ -102,7 +108,7 @@ namespace QuanLyChoThueNha.GUI.Forms
                     new MenuItemInfo("Tien nghi", btnTienNghi_Click),
                     new MenuItemInfo("Gia dich vu", btnGiaDichVu_Click)
                 });
-            if (laAdmin || laNhanVien)
+            if (laAdmin || (laNhanVien && qHopDong))
                 AddMenuGroup("hopdong", "Hop dong", new[]
                 {
                     new MenuItemInfo("Khach thue", btnKhachThue_Click),
@@ -110,7 +116,7 @@ namespace QuanLyChoThueNha.GUI.Forms
                     new MenuItemInfo("Hop dong", btnHopDong_Click),
                     new MenuItemInfo("Gia han", btnGiaHan_Click)
                 });
-            if (laAdmin || laNhanVien)
+            if (laAdmin || (laNhanVien && qThanhToan))
                 AddMenuGroup("thanhtoan", "Thanh toan", new[]
                 {
                     new MenuItemInfo("Loai hoa don", btnLoaiHoaDon_Click),
@@ -122,12 +128,28 @@ namespace QuanLyChoThueNha.GUI.Forms
                 AddMenuGroup("quantri", "Quan tri", new[]
                 {
                     new MenuItemInfo("Tai khoan", btnQuanLyTaiKhoan_Click),
-                    new MenuItemInfo("Tai khoan khach", btnQuanLyTaiKhoanKhach_Click)
+                    new MenuItemInfo("Tai khoan khach", btnQuanLyTaiKhoanKhach_Click),
+                    new MenuItemInfo("Phan quyen NV", btnPhanQuyenNhanVien_Click)
                 });
-            if (laAdmin)
+            if (laAdmin || (laNhanVien && qBaoCao))
                 AddMenuGroup("baocao", "Bao cao", new[] { new MenuItemInfo("Bao cao & thong ke", btnBaoCao_Click) });
 
             AddLogoutButton();
+            CapNhatKichThuocMenu();
+        }
+
+        private void CapNhatKichThuocMenu()
+        {
+            if (_menuGroups == null || _menuItems == null) return;
+            var width = Math.Max(720, ClientSize.Width - 24);
+            _menuGroups.Width = width;
+            _menuItems.Width = width;
+        }
+
+        private bool CoQuyenNhanVien(string maChucNang)
+        {
+            if (!SessionContext.LaNhanVien) return false;
+            return new NhanVienPhanQuyenService().CoQuyen(SessionContext.MaNguoiDung, maChucNang);
         }
 
         private void AddMenuGroup(string key, string text, MenuItemInfo[] children)
@@ -280,6 +302,7 @@ namespace QuanLyChoThueNha.GUI.Forms
 
         private void btnQuanLyTaiKhoan_Click(object sender, EventArgs e) { MoForm(new frmQuanLyTaiKhoan()); }
         private void btnQuanLyTaiKhoanKhach_Click(object sender, EventArgs e) { MoForm(new frmQuanLyTaiKhoanKhach()); }
+        private void btnPhanQuyenNhanVien_Click(object sender, EventArgs e) { MoForm(new frmPhanQuyenNhanVien()); }
         private void btnBaoCao_Click(object sender, EventArgs e) { MoForm(new frmBaoCao()); }
 
         private void MoForm(Form form)

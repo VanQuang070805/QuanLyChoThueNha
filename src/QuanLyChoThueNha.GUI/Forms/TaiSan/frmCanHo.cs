@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.TaiSan
@@ -26,7 +27,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private DataGridView dgv;
         private MaterialTextBox txtMa;
         private MaterialTextBox txtSoCanHo;
-        private MaterialTextBox txtTimKiem;
+        private PlaceholderTextBox txtTimKiem;
         private MaterialTextBox txtMoTa;
         private ComboBox cboToa;
         private ComboBox cboLoai;
@@ -70,12 +71,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32));
 
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
-            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            txtTimKiem = new MaterialTextBox { Dock = DockStyle.Fill, Hint = "Tim theo ma can ho, so can ho, tinh trang" };
+            var searchPanel = CreateSearchPanel("Tìm kiếm", "Tìm theo mã căn hộ, số căn hộ, tình trạng");
             txtTimKiem.TextChanged += delegate { TimKiem(); };
-            left.Controls.Add(txtTimKiem, 0, 0);
+            left.Controls.Add(searchPanel, 0, 0);
 
             dgv = new DataGridView
             {
@@ -86,9 +87,22 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 MultiSelect = false,
                 RowHeadersVisible = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                AutoGenerateColumns = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                BackgroundColor = Color.White
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeight = 36,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing
             };
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(239, 246, 255);
+            dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(30, 64, 175);
+            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            dgv.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
+            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            dgv.DefaultCellStyle.SelectionForeColor = Color.FromArgb(17, 24, 39);
+            dgv.RowTemplate.Height = 30;
+            TaoCotBang();
             dgv.SelectionChanged += Dgv_SelectionChanged;
             left.Controls.Add(dgv, 0, 1);
 
@@ -228,6 +242,40 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         // ── Helper constructors ──────────────────────────────────────────────────
 
+        private Control CreateSearchPanel(string label, string placeholder)
+        {
+            var panel = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 12,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                Padding = new Padding(12, 5, 12, 6),
+                BackColor = Color.White
+            };
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = Color.White };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.Controls.Add(new Label
+            {
+                Text = label,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                TextAlign = ContentAlignment.MiddleLeft
+            }, 0, 0);
+            txtTimKiem = new PlaceholderTextBox
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.White,
+                Font = new Font("Segoe UI", 10.5F),
+                Placeholder = placeholder
+            };
+            layout.Controls.Add(txtTimKiem, 0, 1);
+            panel.Controls.Add(layout);
+            return panel;
+        }
+
         private MaterialTextBox CreateTextBox(string hint, bool readOnly)
         {
             return new MaterialTextBox { Dock = DockStyle.Top, Hint = hint, ReadOnly = readOnly };
@@ -266,6 +314,40 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         }
 
         // ── Data ─────────────────────────────────────────────────────────────────
+
+        private void TaoCotBang()
+        {
+            dgv.Columns.Clear();
+            AddGridColumn("MaCanHo", "Mã căn hộ", 90);
+            AddGridColumn("MaToa", "Tòa", 80);
+            AddGridColumn("MaLoai", "Loại", 80);
+            AddGridColumn("DienTich", "Diện tích", 90, "N1");
+            AddGridColumn("GiaThueNiemYet", "Giá thuê", 110, "N0");
+            AddGridColumn("TienCocNiemYet", "Tiền cọc", 110, "N0");
+            AddGridColumn("SoCanHo", "Số căn", 80);
+            AddGridColumn("TangSo", "Tầng", 70);
+            AddGridColumn("TinhTrang", "Tình trạng", 100);
+            AddGridColumn("MaNguoiThaoTac", "Mã người thao tác", 120);
+            AddGridColumn("VaiTroNguoiThaoTac", "Vai trò thao tác", 120);
+        }
+
+        private void AddGridColumn(string propertyName, string header, int minWidth, string format = null)
+        {
+            var column = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = propertyName,
+                Name = propertyName,
+                HeaderText = header,
+                MinimumWidth = minWidth,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            };
+            if (!string.IsNullOrEmpty(format))
+            {
+                column.DefaultCellStyle.Format = format;
+                column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            }
+            dgv.Columns.Add(column);
+        }
 
         private void NapComboBox()
         {

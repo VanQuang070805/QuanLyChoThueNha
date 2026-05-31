@@ -22,6 +22,7 @@ namespace QuanLyChoThueNha.DAL.Repositories
         private IRepository<TaiKhoan>         _taiKhoans;
         private IRepository<Admin>            _admins;
         private IRepository<NhanVienQuanLy>   _nhanVienQuanLys;
+        private IRepository<NhanVienQuyen>    _nhanVienQuyens;
         private IRepository<KhachThue>        _khachThues;
         private IRepository<KhuVuc>           _khuVucs;
         private IRepository<LoaiCanHo>        _loaiCanHos;
@@ -43,6 +44,7 @@ namespace QuanLyChoThueNha.DAL.Repositories
         public IRepository<TaiKhoan>         TaiKhoans         => _taiKhoans         ?? (_taiKhoans         = new Repository<TaiKhoan>(_context));
         public IRepository<Admin>            Admins             => _admins             ?? (_admins             = new Repository<Admin>(_context));
         public IRepository<NhanVienQuanLy>   NhanVienQuanLys    => _nhanVienQuanLys    ?? (_nhanVienQuanLys    = new Repository<NhanVienQuanLy>(_context));
+        public IRepository<NhanVienQuyen>    NhanVienQuyens     => _nhanVienQuyens     ?? (_nhanVienQuyens     = new Repository<NhanVienQuyen>(_context));
         public IRepository<KhachThue>        KhachThues         => _khachThues         ?? (_khachThues         = new Repository<KhachThue>(_context));
         public IRepository<KhuVuc>           KhuVucs            => _khuVucs            ?? (_khuVucs            = new Repository<KhuVuc>(_context));
         public IRepository<LoaiCanHo>        LoaiCanHos         => _loaiCanHos         ?? (_loaiCanHos         = new Repository<LoaiCanHo>(_context));
