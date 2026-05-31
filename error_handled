@@ -233,3 +233,110 @@ Baseline checks:
 
 - Kiem tra WinForms truc tiep cho cac loi layout: form dat truoc co bi thieu thong tin o kich thuoc mac dinh, dashboard co cuon duoc, card phong co responsive du tren cac kich thuoc man hinh.
 - Kiem tra nut dang xuat cua khach trong flow dang nhap that, vi nut dang xuat nam o shell chinh con form khach hang khong tu chua nut rieng.
+
+## 2026-06-01 - Merge check from codex/bugfix-report
+
+### Context
+
+Created a new branch from `guide`, fetched `origin/codex/bugfix-report`, and merged it with `--allow-unrelated-histories` because the branch had a separate Git history.
+
+Conflict strategy:
+
+- The conflicted implementation files were resolved by taking the `codex/bugfix-report` version so the bugfix branch could be evaluated.
+- `error_handled` from `guide` was preserved.
+- The GUI project was adjusted back from `EntityFramework.6.5.2` to the existing repo package `EntityFramework.6.4.4`, because `6.5.2` was not present locally and no `nuget.exe` was available in PATH.
+
+Build verification:
+
+- `dotnet build QuanLyChoThueNha.sln`: passed.
+- Remaining warnings: 14 unresolved optional/package assembly references around ClosedXML/export dependencies, but no compile error.
+
+### Fix status for the 14 tracked issues
+
+#### NET-TEST-001 - Partially fixed
+
+- `TextFormatHelper.NormalizeSearch` was added.
+- Public search and customer account search now use normalized search.
+- Still needs manual UI test for all search boxes outside these two screens.
+
+#### NET-TEST-002 - Not fixed
+
+- Public room cards still render `room.MaLoai` in both detail and card text.
+- File: `src/QuanLyChoThueNha.GUI/Forms/KhachHang/frmTimTroPublic.cs`.
+
+#### NET-TEST-003 - Mostly fixed
+
+- Booking dialog removed address from the visible flow.
+- Phone number is now required.
+- Deposit now validates at least 10% of room price.
+- Still uses message boxes instead of field-level validation, so the "show error at exact field" requirement is not fully done.
+
+#### NET-TEST-004 - Fixed
+
+- Clipboard now includes receiving bank account info through `frmQrThanhToan.SoTaiKhoanNhan`.
+
+#### NET-TEST-005 - Partially fixed
+
+- `TrangThai` is read-only and update blocks some system statuses.
+- However the dropdown list still contains `DaKyHD` and `HetHan`, so the UI is not fully clean.
+
+#### NET-TEST-006 - Fixed
+
+- `PhieuDatTruocService.XoaPhieu` was added and `DeleteItem` now calls it instead of direct delete.
+- This should prevent raw FK conflict when a reservation is linked to a contract.
+
+#### NET-TEST-007 - Partially fixed
+
+- Contract form filters apartments to `Trong` or apartments with `ChoKy` reservations.
+- Selecting apartment auto-fills matching `ChoKy` reservation and tenant.
+- Still no separate tower-first dropdown as requested.
+
+#### NET-TEST-008 - Mostly fixed
+
+- Extension form no longer exposes `TrangThai`.
+- Service now blocks extension if the apartment has open reservations.
+- Needs manual check that the apartment is truly rented, not just contract `HieuLuc`.
+
+#### NET-TEST-009 - Mostly fixed
+
+- `SoTienPhaiTra` and `TrangThai` are read-only in UI.
+- `MaViPham` is forced null in add/update and hidden from grid.
+- Service validates invoice due date within contract period and computes status through `TinhTrangThai`.
+- Still depends on `MaLoaiHoaDon`, so not aligned with the separate "remove invoice type" requirement.
+
+#### NET-TEST-010 - Fixed
+
+- Meter reading calculation no longer reports the old `new index must be >= old index` validation.
+
+#### NET-TEST-011 - Partially fixed
+
+- UI removed direct `DaKhauTru` option.
+- But add/update currently sets `TinhTrang = DaKhauTru` immediately when `TruVaoCoc` is checked, while the requested flow says this should happen when deposit deduction is actually processed.
+
+#### NET-TEST-012 - Partially fixed
+
+- Main menu no longer lists `Loai hoa don`.
+- Model/database/form/project still retain `LoaiHoaDon`, and invoices still require a type internally.
+
+#### NET-TEST-013 - Mostly fixed
+
+- Customer screen now has a `Vi pham` tab.
+- Contract display now maps apartment to `TenCanHo` and `TenToa`.
+- Still needs manual test for customer logout and invoice status synchronization.
+
+#### NET-TEST-014 - Not fixed
+
+- Apartment management still adds grid columns `MaNguoiThaoTac` and `VaiTroNguoiThaoTac` directly.
+- Audit service exists, but UI still shows audit columns in the main grid.
+
+### Summary
+
+The merged branch improves the bug list, but it does not fully close all 14 issues.
+
+Likely fixed: `NET-TEST-004`, `NET-TEST-006`, `NET-TEST-010`.
+
+Mostly fixed but needs final adjustment/manual verification: `NET-TEST-003`, `NET-TEST-008`, `NET-TEST-009`, `NET-TEST-013`.
+
+Partially fixed: `NET-TEST-001`, `NET-TEST-005`, `NET-TEST-007`, `NET-TEST-011`, `NET-TEST-012`.
+
+Still not fixed: `NET-TEST-002`, `NET-TEST-014`.

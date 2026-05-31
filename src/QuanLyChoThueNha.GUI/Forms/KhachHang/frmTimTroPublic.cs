@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using MaterialSkin;
 using MaterialSkin.Controls;
 using Microsoft.Web.WebView2.WinForms;
+using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.GUI.Forms.Auth;
@@ -491,6 +492,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             number.Width = 140;
             number.Maximum = 1000000000000;
             number.ThousandsSeparator = true;
+            number.DecimalPlaces = 0;
         }
 
         private void NapBoLoc()
@@ -548,7 +550,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var data = _canHoService.LayTatCa();
             var khuVucs = _khuVucService.LayTatCa().ToDictionary(k => k.MaKhuVuc);
             var toas = _toaService.LayTatCa().ToDictionary(t => t.MaToa);
-            var kw = (_txtTimKiem.Text ?? string.Empty).Trim().ToLowerInvariant();
+            var kw = TextFormatHelper.NormalizeSearch(_txtTimKiem.Text);
             if (!string.IsNullOrWhiteSpace(kw))
             {
                 data = data.Where(c =>
@@ -558,16 +560,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     toas.TryGetValue(c.MaToa, out toa);
                     if (toa != null) khuVucs.TryGetValue(toa.MaKhuVuc, out khuVuc);
 
-                    return (c.MaCanHo ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                           (c.MaToa ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                           c.SoCanHo.ToString().Contains(kw) ||
-                           (toa != null && (
-                               (toa.TenToa ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                               (toa.DiaChi ?? string.Empty).ToLowerInvariant().Contains(kw))) ||
-                           (khuVuc != null && (
-                               (khuVuc.TenKhuVuc ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                               (khuVuc.Quan ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                               (khuVuc.ThanhPho ?? string.Empty).ToLowerInvariant().Contains(kw)));
+                    var haystack = TextFormatHelper.JoinSearchParts(
+                        c.MaCanHo, c.MaToa, c.SoCanHo, c.MaLoai, c.TangSo,
+                        toa == null ? null : toa.TenToa,
+                        toa == null ? null : toa.DiaChi,
+                        khuVuc == null ? null : khuVuc.TenKhuVuc,
+                        khuVuc == null ? null : khuVuc.Quan,
+                        khuVuc == null ? null : khuVuc.ThanhPho);
+                    return TextFormatHelper.ContainsNormalized(haystack, kw);
                 });
             }
             if (_cboToa.SelectedValue != null && !string.IsNullOrWhiteSpace(_cboToa.SelectedValue.ToString()))
@@ -1100,6 +1100,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 message.AppendLine("Mã phiếu: " + phieu.MaPhieuDatTruoc);
                 message.AppendLine("Mã phòng: " + room.MaCanHo);
                 message.AppendLine("Tiền cọc: " + dialog.TienCoc.ToString("N0"));
+                message.AppendLine("STK nhận cọc: " + frmQrThanhToan.SoTaiKhoanNhan);
                 message.AppendLine("Nội dung CK: " + noiDungChuyenKhoan);
                 message.AppendLine(emailStatus);
                 Clipboard.SetText(message.ToString());

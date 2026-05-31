@@ -26,6 +26,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             {
                 new FieldDefinition("MaTaiKhoan", "Ma tai khoan", typeof(string), true),
                 new FieldDefinition("TenDangNhap", "Ten dang nhap"),
+                new FieldDefinition("MatKhauHash", "Mat khau", typeof(string), true),
                 new FieldDefinition("Email", "Email"),
                 new FieldDefinition("SoDienThoai", "So dien thoai"),
                 new FieldDefinition("VaiTro", "Vai tro", typeof(string), false,
@@ -43,9 +44,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         protected override void AfterGridBound()
         {
-            // An cot hash mat khau - khong can hien thi
             if (Grid.Columns.Contains("MatKhauHash"))
-                Grid.Columns["MatKhauHash"].Visible = false;
+                Grid.Columns["MatKhauHash"].HeaderText = "Mat khau";
         }
 
         protected override bool AddItem(TaiKhoan item, out string error)

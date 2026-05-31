@@ -20,6 +20,15 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly PictureBox _picture = new PictureBox();
         private readonly Label _lblInfo = new Label();
 
+        public static string SoTaiKhoanNhan
+        {
+            get
+            {
+                var value = ConfigurationManager.AppSettings["PaymentAccountNo"];
+                return string.IsNullOrWhiteSpace(value) ? "0000000000" : value;
+            }
+        }
+
         public frmQrThanhToan(HoaDonThanhToan hoaDon)
         {
             _hoaDon = hoaDon;
@@ -63,10 +72,11 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             _lblInfo.Dock = DockStyle.Fill;
             _lblInfo.Text = string.Format(
-                "{0}: {1}\nThong tin: {2}\nSo tien can thanh toan: {3:N0}",
+                "{0}: {1}\nThong tin: {2}\nSTK nhan: {3}\nSo tien can thanh toan: {4:N0}",
                 _hoaDon == null ? "Ma thanh toan" : "Hoa don",
                 _maThanhToan,
                 _kyThanhToan,
+                SoTaiKhoanNhan,
                 _soTienCanTra);
             _lblInfo.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             root.Controls.Add(_lblInfo, 0, 0);
@@ -123,7 +133,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private string TaoVietQrUrl()
         {
             var bank = Config("PaymentBankCode", "MB");
-            var account = Config("PaymentAccountNo", "0000000000");
+            var account = SoTaiKhoanNhan;
             var name = Config("PaymentAccountName", "QUAN LY CHO THUE NHA");
             var amount = decimal.ToInt64(_soTienCanTra);
             var addInfo = Uri.EscapeDataString(NoiDungChuyenKhoan());

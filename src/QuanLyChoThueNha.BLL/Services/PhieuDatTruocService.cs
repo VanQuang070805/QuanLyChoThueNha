@@ -126,6 +126,10 @@ namespace QuanLyChoThueNha.BLL.Services
                 AuditHelper.GanNguoiThaoTac(phieu);
                 _uow.PhieuDatTruocs.Add(phieu);
 
+                canHo.TinhTrang = "DaDatCoc";
+                AuditHelper.GanNguoiThaoTac(canHo);
+                _uow.CanHos.Update(canHo);
+
                 _uow.Complete();
                 _uow.CommitTransaction();
                 return true;
@@ -161,6 +165,42 @@ namespace QuanLyChoThueNha.BLL.Services
                 var canHo = _uow.CanHos.GetById(phieu.MaCanHo);
                 if (canHo != null) { canHo.TinhTrang = "Trong"; _uow.CanHos.Update(canHo); }
 
+                _uow.Complete();
+                _uow.CommitTransaction();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _uow.RollbackTransaction();
+                var _inner = ex; while (_inner.InnerException != null) _inner = _inner.InnerException;
+                loi = _inner.Message;
+                return false;
+            }
+        }
+
+        public bool XoaPhieu(string maPhieu, out string loi)
+        {
+            loi = string.Empty;
+            var phieu = LayTheoMa(maPhieu);
+            if (phieu == null) { loi = "Khong tim thay phieu."; return false; }
+
+            if (_uow.HopDongs.Any(h => h.MaPhieuDatTruoc == maPhieu))
+            {
+                loi = "Phieu da duoc dung de ky hop dong, khong the xoa. Hay giu de doi soat.";
+                return false;
+            }
+
+            _uow.BeginTransaction();
+            try
+            {
+                var canHo = _uow.CanHos.GetById(phieu.MaCanHo);
+                if (canHo != null && canHo.TinhTrang == "DaDatCoc")
+                {
+                    canHo.TinhTrang = "Trong";
+                    _uow.CanHos.Update(canHo);
+                }
+
+                _uow.PhieuDatTruocs.Remove(phieu);
                 _uow.Complete();
                 _uow.CommitTransaction();
                 return true;

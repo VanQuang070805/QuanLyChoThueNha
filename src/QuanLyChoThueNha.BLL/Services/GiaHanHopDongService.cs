@@ -27,6 +27,16 @@ namespace QuanLyChoThueNha.BLL.Services
             if (hd == null) { loi = "Hop dong khong ton tai."; return false; }
             if (hd.TrangThai != "HieuLuc") { loi = "Chi gia han hop dong dang hieu luc."; return false; }
             if (ngayKetThucMoi <= hd.NgayKetThuc) { loi = "Ngay ket thuc moi phai sau ngay ket thuc hien tai."; return false; }
+            var coPhieuDatTruocMo = _uow.PhieuDatTruocs.Any(p =>
+                p.MaCanHo == hd.MaCanHo &&
+                (p.TrangThai == PhieuDatTruocService.ChoThanhToanCoc ||
+                 p.TrangThai == PhieuDatTruocService.DaThanhToanCoc ||
+                 p.TrangThai == PhieuDatTruocService.ChoKy));
+            if (coPhieuDatTruocMo)
+            {
+                loi = "Can ho dang co phieu dat truoc hop le, khong the gia han.";
+                return false;
+            }
 
             var gh = new GiaHanHopDong
             {
@@ -110,7 +120,13 @@ namespace QuanLyChoThueNha.BLL.Services
             }
             if (!ValidationHelper.SoDuong(hoaDon.SoTienPhaiTra, "So tien phai tra", out loi)) return false;
             if (hoaDon.SoTienDaTra < 0) { loi = "So tien da tra khong duoc am."; return false; }
-            if (_uow.HopDongs.GetById(hoaDon.MaHopDong) == null) { loi = "Hop dong khong ton tai."; return false; }
+            var hopDong = _uow.HopDongs.GetById(hoaDon.MaHopDong);
+            if (hopDong == null) { loi = "Hop dong khong ton tai."; return false; }
+            if (hopDong.TrangThai != "HieuLuc" || hoaDon.NgayDaoHan.Date < hopDong.NgayBatDau.Date || hoaDon.NgayDaoHan.Date > hopDong.NgayKetThuc.Date)
+            {
+                loi = "Chi duoc tao hoa don trong thoi han hop dong con hieu luc.";
+                return false;
+            }
             if (_uow.LoaiHoaDons.GetById(hoaDon.MaLoaiHoaDon) == null) { loi = "Loai hoa don khong ton tai."; return false; }
             // BỔ SUNG: không cho lập 2 hóa đơn cùng KỲ + cùng LOẠI trên cùng 1 hợp đồng (tránh trùng).
             if (_uow.HoaDonThanhToans.Any(h => h.MaHopDong == hoaDon.MaHopDong
@@ -127,7 +143,7 @@ namespace QuanLyChoThueNha.BLL.Services
             }
 
             hoaDon.MaHoaDon = SinhMa();
-            hoaDon.TrangThai = hoaDon.SoTienDaTra >= hoaDon.SoTienPhaiTra ? "DaTra" : "ChuaTra";
+            hoaDon.TrangThai = TinhTrangThai(hoaDon);
             if (hoaDon.TrangThai == "DaTra" && hoaDon.NgayThanhToan == null) hoaDon.NgayThanhToan = DateTime.Now;
             AuditHelper.GanNguoiThaoTac(hoaDon);
             base.Them(hoaDon);
@@ -172,11 +188,8 @@ namespace QuanLyChoThueNha.BLL.Services
             double nuocCu, double nuocMoi, bool tinhDichVuChung, out string loi)
         {
             loi = string.Empty;
-            if (dienMoi < dienCu) { loi = "Chi so dien moi phai >= chi so dien cu."; return 0; }
-            if (nuocMoi < nuocCu) { loi = "Chi so nuoc moi phai >= chi so nuoc cu."; return 0; }
-
-            decimal soDienTieuThu = (decimal)(dienMoi - dienCu);
-            decimal soNuocTieuThu = (decimal)(nuocMoi - nuocCu);
+            decimal soDienTieuThu = Math.Abs((decimal)(dienMoi - dienCu));
+            decimal soNuocTieuThu = Math.Abs((decimal)(nuocMoi - nuocCu));
             return TinhTienDienNuocDichVu(maHopDong, soDienTieuThu, soNuocTieuThu, tinhDichVuChung, out loi);
         }
 
@@ -192,10 +205,25 @@ namespace QuanLyChoThueNha.BLL.Services
             hd.NgayThanhToan = DateTime.Now;
             hd.PhuongThucThanhToan = phuongThuc;
             hd.MaNhanVienThu = maNhanVien;
-            hd.TrangThai = soTienThanhToan >= hd.SoTienPhaiTra ? "DaTra" : "TraThieu";
+            hd.TrangThai = TinhTrangThai(hd);
             AuditHelper.GanNguoiThaoTac(hd);
             Sua(hd);
             return true;
+        }
+
+        public override void Sua(HoaDonThanhToan hoaDon)
+        {
+            hoaDon.MaViPham = string.IsNullOrWhiteSpace(hoaDon.MaViPham) ? null : hoaDon.MaViPham.Trim();
+            hoaDon.TrangThai = TinhTrangThai(hoaDon);
+            base.Sua(hoaDon);
+        }
+
+        private static string TinhTrangThai(HoaDonThanhToan hoaDon)
+        {
+            if (hoaDon.SoTienDaTra >= hoaDon.SoTienPhaiTra) return "DaTra";
+            if (hoaDon.NgayDaoHan.Date < DateTime.Today) return "QuaHan";
+            if (hoaDon.SoTienDaTra <= 0) return "ChuaTra";
+            return "TraThieu";
         }
 
         public IEnumerable<HoaDonThanhToan> LayTheoHopDong(string maHopDong)
@@ -342,7 +370,7 @@ namespace QuanLyChoThueNha.BLL.Services
 
             phieu.MaViPham = SinhMa();
             phieu.NgayGhiNhan = DateTime.Now;
-            phieu.TinhTrang = "ChoXuLy";
+            phieu.TinhTrang = phieu.TruVaoCoc ? "DaKhauTru" : "ChoXuLy";
             AuditHelper.GanNguoiThaoTac(phieu);
             base.Them(phieu);
             return true;

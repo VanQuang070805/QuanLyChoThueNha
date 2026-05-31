@@ -122,7 +122,6 @@ namespace QuanLyChoThueNha.GUI.Forms
             if (laAdmin || (laNhanVien && qThanhToan))
                 AddMenuGroup("thanhtoan", "Thanh toan", new[]
                 {
-                    new MenuItemInfo("Loai hoa don", btnLoaiHoaDon_Click),
                     new MenuItemInfo("Hoa don", btnHoaDon_Click),
                     new MenuItemInfo("Phieu tra nha", btnPhieuTraNha_Click),
                     new MenuItemInfo("Xu ly vi pham", btnViPham_Click)

@@ -40,7 +40,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 new FieldDefinition("PhiBoiThuong", "Phi boi thuong", typeof(decimal)),
                 new FieldDefinition("TruVaoCoc", "Tru vao coc", typeof(bool)),
                 new FieldDefinition("TinhTrang", "Tinh trang", typeof(string), false,
-                    new[] { "ChoXuLy", "DaKhauTru", "DaThanhToan" }),
+                    new[] { "ChoXuLy", "DaThanhToan" }),
                 new FieldDefinition("NgayGhiNhan", "Ngay ghi nhan", typeof(System.DateTime), true)
             };
         }
@@ -51,6 +51,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         {
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             item.MaPhieuTraNha = string.IsNullOrWhiteSpace(item.MaPhieuTraNha) ? null : item.MaPhieuTraNha;
+            if (item.TruVaoCoc) item.TinhTrang = "DaKhauTru";
             return _service.GhiNhan(item, out error);
         }
 
@@ -58,6 +59,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         {
             error = string.Empty;
             item.MaPhieuTraNha = string.IsNullOrWhiteSpace(item.MaPhieuTraNha) ? null : item.MaPhieuTraNha;
+            if (item.TruVaoCoc) item.TinhTrang = "DaKhauTru";
             _service.Sua(item);
             return true;
         }

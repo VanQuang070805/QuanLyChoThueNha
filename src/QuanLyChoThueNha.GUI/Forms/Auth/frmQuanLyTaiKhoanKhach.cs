@@ -6,8 +6,10 @@ using System.Linq;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
+using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Controls;
+using QuanLyChoThueNha.GUI.Forms.HopDong;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.Auth
@@ -24,6 +26,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             public string MaKhach      { get; set; }
             public string MaTaiKhoan   { get; set; }
             public string TenDangNhap  { get; set; }
+            public string MatKhau      { get; set; }
             public string HoTen        { get; set; }
             public string SoCMND       { get; set; }
             public string DiaChi       { get; set; }
@@ -55,6 +58,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         private CheckBox        chkTrangThai;
 
         private MaterialButton btnSua;
+        private MaterialButton btnThemMoi;
         private MaterialButton btnLamMoi;
         private MaterialButton btnKhoa;
         private MaterialButton btnMoKhoa;
@@ -181,10 +185,12 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                 Margin = new Padding(0, 12, 0, 0)
             };
             btnSua    = Btn("Sửa thông tin", BtnSua_Click);
+            btnThemMoi = Btn("Thêm mới", BtnThemMoi_Click);
             btnLamMoi = Btn("Làm mới",       BtnLamMoi_Click);
             btnKhoa   = Btn("Khóa",          BtnKhoa_Click);
             btnMoKhoa = Btn("Mở khóa",       BtnMoKhoa_Click);
             commands.Controls.Add(btnSua);
+            commands.Controls.Add(btnThemMoi);
             commands.Controls.Add(btnLamMoi);
             commands.Controls.Add(btnKhoa);
             commands.Controls.Add(btnMoKhoa);
@@ -306,6 +312,15 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             EnterViewMode();
         }
 
+        private void BtnThemMoi_Click(object sender, EventArgs e)
+        {
+            using (var form = new frmKhachThue())
+            {
+                form.ShowDialog(this);
+            }
+            ReloadData();
+        }
+
         private void BtnLamMoi_Click(object sender, EventArgs e)
         {
             if (_mode == FormMode.Editing)
@@ -369,6 +384,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                     MaKhach     = k.MaKhach,
                     MaTaiKhoan  = k.MaTaiKhoan,
                     TenDangNhap = tk?.TenDangNhap ?? string.Empty,
+                    MatKhau     = tk?.MatKhauHash ?? string.Empty,
                     HoTen       = k.HoTen,
                     SoCMND      = k.SoCMND,
                     DiaChi      = k.DiaChi,
@@ -384,13 +400,15 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private void FilterGrid()
         {
-            var kw = txtSearch.Text.Trim().ToLowerInvariant();
+            var kw = TextFormatHelper.NormalizeSearch(txtSearch.Text);
             var data = string.IsNullOrEmpty(kw)
                 ? _allData
                 : _allData.Where(v =>
-                    (v.HoTen ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    (v.SoCMND ?? string.Empty).ToLowerInvariant().Contains(kw) ||
-                    (v.TenDangNhap ?? string.Empty).ToLowerInvariant().Contains(kw)).ToList();
+                    TextFormatHelper.ContainsNormalized(v.HoTen, kw) ||
+                    TextFormatHelper.ContainsNormalized(v.SoCMND, kw) ||
+                    TextFormatHelper.ContainsNormalized(v.TenDangNhap, kw) ||
+                    TextFormatHelper.ContainsNormalized(v.Email, kw) ||
+                    TextFormatHelper.ContainsNormalized(v.SoDienThoai, kw)).ToList();
 
             grid.DataSource = new BindingList<KhachTaiKhoanVM>(data);
             RenameColumns();
@@ -413,6 +431,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             Rename("MaKhach", "Mã khách");
             Rename("MaTaiKhoan", "Mã tài khoản");
             Rename("TenDangNhap", "Tên đăng nhập");
+            Rename("MatKhau", "Mật khẩu");
             Rename("HoTen", "Họ tên");
             Rename("SoCMND", "CMND/CCCD");
             Rename("DiaChi", "Địa chỉ");

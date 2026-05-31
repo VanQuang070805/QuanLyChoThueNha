@@ -50,12 +50,6 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                         h.NgayBatDau,
                         h.NgayKetThuc)))
                 .ToList();
-            var viPhamOptions = new List<ComboOption> { new ComboOption(string.Empty, "(Khong gan vi pham)") };
-            viPhamOptions.AddRange(new PhieuXuLyViPhamService().LayTatCa()
-                .Where(v => v.TinhTrang == "ChoXuLy")
-                .OrderBy(v => v.MaViPham)
-                .Select(v => new ComboOption(v.MaViPham,
-                    string.Format("{0} | Hop dong {1} | {2:N0}", v.MaViPham, v.MaHopDong, v.PhiBoiThuong))));
             var kyOptions = Enumerable.Range(1, 12)
                 .Select(m => string.Format("{0:00}/{1}", m, DateTime.Today.Year))
                 .ToArray();
@@ -66,16 +60,15 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 FieldDefinition.Lookup("MaHopDong", "Hop dong", hopDongOptions),
                 new FieldDefinition("Phong", "Phong", typeof(string), true),
                 new FieldDefinition("MaNhanVienThu", "Ma nhan vien thu", typeof(string), true),
-                FieldDefinition.Lookup("MaViPham", "Ma vi pham", viPhamOptions),
                 new FieldDefinition("KyThanhToan", "Ky thanh toan", typeof(string), false, kyOptions),
                 // BỔ SUNG (Bước 3): các trường chỉ số điện/nước. ChiSoCu tự điền, chỉ nhập ChiSoMoi.
                 new FieldDefinition("ChiSoDienMoi", "Chi so dien moi", typeof(double)),
                 new FieldDefinition("ChiSoNuocMoi", "Chi so nuoc moi", typeof(double)),
-                new FieldDefinition("SoTienPhaiTra", "So tien phai tra", typeof(decimal)),
+                new FieldDefinition("SoTienPhaiTra", "So tien phai tra", typeof(decimal), true),
                 new FieldDefinition("SoTienDaTra", "So tien da tra", typeof(decimal)),
                 new FieldDefinition("NgayDaoHan", "Ngay dao han", typeof(DateTime)),
                 new FieldDefinition("NgayThanhToan", "Ngay thanh toan", typeof(DateTime?)),
-                new FieldDefinition("TrangThai", "Trang thai", typeof(string), false,
+                new FieldDefinition("TrangThai", "Trang thai", typeof(string), true,
                     new[] { "ChuaTra", "DaTra", "TraThieu", "QuaHan" }),
                 new FieldDefinition("PhuongThucThanhToan", "Phuong thuc")
             };
@@ -106,7 +99,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         protected override bool AddItem(HoaDonThanhToan item, out string error)
         {
             item.MaNhanVienThu = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
-            item.MaViPham = string.IsNullOrWhiteSpace(item.MaViPham) ? null : item.MaViPham;
+            item.MaViPham = null;
+            item.SoTienPhaiTra = LayTienTuEditor("SoTienPhaiTra");
             GanChiSoCu(item);
             return _service.TaoHoaDon(item, out error);
         }
@@ -114,7 +108,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         protected override bool UpdateItem(HoaDonThanhToan item, out string error)
         {
             error = string.Empty;
-            item.MaViPham = string.IsNullOrWhiteSpace(item.MaViPham) ? null : item.MaViPham;
+            item.MaViPham = null;
+            item.SoTienPhaiTra = LayTienTuEditor("SoTienPhaiTra");
             GanChiSoCu(item);
             _service.Sua(item);
             return true;  // exceptions propagate to CrudFormBase catch block
@@ -216,6 +211,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             return editor == null ? 0 : (double)editor.Value;
         }
 
+        private decimal LayTienTuEditor(string propertyName)
+        {
+            var editor = GetEditor(propertyName) as NumericUpDown;
+            return editor == null ? 0 : editor.Value;
+        }
+
         // ===== BỔ SUNG (Bước 3): tự động điền chỉ số CŨ từ hóa đơn kỳ liền trước =====
         private void GanChiSoCu(HoaDonThanhToan hoaDon)
         {
@@ -254,7 +255,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             SetEditorValue("SoTienPhaiTra", amount);
             SetEditorValue("SoTienDaTra", 0);
             ShowInfo(string.Format("Tieu thu: Dien {0} kWh, Nuoc {1} m3. Thanh tien: {2:N0} d.",
-                dienMoi - dienCu, nuocMoi - nuocCu, amount));
+                Math.Abs(dienMoi - dienCu), Math.Abs(nuocMoi - nuocCu), amount));
         }
     }
 }

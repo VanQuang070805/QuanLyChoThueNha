@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
@@ -15,20 +16,18 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
     {
         private readonly CanHoService _canHoService = new CanHoService();
         private readonly ToaService _toaService = new ToaService();
-        private readonly LoaiCanHoService _loaiService = new LoaiCanHoService();
         private readonly PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
         private readonly HopDongService _hopDongService = new HopDongService();
         private readonly HoaDonThanhToanService _hoaDonService = new HoaDonThanhToanService();
+        private readonly PhieuXuLyViPhamService _viPhamService = new PhieuXuLyViPhamService();
         private readonly KhachThueService _khachThueService = new KhachThueService();
         private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
 
-        private ComboBox cboToa;
-        private ComboBox cboLoai;
-        private NumericUpDown numGiaToiDa;
         private FlowLayoutPanel roomCards;
         private DataGridView gridPhieuDatTruoc;
         private DataGridView gridHopDong;
         private DataGridView gridHoaDon;
+        private DataGridView gridViPham;
         private MaterialLabel lblHeader;
         private MaterialButton btnQrThanhToan;
 
@@ -38,7 +37,6 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             Size = new Size(1120, 720);
             StartPosition = FormStartPosition.CenterParent;
             BuildLayout();
-            NapBoLoc();
             Load += delegate { TaiDuLieu(); };
             Resize += delegate { ResizeRoomCards(); };
         }
@@ -52,7 +50,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 Padding = new Padding(16, 76, 16, 14)
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
             lblHeader = new MaterialLabel
@@ -70,29 +68,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 WrapContents = true,
                 Padding = new Padding(0, 8, 0, 0)
             };
-            cboToa = CreateComboBox(190);
-            cboLoai = CreateComboBox(190);
-            numGiaToiDa = new NumericUpDown
-            {
-                Width = 170,
-                Minimum = 0,
-                Maximum = 1000000000000,
-                ThousandsSeparator = true
-            };
             var btnLamMoi = new MaterialButton { Text = "Lam moi", AutoSize = true };
             btnLamMoi.Click += delegate { LamMoiDuLieu(); };
             btnQrThanhToan = new MaterialButton { Text = "Hien QR hoa don", AutoSize = true };
             btnQrThanhToan.Click += BtnQrThanhToan_Click;
-            cboToa.SelectedIndexChanged += delegate { TaiDuLieu(); };
-            cboLoai.SelectedIndexChanged += delegate { TaiDuLieu(); };
-            numGiaToiDa.ValueChanged += delegate { TaiDuLieu(); };
-
-            filters.Controls.Add(new Label { Text = "Toa", AutoSize = true, Padding = new Padding(0, 9, 4, 0) });
-            filters.Controls.Add(cboToa);
-            filters.Controls.Add(new Label { Text = "Loai", AutoSize = true, Padding = new Padding(12, 9, 4, 0) });
-            filters.Controls.Add(cboLoai);
-            filters.Controls.Add(new Label { Text = "Gia toi da", AutoSize = true, Padding = new Padding(12, 9, 4, 0) });
-            filters.Controls.Add(numGiaToiDa);
             filters.Controls.Add(btnLamMoi);
             filters.Controls.Add(btnQrThanhToan);
             root.Controls.Add(filters, 0, 1);
@@ -108,6 +87,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             gridHopDong = CreateGrid();
             gridHoaDon = CreateGrid();
             gridPhieuDatTruoc = CreateGrid();
+            gridViPham = CreateGrid();
 
             var tabs = new TabControl
             {
@@ -117,6 +97,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             tabs.TabPages.Add(CreateTab("Can ho da dat", gridPhieuDatTruoc));
             tabs.TabPages.Add(CreateTab("Hop dong", gridHopDong));
             tabs.TabPages.Add(CreateTab("Hoa don", gridHoaDon));
+            tabs.TabPages.Add(CreateTab("Vi pham", gridViPham));
             tabs.TabPages.Add(CreateTab("Can ho dang trong", roomCards));
             root.Controls.Add(tabs, 0, 2);
             Controls.Add(root);
@@ -130,40 +111,9 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             return tab;
         }
 
-        private void NapBoLoc()
-        {
-            var selectedToa = cboToa.SelectedValue == null ? null : cboToa.SelectedValue.ToString();
-            var selectedLoai = cboLoai.SelectedValue == null ? null : cboLoai.SelectedValue.ToString();
-
-            cboToa.DisplayMember = "TenToa";
-            cboToa.ValueMember = "MaToa";
-            var toas = _toaService.LayTatCa().OrderBy(t => t.TenToa).ToList();
-            cboToa.DataSource = toas;
-            cboToa.SelectedValue = toas.Any(t => t.MaToa == selectedToa) ? selectedToa : null;
-            if (selectedToa == null) cboToa.SelectedIndex = -1;
-
-            cboLoai.DisplayMember = "TenLoai";
-            cboLoai.ValueMember = "MaLoai";
-            var loais = _loaiService.LayTatCa().OrderBy(l => l.TenLoai).ToList();
-            cboLoai.DataSource = loais;
-            cboLoai.SelectedValue = loais.Any(l => l.MaLoai == selectedLoai) ? selectedLoai : null;
-            if (selectedLoai == null) cboLoai.SelectedIndex = -1;
-        }
-
         private void LamMoiDuLieu()
         {
-            NapBoLoc();
             TaiDuLieu();
-        }
-
-        private ComboBox CreateComboBox(int width)
-        {
-            return new ComboBox
-            {
-                Width = width,
-                Height = 30,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
         }
 
         private GroupBox CreateGroup(string text, Control content)
@@ -197,7 +147,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private void TaiDuLieu()
         {
-            if (roomCards == null || gridPhieuDatTruoc == null || gridHopDong == null || gridHoaDon == null) return;
+            if (roomCards == null || gridPhieuDatTruoc == null || gridHopDong == null || gridHoaDon == null || gridViPham == null) return;
             lblHeader.Text = string.Format("Xin chao {0} [{1}]", SessionContext.HoTen, SessionContext.MaNguoiDung);
             GuiThongBaoPhieuHetHanMoi();
             TaiPhieuDatTruoc();
@@ -255,22 +205,6 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .ToList();
             var data = _canHoService.LayTheoTinhTrang("Trong");
             data = data.Where(c => !phongDangChoCoc.Contains(c.MaCanHo));
-            if (cboToa.SelectedValue != null)
-            {
-                var maToa = cboToa.SelectedValue.ToString();
-                data = data.Where(c => c.MaToa == maToa);
-            }
-            if (cboLoai.SelectedValue != null)
-            {
-                var maLoai = cboLoai.SelectedValue.ToString();
-                data = data.Where(c => c.MaLoai == maLoai);
-            }
-            if (numGiaToiDa.Value > 0)
-            {
-                var giaToiDa = numGiaToiDa.Value;
-                data = data.Where(c => c.GiaThueNiemYet <= giaToiDa);
-            }
-
             var rooms = data.OrderBy(c => c.MaToa).ThenBy(c => c.SoCanHo).ToList();
             if (rooms.Count == 0)
             {
@@ -417,10 +351,13 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var hopDongs = _hopDongService.LayTheoKhach(SessionContext.MaNguoiDung)
                 .OrderByDescending(h => h.NgayTao)
                 .ToList();
+            var canHos = _canHoService.LayTatCa().GroupBy(c => c.MaCanHo).ToDictionary(g => g.Key, g => g.First());
+            var toas = _toaService.LayTatCa().GroupBy(t => t.MaToa).ToDictionary(g => g.Key, g => g.First());
             gridHopDong.DataSource = new BindingList<object>(hopDongs.Select(h => new
             {
                 h.MaHopDong,
-                h.MaCanHo,
+                TenCanHo = LayTenCanHo(h.MaCanHo, canHos),
+                TenToa = LayTenToa(h.MaCanHo, canHos, toas),
                 h.NgayBatDau,
                 h.NgayKetThuc,
                 h.GiaThueChot,
@@ -442,6 +379,38 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     column.Name == "MaNhanVienThu" || column.Name == "MaViPham")
                     column.Visible = false;
             }
+
+            var viPhams = maHopDongs
+                .SelectMany(ma => _viPhamService.LayTheoHopDong(ma))
+                .OrderByDescending(v => v.NgayGhiNhan)
+                .ToList();
+            gridViPham.DataSource = new BindingList<object>(viPhams.Select(v => new
+            {
+                v.MaViPham,
+                v.MaHopDong,
+                v.LoaiViPham,
+                v.MoTa,
+                v.PhiBoiThuong,
+                v.TruVaoCoc,
+                v.TinhTrang,
+                v.NgayGhiNhan
+            }).Cast<object>().ToList());
+        }
+
+        private string LayTenCanHo(string maCanHo, IDictionary<string, CanHo> canHos)
+        {
+            CanHo canHo;
+            return canHos.TryGetValue(maCanHo, out canHo)
+                ? string.Format("Can {0}", canHo.SoCanHo)
+                : maCanHo;
+        }
+
+        private string LayTenToa(string maCanHo, IDictionary<string, CanHo> canHos, IDictionary<string, Toa> toas)
+        {
+            CanHo canHo;
+            if (!canHos.TryGetValue(maCanHo, out canHo)) return string.Empty;
+            Toa toa;
+            return toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
         }
 
         private void BtnQrThanhToan_Click(object sender, EventArgs e)

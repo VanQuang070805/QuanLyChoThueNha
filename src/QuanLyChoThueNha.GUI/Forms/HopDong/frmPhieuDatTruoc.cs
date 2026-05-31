@@ -23,6 +23,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             var canHoService = new CanHoService();
             var khachService = new KhachThueService();
             var canHoOptions = canHoService.LayTatCa()
+                .Where(c => c.TinhTrang == "Trong")
                 .OrderBy(c => c.MaCanHo)
                 .Select(c => new ComboOption(c.MaCanHo,
                     string.Format("{0} - Tang {1} - {2}", c.MaCanHo, c.TangSo, c.TinhTrang)))
@@ -42,9 +43,10 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 new FieldDefinition("SoTienDatCoc", "So tien dat coc", typeof(decimal)),
                 new FieldDefinition("NgayDatCoc", "Ngay dat coc", typeof(DateTime), true),
                 new FieldDefinition("NgayHetHan", "Ngay het han", typeof(DateTime)),
-                new FieldDefinition("TrangThai", "Trang thai", typeof(string), false,
-                    new[] { "ChoThanhToanCoc", "DaThanhToanCoc", "ChoKy", "DaKyHD", "Huy", "HetHan" }),
-                new FieldDefinition("PhuongThucThanhToan", "Phuong thuc"),
+                new FieldDefinition("TrangThai", "Trang thai", typeof(string), true,
+                    new[] { "ChoThanhToanCoc", "ChoKy", "DaKyHD", "Huy", "HetHan" }),
+                new FieldDefinition("PhuongThucThanhToan", "Phuong thuc", typeof(string), false,
+                    new[] { "ChuyenKhoan", "TienMat" }),
                 new FieldDefinition("GhiChu", "Ghi chu", typeof(string), false, null, true)
             };
         }
@@ -60,6 +62,13 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         protected override bool UpdateItem(PhieuDatTruoc item, out string error)
         {
             error = string.Empty;
+            if (item.TrangThai == PhieuDatTruocService.Huy ||
+                item.TrangThai == PhieuDatTruocService.HetHan ||
+                item.TrangThai == PhieuDatTruocService.DaKyHD)
+            {
+                error = "Trang thai he thong khong duoc sua thu cong.";
+                return false;
+            }
             _service.Sua(item);
             return true;
         }
@@ -67,8 +76,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         protected override bool DeleteItem(PhieuDatTruoc item, out string error)
         {
             error = string.Empty;
-            _service.Xoa(item);
-            return true;
+            return _service.XoaPhieu(item.MaPhieuDatTruoc, out error);
         }
 
         private void BtnXacNhanCoc_Click(object sender, EventArgs e)

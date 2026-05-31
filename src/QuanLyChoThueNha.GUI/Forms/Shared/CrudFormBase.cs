@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
+using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.GUI.Controls;
 
 namespace QuanLyChoThueNha.GUI.Forms.Shared
@@ -125,13 +126,13 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             try
             {
                 var items = GetItems().ToList();
-                var keyword = TxtSearch.Text.Trim().ToLowerInvariant();
+                var keyword = TextFormatHelper.NormalizeSearch(TxtSearch.Text);
                 if (!string.IsNullOrWhiteSpace(keyword))
                 {
                     items = items.Where(x => _fields.Any(f =>
                     {
                         var value = GetProperty(f.PropertyName).GetValue(x, null);
-                        return value != null && value.ToString().ToLowerInvariant().Contains(keyword);
+                        return value != null && TextFormatHelper.ContainsNormalized(value.ToString(), keyword);
                     })).ToList();
                 }
 

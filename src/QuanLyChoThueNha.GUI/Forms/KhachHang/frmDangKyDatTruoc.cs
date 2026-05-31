@@ -16,11 +16,11 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly CanHo _room;
         private readonly MaterialTextBox _txtHoTen = new MaterialTextBox();
         private readonly MaterialTextBox _txtCmnd = new MaterialTextBox();
-        private readonly MaterialTextBox _txtDiaChi = new MaterialTextBox();
         private readonly MaterialTextBox _txtEmail = new MaterialTextBox();
         private readonly MaterialTextBox _txtSdt = new MaterialTextBox();
         private readonly DateTimePicker _dtpNgaySinh = new DateTimePicker();
         private readonly NumericUpDown _numTienCoc = new NumericUpDown();
+        private readonly ErrorProvider _errors = new ErrorProvider();
         private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
 
         public KhachThue Khach { get; private set; }
@@ -34,8 +34,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         {
             _room = room;
             Text = "Dang ky dat truoc";
-            Size = new Size(520, 680);
+            Size = new Size(560, 640);
+            MinimumSize = new Size(540, 620);
             StartPosition = FormStartPosition.CenterParent;
+            _errors.BlinkStyle = ErrorBlinkStyle.NeverBlink;
             BuildLayout();
         }
 
@@ -58,7 +60,6 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             SetupText(_txtHoTen, "Ho ten khach");
             SetupText(_txtCmnd, "CMND/CCCD");
-            SetupText(_txtDiaChi, "Dia chi");
             SetupText(_txtEmail, "Email nhan tai khoan");
             SetupText(_txtSdt, "So dien thoai");
 
@@ -76,10 +77,9 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             AddField(root, "Ho ten *", _txtHoTen);
             AddField(root, "CMND/CCCD *", _txtCmnd);
             AddField(root, "Ngay sinh *", _dtpNgaySinh);
-            AddField(root, "Dia chi", _txtDiaChi);
             AddField(root, "Email", _txtEmail);
-            AddField(root, "So dien thoai", _txtSdt);
-            AddField(root, "Tien coc dat truoc", _numTienCoc);
+            AddField(root, "So dien thoai *", _txtSdt);
+            AddField(root, "Tien coc dat truoc (toi thieu 10% gia phong)", _numTienCoc);
 
             var commands = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Margin = new Padding(0, 16, 0, 0) };
             var btnOk = new MaterialButton { Text = "Tao tai khoan va dat truoc", AutoSize = true };
@@ -97,7 +97,9 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private decimal TienCocMacDinh()
         {
-            return _room.TienCocNiemYet > 0 ? _room.TienCocNiemYet : _room.GiaThueNiemYet;
+            var toiThieu = Math.Ceiling(_room.GiaThueNiemYet * 0.1m);
+            var deXuat = _room.TienCocNiemYet > 0 ? _room.TienCocNiemYet : toiThieu;
+            return Math.Max(toiThieu, deXuat);
         }
 
         private void SetupText(MaterialTextBox textbox, string hint)
@@ -120,15 +122,31 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private void Submit()
         {
+            _errors.Clear();
             if (string.IsNullOrWhiteSpace(_txtHoTen.Text) || string.IsNullOrWhiteSpace(_txtCmnd.Text))
             {
+                if (string.IsNullOrWhiteSpace(_txtHoTen.Text)) _errors.SetError(_txtHoTen, "Vui long nhap ho ten.");
+                if (string.IsNullOrWhiteSpace(_txtCmnd.Text)) _errors.SetError(_txtCmnd, "Vui long nhap CMND/CCCD.");
                 MessageBox.Show("Vui long nhap ho ten va CMND/CCCD.", "Thieu thong tin",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            if (_numTienCoc.Value <= 0)
+            string loiSdt;
+            if (!ValidationHelper.KhongRong(SoDienThoai, "So dien thoai", out loiSdt) ||
+                !ValidationHelper.SdtHopLe(SoDienThoai, out loiSdt))
             {
-                MessageBox.Show("Tien coc phai lon hon 0.", "Thieu thong tin",
+                _errors.SetError(_txtSdt, loiSdt);
+                _txtSdt.Focus();
+                MessageBox.Show(loiSdt, "So dien thoai khong hop le",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            var tienCocToiThieu = Math.Ceiling(_room.GiaThueNiemYet * 0.1m);
+            if (_numTienCoc.Value < tienCocToiThieu)
+            {
+                var loi = string.Format("Tien coc dat truoc phai toi thieu 10% gia phong ({0:N0}).", tienCocToiThieu);
+                _errors.SetError(_numTienCoc, loi);
+                MessageBox.Show(loi, "Tien coc khong hop le",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -139,7 +157,6 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             {
                 HoTen = _txtHoTen.Text.Trim(),
                 SoCMND = _txtCmnd.Text.Trim(),
-                DiaChi = _txtDiaChi.Text.Trim(),
                 NgaySinh = _dtpNgaySinh.Value.Date
             };
             TenDangNhap = TaoTenDangNhap(_txtHoTen.Text, _txtCmnd.Text);
@@ -182,14 +199,15 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             string loi;
             if (!ValidationHelper.EmailHopLe(email, out loi))
             {
+                _errors.SetError(_txtEmail, loi);
                 MessageBox.Show(loi, "Email khong hop le", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 _txtEmail.Focus();
                 return false;
             }
             if (_taiKhoanService.EmailDaTon(email))
             {
-                MessageBox.Show("Email nay da ton tai trong he thong. Vui long dung email khac hoac dang nhap tai khoan khach.",
-                    "Email da ton tai", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _errors.SetError(_txtEmail, "Email da duoc su dung.");
+                MessageBox.Show("Email da duoc su dung.", "Email da ton tai", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 _txtEmail.Focus();
                 return false;
             }

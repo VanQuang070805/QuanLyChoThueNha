@@ -145,9 +145,10 @@ namespace QuanLyChoThueNha.BLL.Services
             if (!ValidationHelper.KhongRong(tenDangNhap, "Ten dang nhap", out loi)) return false;
             if (!ValidationHelper.MatKhauDuManh(matKhau, out loi)) return false;
             if (!string.IsNullOrWhiteSpace(email) && !ValidationHelper.EmailHopLe(email, out loi)) return false;
-            if (!string.IsNullOrWhiteSpace(soDienThoai) && !ValidationHelper.SdtHopLe(soDienThoai, out loi)) return false;
+            if (!ValidationHelper.KhongRong(soDienThoai, "So dien thoai", out loi)) return false;
+            if (!ValidationHelper.SdtHopLe(soDienThoai, out loi)) return false;
             if (_uow.TaiKhoans.Any(t => t.TenDangNhap == tenDangNhap)) { loi = "Ten dang nhap da ton tai."; return false; }
-            if (!string.IsNullOrWhiteSpace(email) && _uow.TaiKhoans.Any(t => t.Email == email)) { loi = "Email da ton tai."; return false; }
+            if (!string.IsNullOrWhiteSpace(email) && _uow.TaiKhoans.Any(t => t.Email == email)) { loi = "Email da duoc su dung."; return false; }
             if (_uow.KhachThues.Any(k => k.SoCMND == khach.SoCMND)) { loi = "CMND/CCCD da duoc dang ky."; return false; }
 
             _uow.BeginTransaction();
