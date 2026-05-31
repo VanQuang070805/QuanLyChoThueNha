@@ -114,6 +114,55 @@ namespace QuanLyChoThueNha.BLL.Services
             return data.OrderBy(x => x.Thang).ToList();
         }
 
+        public IEnumerable<DoanhThuTheoThangDto> DoanhThuTheoKy(DateTime tuNgay, DateTime denNgay, string nhomTheo)
+        {
+            var hoaDons = _uow.HoaDonThanhToans
+                .Find(h => h.TrangThai == "DaTra" &&
+                           h.NgayThanhToan.HasValue &&
+                           h.NgayThanhToan.Value.Date >= tuNgay.Date &&
+                           h.NgayThanhToan.Value.Date <= denNgay.Date)
+                .ToList();
+
+            var data = hoaDons
+                .GroupBy(h => TaoNhanKy(h.NgayThanhToan.Value.Date, nhomTheo))
+                .ToDictionary(g => g.Key, g => new DoanhThuTheoThangDto
+                {
+                    Thang = g.Key,
+                    TongThu = g.Sum(h => h.SoTienDaTra),
+                    SoHoaDon = g.Count()
+                });
+
+            return TaoNhanLienTuc(tuNgay, denNgay, nhomTheo)
+                .Select(label => data.ContainsKey(label)
+                    ? data[label]
+                    : new DoanhThuTheoThangDto { Thang = label, TongThu = 0, SoHoaDon = 0 })
+                .ToList();
+        }
+
+        public IEnumerable<DoanhThuTheoThangDto> CongNoTheoKy(DateTime tuNgay, DateTime denNgay, string nhomTheo)
+        {
+            var hoaDons = _uow.HoaDonThanhToans.GetAll()
+                .Where(h => h.NgayDaoHan.Date >= tuNgay.Date &&
+                            h.NgayDaoHan.Date <= denNgay.Date &&
+                            (h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan"))
+                .ToList();
+
+            var data = hoaDons
+                .GroupBy(h => TaoNhanKy(h.NgayDaoHan.Date, nhomTheo))
+                .ToDictionary(g => g.Key, g => new DoanhThuTheoThangDto
+                {
+                    Thang = g.Key,
+                    TongThu = g.Sum(h => Math.Max(0, h.SoTienPhaiTra - h.SoTienDaTra)),
+                    SoHoaDon = g.Count()
+                });
+
+            return TaoNhanLienTuc(tuNgay, denNgay, nhomTheo)
+                .Select(label => data.ContainsKey(label)
+                    ? data[label]
+                    : new DoanhThuTheoThangDto { Thang = label, TongThu = 0, SoHoaDon = 0 })
+                .ToList();
+        }
+
         // ── Tình trạng căn hộ ─────────────────────────────────────────────
         public IEnumerable<TinhTrangCanHoDto> TinhTrangCanHo()
         {
@@ -134,6 +183,8 @@ namespace QuanLyChoThueNha.BLL.Services
         public int HopDongHieuLuc()     => _uow.HopDongs.Count(h => h.TrangThai == "HieuLuc");
         public int HoaDonChuaTra()      => _uow.HoaDonThanhToans.Count(h => h.TrangThai == "ChuaTra");
         public int HopDongMoiTrongThang(int thang, int nam) => _uow.HopDongs.Count(h => h.NgayTao.Month == thang && h.NgayTao.Year == nam);
+        public int HopDongMoiTrongKhoang(DateTime tuNgay, DateTime denNgay) =>
+            _uow.HopDongs.Count(h => h.NgayTao.Date >= tuNgay.Date && h.NgayTao.Date <= denNgay.Date);
         public decimal TongCongNo() => _uow.HoaDonThanhToans.GetAll()
             .Where(h => h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan")
             .Sum(h => Math.Max(0, h.SoTienPhaiTra - h.SoTienDaTra));
@@ -273,6 +324,35 @@ namespace QuanLyChoThueNha.BLL.Services
                 .ToList();
         }
 
+        public IEnumerable<BaoCaoHangMucDto> TopCanHoDoanhThu(DateTime tuNgay, DateTime denNgay, int top = 5)
+        {
+            var hopDongMap = _uow.HopDongs.GetAll().ToDictionary(h => h.MaHopDong);
+            var hoaDons = _uow.HoaDonThanhToans
+                .Find(h => h.TrangThai == "DaTra" &&
+                           h.NgayThanhToan.HasValue &&
+                           h.NgayThanhToan.Value.Date >= tuNgay.Date &&
+                           h.NgayThanhToan.Value.Date <= denNgay.Date)
+                .ToList();
+
+            return hoaDons
+                .Select(h =>
+                {
+                    HopDong hopDong;
+                    hopDongMap.TryGetValue(h.MaHopDong, out hopDong);
+                    return new { MaCanHo = hopDong == null ? h.MaHopDong : hopDong.MaCanHo, h.SoTienDaTra };
+                })
+                .GroupBy(x => x.MaCanHo)
+                .Select(g => new BaoCaoHangMucDto
+                {
+                    Ten = g.Key,
+                    GiaTri = g.Sum(x => x.SoTienDaTra),
+                    SoLuong = g.Count()
+                })
+                .OrderByDescending(x => x.GiaTri)
+                .Take(top)
+                .ToList();
+        }
+
         // ── Khách thuê nhiều nhất ─────────────────────────────────────────
         public IEnumerable<KhachThue> LayKhachThueHieuLuc()
         {
@@ -295,6 +375,51 @@ namespace QuanLyChoThueNha.BLL.Services
                 .Find(h => h.TrangThai == "DaTra" && h.NgayThanhToan.HasValue &&
                            h.NgayThanhToan.Value.Year == nam)
                 .ToList();
+        }
+
+        private static IEnumerable<string> TaoNhanLienTuc(DateTime tuNgay, DateTime denNgay, string nhomTheo)
+        {
+            var labels = new List<string>();
+            var mode = (nhomTheo ?? string.Empty).Trim();
+            var current = tuNgay.Date;
+            if (mode == "Thang" || mode == "Nam")
+            {
+                current = new DateTime(tuNgay.Year, 1, 1);
+                while (current <= denNgay.Date)
+                {
+                    labels.Add(TaoNhanKy(current, mode));
+                    current = current.AddMonths(1);
+                }
+                return labels;
+            }
+
+            while (current <= denNgay.Date)
+            {
+                labels.Add(TaoNhanKy(current, mode));
+                current = current.AddDays(1);
+            }
+            return labels;
+        }
+
+        private static string TaoNhanKy(DateTime date, string nhomTheo)
+        {
+            var mode = (nhomTheo ?? string.Empty).Trim();
+            if (mode == "Thang" || mode == "Nam") return $"T{date.Month:D2}/{date.Year}";
+            return $"{TenThu(date.DayOfWeek)} {date:dd/MM}";
+        }
+
+        private static string TenThu(DayOfWeek day)
+        {
+            switch (day)
+            {
+                case DayOfWeek.Monday: return "T2";
+                case DayOfWeek.Tuesday: return "T3";
+                case DayOfWeek.Wednesday: return "T4";
+                case DayOfWeek.Thursday: return "T5";
+                case DayOfWeek.Friday: return "T6";
+                case DayOfWeek.Saturday: return "T7";
+                default: return "CN";
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +13,8 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
     public class frmBaoCao : MaterialForm
     {
         private readonly BaoCaoService _service = new BaoCaoService();
-        private readonly NumericUpDown _numNam = new NumericUpDown();
+        private readonly ComboBox _cboKyBaoCao = new ComboBox();
+        private readonly DateTimePicker _dtpMocBaoCao = new DateTimePicker();
         private readonly TrackBar _zoomBaoCao = new TrackBar();
         private readonly FlowLayoutPanel _kpiPanel = new FlowLayoutPanel();
         private readonly SmartChartPanel _chartDoanhThu = new SmartChartPanel();
@@ -57,9 +58,12 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             _root.RowStyles.Add(new RowStyle(SizeType.Percent, 34));
             _root.RowStyles.Add(new RowStyle(SizeType.Percent, 24));
 
-            var toolbar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 6 };
+            var toolbar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 9 };
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 48));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 56));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));
@@ -73,19 +77,38 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 TextAlign = ContentAlignment.MiddleLeft
             }, 0, 0);
 
-            _numNam.Minimum = 2020;
-            _numNam.Maximum = 2100;
-            _numNam.Value = DateTime.Today.Year;
-            _numNam.Dock = DockStyle.Fill;
-            toolbar.Controls.Add(_numNam, 1, 0);
+            toolbar.Controls.Add(new Label
+            {
+                Text = "Kỳ",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            }, 1, 0);
+            _cboKyBaoCao.DropDownStyle = ComboBoxStyle.DropDownList;
+            _cboKyBaoCao.Items.AddRange(new object[] { "Ngày", "Tuần", "Tháng", "Năm" });
+            _cboKyBaoCao.SelectedIndex = 2;
+            _cboKyBaoCao.Dock = DockStyle.Fill;
+            _cboKyBaoCao.SelectedIndexChanged += delegate { CapNhatDinhDangMocBaoCao(); };
+            toolbar.Controls.Add(_cboKyBaoCao, 2, 0);
+
+            toolbar.Controls.Add(new Label
+            {
+                Text = "Mốc",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            }, 3, 0);
+            _dtpMocBaoCao.Value = DateTime.Today;
+            _dtpMocBaoCao.Dock = DockStyle.Fill;
+            toolbar.Controls.Add(_dtpMocBaoCao, 4, 0);
 
             var btnXem = new MaterialButton { Text = "Xem", Dock = DockStyle.Fill };
             btnXem.Click += delegate { LoadReport(); };
-            toolbar.Controls.Add(btnXem, 2, 0);
+            toolbar.Controls.Add(btnXem, 5, 0);
 
             var btnExcel = new MaterialButton { Text = "Xuất Excel", Dock = DockStyle.Fill };
             btnExcel.Click += BtnExcel_Click;
-            toolbar.Controls.Add(btnExcel, 3, 0);
+            toolbar.Controls.Add(btnExcel, 6, 0);
 
             toolbar.Controls.Add(new Label
             {
@@ -93,14 +116,14 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-            }, 4, 0);
+            }, 7, 0);
             _zoomBaoCao.Dock = DockStyle.Fill;
             _zoomBaoCao.Minimum = 80;
             _zoomBaoCao.Maximum = 140;
             _zoomBaoCao.TickFrequency = 20;
             _zoomBaoCao.Value = 100;
             _zoomBaoCao.ValueChanged += delegate { ApDungZoomBaoCao(); };
-            toolbar.Controls.Add(_zoomBaoCao, 5, 0);
+            toolbar.Controls.Add(_zoomBaoCao, 8, 0);
             _root.Controls.Add(toolbar, 0, 0);
 
             _kpiPanel.Dock = DockStyle.Fill;
@@ -162,13 +185,80 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             _root.Height = Math.Max(_scrollHost.ClientSize.Height + 260, (int)Math.Round(900 * zoom));
         }
 
+        private void CapNhatDinhDangMocBaoCao()
+        {
+            var ky = LayKyBaoCao();
+            _dtpMocBaoCao.Format = DateTimePickerFormat.Custom;
+            if (ky == "Ngay" || ky == "Tuan")
+            {
+                _dtpMocBaoCao.CustomFormat = "dd/MM/yyyy";
+            }
+            else if (ky == "Thang")
+            {
+                _dtpMocBaoCao.CustomFormat = "MM/yyyy";
+            }
+            else
+            {
+                _dtpMocBaoCao.CustomFormat = "yyyy";
+            }
+        }
+
+        private string LayKyBaoCao()
+        {
+            var text = Convert.ToString(_cboKyBaoCao.SelectedItem) ?? "Tháng";
+            switch (text)
+            {
+                case "Ngày": return "Ngay";
+                case "Tuần": return "Tuan";
+                case "Năm": return "Nam";
+                default: return "Thang";
+            }
+        }
+
+        private void LayKhoangBaoCao(out DateTime tuNgay, out DateTime denNgay, out string nhomTheo)
+        {
+            var moc = _dtpMocBaoCao.Value.Date;
+            var ky = LayKyBaoCao();
+            if (ky == "Ngay")
+            {
+                tuNgay = moc;
+                denNgay = moc;
+                nhomTheo = "Ngay";
+                return;
+            }
+
+            if (ky == "Tuan")
+            {
+                var offset = ((int)moc.DayOfWeek + 6) % 7;
+                tuNgay = moc.AddDays(-offset);
+                denNgay = tuNgay.AddDays(6);
+                nhomTheo = "Ngay";
+                return;
+            }
+
+            if (ky == "Nam")
+            {
+                tuNgay = new DateTime(moc.Year, 1, 1);
+                denNgay = new DateTime(moc.Year, 12, 31);
+                nhomTheo = "Thang";
+                return;
+            }
+
+            tuNgay = new DateTime(moc.Year, moc.Month, 1);
+            denNgay = tuNgay.AddMonths(1).AddDays(-1);
+            nhomTheo = "Ngay";
+        }
+
         private void LoadReport()
         {
             try
             {
-                var nam = (int)_numNam.Value;
-                LoadKpis(nam);
-                LoadCharts(nam);
+                DateTime tuNgay;
+                DateTime denNgay;
+                string nhomTheo;
+                LayKhoangBaoCao(out tuNgay, out denNgay, out nhomTheo);
+                LoadKpis(tuNgay, denNgay);
+                LoadCharts(tuNgay, denNgay, nhomTheo);
                 _gridCanhBao.DataSource = _service.HopDongCanhBao(45).ToList();
                 _gridCongNo.DataSource = _service.CongNoQuaHan().ToList();
             }
@@ -179,21 +269,20 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             }
         }
 
-        private void LoadKpis(int nam)
+        private void LoadKpis(DateTime tuNgay, DateTime denNgay)
         {
-            var now = DateTime.Today;
             _kpiPanel.Controls.Clear();
-            AddKpi("Tổng doanh thu", _service.DoanhThuTheoThang(nam).Sum(x => x.TongThu).ToString("N0") + " VNĐ", Color.FromArgb(4, 86, 197));
+            AddKpi("Tổng doanh thu", _service.DoanhThuTheoKy(tuNgay, denNgay, "Ngay").Sum(x => x.TongThu).ToString("N0") + " VNĐ", Color.FromArgb(4, 86, 197));
             AddKpi("Tỷ lệ lấp đầy", _service.TyLeLapDay().ToString("N1") + "%", Color.FromArgb(245, 158, 11));
             AddKpi("Công nợ", _service.TongCongNo().ToString("N0") + " VNĐ", Color.FromArgb(239, 68, 68));
-            AddKpi("Hợp đồng mới", _service.HopDongMoiTrongThang(now.Month, now.Year).ToString("N0"), Color.FromArgb(16, 185, 129));
+            AddKpi("Hợp đồng mới", _service.HopDongMoiTrongKhoang(tuNgay, denNgay).ToString("N0"), Color.FromArgb(16, 185, 129));
             ResizeKpis();
         }
 
-        private void LoadCharts(int nam)
+        private void LoadCharts(DateTime tuNgay, DateTime denNgay, string nhomTheo)
         {
-            var revenue = _service.DoanhThuTheoThang(nam).ToList();
-            var debt = _service.CongNoTheoThang(nam).ToList();
+            var revenue = _service.DoanhThuTheoKy(tuNgay, denNgay, nhomTheo).ToList();
+            var debt = _service.CongNoTheoKy(tuNgay, denNgay, nhomTheo).ToList();
             _chartDoanhThu.SetGroupedColumns(
                 revenue.Select(x => x.Thang).ToList(),
                 revenue.Select(x => x.TongThu).ToList(),
@@ -207,7 +296,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             _chartLoaiCanHo.SetBars(_service.LoaiCanHoDuocThueNhieuNhat(10)
                 .Select(x => new SmartChartPoint(x.Ten, x.SoLuong)).ToList(), Color.FromArgb(16, 185, 129));
 
-            _chartTopCanHo.SetBars(_service.TopCanHoDoanhThu(nam, 5)
+            _chartTopCanHo.SetBars(_service.TopCanHoDoanhThu(tuNgay, denNgay, 5)
                 .Select(x => new SmartChartPoint(x.Ten, x.GiaTri)).ToList(), Color.FromArgb(4, 86, 197));
         }
 
@@ -300,7 +389,10 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
 
         private void BtnExcel_Click(object sender, EventArgs e)
         {
-            var nam = (int)_numNam.Value;
+            DateTime tuNgay;
+            DateTime denNgay;
+            string nhomTheo;
+            LayKhoangBaoCao(out tuNgay, out denNgay, out nhomTheo);
             using (var dialog = new SaveFileDialog { Filter = "Excel Workbook|*.xlsx", FileName = "BaoCaoSmartApart.xlsx" })
             {
                 if (dialog.ShowDialog() != DialogResult.OK) return;
@@ -309,11 +401,11 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 {
                     using (var wb = new XLWorkbook())
                     {
-                        WriteSheet(wb, "Doanh thu", _service.DoanhThuTheoThang(nam).Select(x => new { x.Thang, x.TongThu, x.SoHoaDon }).ToList());
+                        WriteSheet(wb, "Doanh thu", _service.DoanhThuTheoKy(tuNgay, denNgay, nhomTheo).Select(x => new { x.Thang, x.TongThu, x.SoHoaDon }).ToList());
                         WriteSheet(wb, "Cong no", _service.CongNoQuaHan().ToList());
                         WriteSheet(wb, "Hop dong canh bao", _service.HopDongCanhBao(45).ToList());
                         WriteSheet(wb, "Loai nha", _service.LoaiCanHoDuocThueNhieuNhat(10).ToList());
-                        WriteSheet(wb, "Top can ho", _service.TopCanHoDoanhThu(nam, 5).ToList());
+                        WriteSheet(wb, "Top can ho", _service.TopCanHoDoanhThu(tuNgay, denNgay, 5).ToList());
                         wb.SaveAs(dialog.FileName);
                     }
                     MessageBox.Show("Đã xuất Excel.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
