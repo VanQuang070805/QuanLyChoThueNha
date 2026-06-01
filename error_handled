@@ -426,6 +426,32 @@ NuGet also reported `System.IO.Packaging 6.0.0` has known high severity vulnerab
 - `nuget.exe restore QuanLyChoThueNha.sln -PackagesDirectory packages`: passed, no vulnerability warning after the package update.
 - `dotnet build QuanLyChoThueNha.sln`: passed with `0 Warning(s)` and `0 Error(s)`.
 
+## 2026-06-01 - SQL Server connection instance fix
+
+### Error
+
+App failed at startup/login with:
+
+`System.Data.SqlClient.SqlException: A network-related or instance-specific error occurred ... error: 26 - Error Locating Server/Instance Specified`
+
+### Cause
+
+The machine has SQL Server Express running as `.\SQLEXPRESS`, but both app config files pointed to `localhost\MSSQLSERVER01`, which is not available on this machine.
+
+### Fix
+
+- Updated `src/QuanLyChoThueNha.GUI/App.config`.
+- Updated `src/QuanLyChoThueNha.DAL/App.config`.
+- New connection string:
+
+`Server=.\SQLEXPRESS;Database=QuanLyChoThueNha;Integrated Security=True;MultipleActiveResultSets=True;`
+
+### Verification
+
+- Confirmed SQL Server service `MSSQL$SQLEXPRESS` is running.
+- Confirmed database `QuanLyChoThueNha` exists on `.\SQLEXPRESS`.
+- `dotnet build QuanLyChoThueNha.sln`: passed with `0 Warning(s)` and `0 Error(s)`.
+
 ## 2026-06-01 - Menu, search precision, logo and report period buttons
 
 ### Context
