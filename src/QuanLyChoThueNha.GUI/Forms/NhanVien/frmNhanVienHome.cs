@@ -110,6 +110,9 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 .Where(h => h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan")
                 .OrderBy(h => h.NgayDaoHan)
                 .ToList();
+            var khachMap = _khachThueService.LayTatCa()
+                .GroupBy(k => k.MaKhach)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
 
             _kpiPanel.Controls.Clear();
             AddKpi("Phong trong", _canHoService.LayTheoTinhTrang("Trong").Count().ToString("N0"), Color.FromArgb(0, 137, 123));
@@ -121,7 +124,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             _gridDatPhong.DataSource = new BindingList<object>(phieuCanXuLy.Select(p => new
             {
                 p.MaPhieuDatTruoc,
-                p.MaKhach,
+                TenKhach = khachMap.ContainsKey(p.MaKhach) ? khachMap[p.MaKhach] : p.MaKhach,
                 p.MaCanHo,
                 p.SoTienDatCoc,
                 p.NgayDatCoc,
@@ -132,7 +135,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             _gridHopDong.DataSource = new BindingList<object>(hopDongSapHetHan.Select(h => new
             {
                 h.MaHopDong,
-                h.MaKhach,
+                TenKhach = khachMap.ContainsKey(h.MaKhach) ? khachMap[h.MaKhach] : h.MaKhach,
                 h.MaCanHo,
                 h.NgayKetThuc,
                 SoNgayConLai = Math.Max(0, (h.NgayKetThuc.Date - DateTime.Today).Days),

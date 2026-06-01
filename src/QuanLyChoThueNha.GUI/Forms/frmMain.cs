@@ -19,7 +19,9 @@ namespace QuanLyChoThueNha.GUI.Forms
     public partial class frmMain : MaterialForm
     {
         private FlowLayoutPanel _menuGroups;
-        private FlowLayoutPanel _menuItems;
+        private Panel _drawerPanel;
+        private FlowLayoutPanel _drawerItems;
+        private Label _drawerTitle;
         private string _activeMenuKey;
 
         private class MenuItemInfo
@@ -70,30 +72,22 @@ namespace QuanLyChoThueNha.GUI.Forms
             bool qBaoCao = CoQuyenNhanVien(NhanVienPhanQuyenService.BaoCao);
 
             panelSidebar.Controls.Clear();
-            panelSidebar.Height = 88;
+            panelSidebar.Height = 50;
             panelSidebar.Padding = new Padding(12, 6, 12, 6);
             panelSidebar.FlowDirection = FlowDirection.TopDown;
             panelSidebar.WrapContents = false;
+            EnsureDrawer();
 
             _menuGroups = new FlowLayoutPanel
             {
                 Width = Math.Max(900, ClientSize.Width - 24),
-                Height = 34,
+                Height = 38,
                 WrapContents = false,
                 BackColor = Color.FromArgb(25, 118, 210),
                 Margin = new Padding(0)
             };
-            _menuItems = new FlowLayoutPanel
-            {
-                Width = Math.Max(900, ClientSize.Width - 24),
-                Height = 34,
-                WrapContents = false,
-                BackColor = Color.FromArgb(21, 101, 192),
-                Margin = new Padding(0, 4, 0, 0)
-            };
 
             panelSidebar.Controls.Add(_menuGroups);
-            panelSidebar.Controls.Add(_menuItems);
 
             AddGuideButton();
 
@@ -142,10 +136,10 @@ namespace QuanLyChoThueNha.GUI.Forms
 
         private void CapNhatKichThuocMenu()
         {
-            if (_menuGroups == null || _menuItems == null) return;
+            if (_menuGroups == null) return;
             var width = Math.Max(720, ClientSize.Width - 24);
             _menuGroups.Width = width;
-            _menuItems.Width = width;
+            if (_drawerPanel != null) _drawerPanel.Height = panelNoidung.ClientSize.Height;
         }
 
         private bool CoQuyenNhanVien(string maChucNang)
@@ -169,20 +163,100 @@ namespace QuanLyChoThueNha.GUI.Forms
             if (string.IsNullOrEmpty(_activeMenuKey))
             {
                 _activeMenuKey = key;
-                ShowMenuItems(children);
                 HighlightMenuGroup(button);
             }
         }
 
         private void ShowMenuItems(MenuItemInfo[] items)
         {
-            _menuItems.Controls.Clear();
+            EnsureDrawer();
+            _drawerItems.Controls.Clear();
             foreach (var item in items)
             {
-                var button = CreateMenuButton(item.Text, false);
-                button.Click += item.Handler;
-                _menuItems.Controls.Add(button);
+                var button = CreateDrawerButton(item.Text);
+                button.Click += delegate(object sender, EventArgs e)
+                {
+                    HideDrawer();
+                    item.Handler(sender, e);
+                };
+                _drawerItems.Controls.Add(button);
             }
+            _drawerPanel.Visible = true;
+            _drawerPanel.BringToFront();
+        }
+
+        private void EnsureDrawer()
+        {
+            if (_drawerPanel != null && !_drawerPanel.IsDisposed) return;
+
+            _drawerPanel = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 280,
+                Visible = false,
+                BackColor = Color.White,
+                Padding = new Padding(0, 0, 0, 10)
+            };
+
+            var drawerRoot = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                BackColor = Color.White
+            };
+            drawerRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
+            drawerRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            _drawerTitle = new Label
+            {
+                Text = "Danh mục",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(25, 118, 210),
+                Padding = new Padding(18, 0, 12, 0),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            drawerRoot.Controls.Add(_drawerTitle, 0, 0);
+
+            _drawerItems = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                Padding = new Padding(10, 0, 10, 0),
+                BackColor = Color.White
+            };
+            drawerRoot.Controls.Add(_drawerItems, 0, 1);
+            _drawerPanel.Controls.Add(drawerRoot);
+            panelNoidung.Controls.Add(_drawerPanel);
+            _drawerPanel.BringToFront();
+        }
+
+        private void HideDrawer()
+        {
+            if (_drawerPanel != null) _drawerPanel.Visible = false;
+        }
+
+        private Button CreateDrawerButton(string text)
+        {
+            var button = new Button
+            {
+                Text = text,
+                Width = 246,
+                Height = 42,
+                Margin = new Padding(4, 4, 4, 4),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.White,
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(14, 0, 0, 0)
+            };
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(219, 234, 254);
+            return button;
         }
 
         private void HighlightMenuGroup(Button activeButton)
@@ -323,12 +397,21 @@ namespace QuanLyChoThueNha.GUI.Forms
         private void MoForm(Form form)
         {
             panelNoidung.Controls.Clear();
+            _drawerPanel = null;
             form.TopLevel = false;
             form.FormBorderStyle = FormBorderStyle.None;
+            var materialForm = form as MaterialForm;
+            if (materialForm != null)
+            {
+                materialForm.FormStyle = MaterialForm.FormStyles.StatusAndActionBar_None;
+                materialForm.Padding = new Padding(0);
+            }
             form.Dock = DockStyle.Fill;
             panelNoidung.Controls.Add(form);
             panelNoidung.Tag = form;
             form.Show();
+            EnsureDrawer();
+            HideDrawer();
         }
     }
 }

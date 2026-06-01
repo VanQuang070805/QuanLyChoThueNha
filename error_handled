@@ -426,6 +426,55 @@ NuGet also reported `System.IO.Packaging 6.0.0` has known high severity vulnerab
 - `nuget.exe restore QuanLyChoThueNha.sln -PackagesDirectory packages`: passed, no vulnerability warning after the package update.
 - `dotnet build QuanLyChoThueNha.sln`: passed with `0 Warning(s)` and `0 Error(s)`.
 
+## 2026-06-01 - Menu, search precision, logo and report period buttons
+
+### Context
+
+User requested UI behavior closer to the referenced game-store management app:
+
+- Top menu should open a left drawer list of pages.
+- Searching `Toa B` must not match all towers.
+- Price filter Enter key must apply the current value instead of reverting.
+- Dashboard report period should be selectable by buttons.
+- Customer code should be replaced by customer name in summary grids where possible.
+- Newly added `logo.png` should be used by the app.
+
+### Fix
+
+- Reworked `frmMain` navigation:
+  - Top menu remains as compact group buttons.
+  - Clicking a group opens a left drawer containing that group's pages.
+  - Clicking a drawer item opens the form and closes the drawer.
+  - Embedded `MaterialForm` children now use `StatusAndActionBar_None` to avoid duplicated headers and visual clipping.
+- Tightened `TextFormatHelper.ContainsNormalized`:
+  - Multi-token search now requires every token to match.
+  - Short tokens like `B` must match an actual token, preventing `Toa B` from matching `Toa A` or `Toa C`.
+  - Alias and fuzzy search remain available for single terms and normal word-sized terms.
+- Public room search:
+  - Enter on `Giá từ` / `Giá đến` now applies the filter and suppresses default reset behavior.
+- Dashboard report:
+  - Replaced period dropdown with button-style selectors: `Ngày`, `Tuần`, `Tháng`, `Năm`.
+- Summary grids:
+  - Dashboard expiring-contract grid now uses `TenKhach` instead of `MaKhach`.
+  - Employee home reservation/contract grids now show `TenKhach` instead of raw customer code.
+- Login logo:
+  - Added root `logo.png` as GUI content and copy-to-output.
+  - Login form loads `logo.png` automatically when available.
+
+### External UI review
+
+Read `D:\Net\QuanLyCuaHangGame (1).rar` into a temporary folder for reference only. The referenced app uses:
+
+- WinForms + MaterialSkin.2.
+- LiveCharts for charts.
+- Custom GDI+/WinForms helpers for rounded controls, KPI cards, list/table styling, and message boxes.
+- A hidden `TabControl`/drawer-style navigation pattern where the visible menu changes selected pages.
+- Manual responsive resizing through `SizeChanged` handlers and percentage column widths.
+
+### Verification
+
+- `dotnet build QuanLyChoThueNha.sln`: passed with `0 Warning(s)` and `0 Error(s)`.
+
 ## 2026-06-01 - Search and dashboard filter update
 
 ### Context

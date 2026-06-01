@@ -14,6 +14,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
     {
         private readonly BaoCaoService _service = new BaoCaoService();
         private readonly ComboBox _cboKyBaoCao = new ComboBox();
+        private readonly FlowLayoutPanel _periodButtons = new FlowLayoutPanel();
         private readonly DateTimePicker _dtpMocBaoCao = new DateTimePicker();
         private readonly TrackBar _zoomBaoCao = new TrackBar();
         private readonly FlowLayoutPanel _kpiPanel = new FlowLayoutPanel();
@@ -25,6 +26,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
         private readonly DataGridView _gridCongNo = CreateGrid();
         private Panel _scrollHost;
         private TableLayoutPanel _root;
+        private string _selectedKyBaoCao = "Thang";
 
         public frmBaoCao()
         {
@@ -61,7 +63,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             var toolbar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 9 };
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 48));
-            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 250));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 56));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
@@ -84,12 +86,15 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             }, 1, 0);
-            _cboKyBaoCao.DropDownStyle = ComboBoxStyle.DropDownList;
-            _cboKyBaoCao.Items.AddRange(new object[] { "Ngày", "Tuần", "Tháng", "Năm" });
-            _cboKyBaoCao.SelectedIndex = 2;
-            _cboKyBaoCao.Dock = DockStyle.Fill;
-            _cboKyBaoCao.SelectedIndexChanged += delegate { CapNhatDinhDangMocBaoCao(); };
-            toolbar.Controls.Add(_cboKyBaoCao, 2, 0);
+            _periodButtons.Dock = DockStyle.Fill;
+            _periodButtons.WrapContents = false;
+            _periodButtons.Margin = new Padding(0);
+            _periodButtons.BackColor = Color.Transparent;
+            AddPeriodButton("Ngày", "Ngay");
+            AddPeriodButton("Tuần", "Tuan");
+            AddPeriodButton("Tháng", "Thang");
+            AddPeriodButton("Năm", "Nam");
+            toolbar.Controls.Add(_periodButtons, 2, 0);
 
             toolbar.Controls.Add(new Label
             {
@@ -205,13 +210,43 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
 
         private string LayKyBaoCao()
         {
-            var text = Convert.ToString(_cboKyBaoCao.SelectedItem) ?? "Tháng";
-            switch (text)
+            return string.IsNullOrWhiteSpace(_selectedKyBaoCao) ? "Thang" : _selectedKyBaoCao;
+        }
+
+        private void AddPeriodButton(string text, string value)
+        {
+            var button = new Button
             {
-                case "Ngày": return "Ngay";
-                case "Tuần": return "Tuan";
-                case "Năm": return "Nam";
-                default: return "Thang";
+                Text = text,
+                Tag = value,
+                Width = 58,
+                Height = 30,
+                Margin = new Padding(0, 2, 4, 2),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            button.FlatAppearance.BorderColor = Color.FromArgb(191, 219, 254);
+            button.Click += delegate
+            {
+                _selectedKyBaoCao = value;
+                UpdatePeriodButtons();
+                CapNhatDinhDangMocBaoCao();
+                LoadReport();
+            };
+            _periodButtons.Controls.Add(button);
+            UpdatePeriodButtons();
+        }
+
+        private void UpdatePeriodButtons()
+        {
+            foreach (Control control in _periodButtons.Controls)
+            {
+                var button = control as Button;
+                if (button == null) continue;
+                var active = Convert.ToString(button.Tag) == _selectedKyBaoCao;
+                button.BackColor = active ? Color.FromArgb(25, 118, 210) : Color.White;
+                button.ForeColor = active ? Color.White : Color.FromArgb(30, 64, 175);
             }
         }
 

@@ -101,7 +101,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 AddKpi("Doanh thu tháng", _service.DoanhThuThang(now.Month, now.Year).ToString("N0"), Color.FromArgb(245, 124, 0));
                 AddKpi("Hóa đơn chưa trả", _service.HoaDonChuaTra().ToString("N0"), Color.FromArgb(220, 38, 38));
 
-                _gridHopDong.DataSource = _service.HopDongSapHetHan(30).ToList();
+                _gridHopDong.DataSource = _service.HopDongCanhBao(30).ToList();
                 _gridDoanhThu.DataSource = _service.DoanhThuTheoThang(now.Year).ToList();
                 FormatGrids();
                 ResizeKpis();
@@ -117,10 +117,10 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
         {
             Rename(_gridHopDong, "MaHopDong", "Mã HĐ");
             Rename(_gridHopDong, "MaCanHo", "Căn hộ");
-            Rename(_gridHopDong, "MaKhach", "Khách");
+            Rename(_gridHopDong, "TenKhach", "Khách");
             Rename(_gridHopDong, "NgayKetThuc", "Ngày kết thúc");
             Rename(_gridHopDong, "TrangThai", "Trạng thái");
-            HideExcept(_gridHopDong, "MaHopDong", "MaCanHo", "MaKhach", "NgayKetThuc", "TrangThai");
+            HideExcept(_gridHopDong, "MaHopDong", "MaCanHo", "TenKhach", "NgayKetThuc", "TrangThai");
 
             Rename(_gridDoanhThu, "Thang", "Tháng");
             Rename(_gridDoanhThu, "TongThu", "Tổng thu");

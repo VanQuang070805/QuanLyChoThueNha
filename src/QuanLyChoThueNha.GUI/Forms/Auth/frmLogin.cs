@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 using MaterialSkin;
 using MaterialSkin.Controls;
@@ -52,6 +54,25 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                 TextShade.WHITE);
 
             _authService = new AuthService();
+            TryApplyLogo();
+        }
+
+        private void TryApplyLogo()
+        {
+            var logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+            if (!File.Exists(logoPath)) return;
+
+            var logo = new PictureBox
+            {
+                Image = Image.FromFile(logoPath),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Location = new Point(70, 82),
+                Size = new Size(48, 48),
+                BackColor = Color.Transparent
+            };
+            lblTieuDe.Location = new Point(132, lblTieuDe.Location.Y);
+            Controls.Add(logo);
+            logo.BringToFront();
         }
 
         // â”€â”€ Xá»­ lÃ½ Ä‘Äƒng nháº­p â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

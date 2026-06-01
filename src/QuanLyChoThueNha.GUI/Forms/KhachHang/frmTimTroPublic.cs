@@ -157,6 +157,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             SetupMoney(_numGiaDen);
             _numGiaTu.ValueChanged += delegate { TaiDanhSachTro(); };
             _numGiaDen.ValueChanged += delegate { TaiDanhSachTro(); };
+            _numGiaTu.KeyDown += MoneyFilter_KeyDown;
+            _numGiaDen.KeyDown += MoneyFilter_KeyDown;
 
             root.Controls.Add(CreateFilterPanel(), 0, 1);
 
@@ -493,6 +495,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             number.Maximum = 1000000000000;
             number.ThousandsSeparator = true;
             number.DecimalPlaces = 0;
+        }
+
+        private void MoneyFilter_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter) return;
+            e.SuppressKeyPress = true;
+            e.Handled = true;
+            TaiDanhSachTro();
         }
 
         private void NapBoLoc()

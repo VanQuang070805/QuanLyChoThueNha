@@ -63,10 +63,12 @@ namespace QuanLyChoThueNha.BLL.Helpers
             var normalizedSource = NormalizeSearch(source);
             if (normalizedSource.Contains(kw)) return true;
 
+            var terms = SplitSearchTerms(kw).ToList();
+            if (terms.Count > 1)
+                return terms.All(term => TermMatches(normalizedSource, term));
+
             foreach (var expanded in ExpandSearchTerms(kw))
-            {
-                if (normalizedSource.Contains(expanded)) return true;
-            }
+                if (TermMatches(normalizedSource, expanded)) return true;
 
             return IsNearMatch(normalizedSource, kw);
         }
@@ -91,8 +93,7 @@ namespace QuanLyChoThueNha.BLL.Helpers
         private static IEnumerable<string> ExpandSearchTerms(string keyword)
         {
             var result = new HashSet<string>();
-            var words = keyword.Split(new[] { ' ', '-', '_', '/', '\\', ',', '.', ';', ':' },
-                System.StringSplitOptions.RemoveEmptyEntries);
+            var words = SplitSearchTerms(keyword);
 
             foreach (var word in words)
             {
@@ -123,13 +124,41 @@ namespace QuanLyChoThueNha.BLL.Helpers
             return result;
         }
 
+        private static IEnumerable<string> SplitSearchTerms(string value)
+        {
+            return value.Split(new[] { ' ', '-', '_', '/', '\\', ',', '.', ';', ':', '|', '(', ')' },
+                System.StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        private static bool TermMatches(string normalizedSource, string term)
+        {
+            if (string.IsNullOrWhiteSpace(term)) return true;
+            var sourceTokens = SplitSearchTerms(normalizedSource).ToList();
+            if (term.Length <= 2)
+                return sourceTokens.Any(token => token == term);
+
+            if (normalizedSource.Contains(term)) return true;
+
+            foreach (var expanded in ExpandSearchTerms(term))
+            {
+                if (expanded.Length <= 2)
+                {
+                    if (sourceTokens.Any(token => token == expanded)) return true;
+                }
+                else if (normalizedSource.Contains(expanded))
+                {
+                    return true;
+                }
+            }
+
+            return IsNearMatch(normalizedSource, term);
+        }
+
         private static bool IsNearMatch(string source, string keyword)
         {
             if (keyword.Length < 4) return false;
-            var sourceTokens = source.Split(new[] { ' ', '-', '_', '/', '\\', ',', '.', ';', ':', '|', '(', ')' },
-                System.StringSplitOptions.RemoveEmptyEntries);
-            var keywordTokens = keyword.Split(new[] { ' ', '-', '_', '/', '\\', ',', '.', ';', ':' },
-                System.StringSplitOptions.RemoveEmptyEntries);
+            var sourceTokens = SplitSearchTerms(source);
+            var keywordTokens = SplitSearchTerms(keyword);
 
             foreach (var kw in keywordTokens.Where(x => x.Length >= 4))
             {
