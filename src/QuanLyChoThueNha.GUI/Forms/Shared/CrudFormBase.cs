@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.GUI.Controls;
+using QuanLyChoThueNha.GUI.Helpers;
 
 namespace QuanLyChoThueNha.GUI.Forms.Shared
 {
@@ -137,6 +138,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         {
             try
             {
+                GridFormatterHelper.ClearNamesCache();
                 var items = GetItems().ToList();
                 var keyword = TextFormatHelper.NormalizeSearch(TxtSearch.Text);
                 if (!string.IsNullOrWhiteSpace(keyword))
@@ -228,6 +230,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             Grid.DataBindingComplete += delegate { Grid.ClearSelection(); };
             Grid.SelectionChanged += delegate { BindCurrentToInputs(); };
             TaoCotGrid();
+            GridFormatterHelper.SetupCellFormatting(Grid);
             left.Controls.Add(Grid, 0, 1);
 
             LblStatus.Dock = DockStyle.Fill;
@@ -379,11 +382,21 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 FieldDefinition field;
                 if (!fieldByName.TryGetValue(propertyName, out field)) continue;
 
+                var headerText = field.Caption;
+                if (field.PropertyName == "MaCanHo" || field.PropertyName == "Phong")
+                {
+                    headerText = "Tên căn hộ";
+                }
+                else if (field.PropertyName == "MaToa" || field.PropertyName == "Toa")
+                {
+                    headerText = "Tên tòa";
+                }
+
                 var column = new DataGridViewTextBoxColumn
                 {
                     DataPropertyName = field.PropertyName,
                     Name = field.PropertyName,
-                    HeaderText = field.Caption,
+                    HeaderText = headerText,
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                     MinimumWidth = 90
                 };

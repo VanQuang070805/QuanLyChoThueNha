@@ -27,12 +27,29 @@ function Load-AppAssemblies {
     Add-Type -AssemblyName System.Drawing
     Add-Type -AssemblyName System.Configuration
 
-    [AppDomain]::CurrentDomain.add_AssemblyResolve({
-        param($sender, $args)
-        $name = New-Object System.Reflection.AssemblyName($args.Name)
-        $candidate = Join-Path $bin ($name.Name + ".dll")
-        if (Test-Path $candidate) {
-            return [System.Reflection.Assembly]::LoadFrom($candidate)
+    $script:bin_dir = $bin
+    $script:resolving = $false
+    [AppDomain]::CurrentDomain.add_AssemblyResolve([System.ResolveEventHandler]{
+        param($sender, $resolveArgs)
+        if ($script:resolving) { return $null }
+        $script:resolving = $true
+        try {
+            $fullName = $resolveArgs.Name
+            if ($null -eq $fullName) { return $null }
+            Write-Host "[Resolve] Request: $fullName"
+            $commaIdx = $fullName.IndexOf(",")
+            $shortName = if ($commaIdx -ge 0) { $fullName.Substring(0, $commaIdx) } else { $fullName }
+            
+            $candidate = Join-Path $script:bin_dir ($shortName + ".dll")
+            if (Test-Path $candidate) {
+                $asm = [System.Reflection.Assembly]::LoadFrom($candidate)
+                Write-Host "[Resolve] Loaded: $($asm.FullName)"
+                return $asm
+            }
+        } catch {
+            Write-Host "[Resolve] Error: $_"
+        } finally {
+            $script:resolving = $false
         }
         return $null
     }) | Out-Null
@@ -184,7 +201,7 @@ function Assert-BookingFlow {
     }
 
     $created = @($phieuSvc.LayTatCa() |
-        Where-Object { $_.MaKhach -eq "KH903" -and $_.MaCanHo -eq $canHo.MaCanHo -and $_.TrangThai -eq "ChoKy" } |
+        Where-Object { $_.MaKhach -eq "KH903" -and $_.MaCanHo -eq $canHo.MaCanHo -and ($_.TrangThai -eq "ChoKy" -or $_.TrangThai -eq "ChoThanhToanCoc") } |
         Sort-Object NgayDatCoc -Descending |
         Select-Object -First 1)[0]
 

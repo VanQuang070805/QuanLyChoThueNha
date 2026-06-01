@@ -206,6 +206,19 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         protected override void AfterGridBound()
         {
+            if (!Grid.Columns.Contains("Toa"))
+            {
+                Grid.Columns.Insert(3, new DataGridViewTextBoxColumn
+                {
+                    Name = "Toa",
+                    HeaderText = "Tên tòa",
+                    ReadOnly = true
+                });
+            }
+
+            var canHos = _canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
+            var toas = new ToaService().LayTatCa().ToDictionary(t => t.MaToa);
+
             foreach (DataGridViewRow row in Grid.Rows)
             {
                 var hd = row.DataBoundItem as HopDongEntity;
@@ -222,6 +235,17 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 // Hiển thị tiếng Việt trong cột TrangThai
                 if (Grid.Columns.Contains("TrangThai"))
                     row.Cells["TrangThai"].ToolTipText = HienThiTrangThai(status);
+
+                CanHo canHo;
+                if (canHos.TryGetValue(hd.MaCanHo, out canHo))
+                {
+                    Toa toa;
+                    row.Cells["Toa"].Value = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
+                }
+                else
+                {
+                    row.Cells["Toa"].Value = string.Empty;
+                }
             }
         }
 

@@ -329,11 +329,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private void TaoCotBang()
         {
             dgv.Columns.Clear();
-            AddDisplayColumn("TenCanHo", "Tên căn hộ", 90);
-            AddDisplayColumn("TenToa", "Tên tòa", 100);
             AddGridColumn("MaCanHo", "Mã căn hộ", 90);
-            AddGridColumn("MaToa", "Tòa", 80);
-            AddGridColumn("MaLoai", "Loại", 80);
+            AddGridColumn("TenCanHo", "Tên căn hộ", 95);
+            AddGridColumn("TenToa", "Tên tòa", 100);
+            AddGridColumn("TenLoai", "Loại", 80);
             AddGridColumn("DienTich", "Diện tích", 90, "N1");
             AddGridColumn("GiaThueNiemYet", "Giá thuê", 110, "N0");
             AddGridColumn("TienCocNiemYet", "Tiền cọc", 110, "N0");
@@ -360,18 +359,6 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             dgv.Columns.Add(column);
         }
 
-        private void AddDisplayColumn(string name, string header, int minWidth)
-        {
-            dgv.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = name,
-                HeaderText = header,
-                MinimumWidth = minWidth,
-                ReadOnly = true,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
-            });
-        }
-
         private void NapComboBox()
         {
             cboToa.DisplayMember = "TenToa";
@@ -391,8 +378,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void TaiDuLieu()
         {
-            dgv.DataSource = new BindingList<CanHo>(_canHoSvc.LayTatCa().OrderBy(c => c.MaCanHo).ToList());
-            ApDungCotTenCanHoToa();
+            var data = _canHoSvc.LayTatCa().OrderBy(c => c.MaCanHo).ToList();
+            CapNhatGrid(data);
             dgv.ClearSelection();
         }
 
@@ -407,29 +394,37 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                     TextFormatHelper.ContainsNormalized(c.SoCanHo.ToString(), kw) ||
                     TextFormatHelper.ContainsNormalized(c.TinhTrang, kw));
             }
-            dgv.DataSource = new BindingList<CanHo>(data.OrderBy(c => c.MaCanHo).ToList());
-            ApDungCotTenCanHoToa();
+            CapNhatGrid(data.OrderBy(c => c.MaCanHo).ToList());
         }
 
-        private void ApDungCotTenCanHoToa()
+        private void CapNhatGrid(List<CanHo> canHos)
         {
-            var toas = _toaSvc.LayTatCa().GroupBy(t => t.MaToa).ToDictionary(g => g.Key, g => g.First());
-            foreach (DataGridViewRow row in dgv.Rows)
+            var toas = _toaSvc.LayTatCa().ToDictionary(t => t.MaToa, t => t.TenToa);
+            var loais = _loaiSvc.LayTatCa().ToDictionary(l => l.MaLoai, l => l.TenLoai);
+
+            var list = canHos.Select(c => new
             {
-                var canHo = row.DataBoundItem as CanHo;
-                if (canHo == null) continue;
-                row.Cells["TenCanHo"].Value = "Can " + canHo.SoCanHo;
-                Toa toa;
-                row.Cells["TenToa"].Value = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
-            }
-            if (dgv.Columns.Contains("MaCanHo")) dgv.Columns["MaCanHo"].Visible = false;
-            if (dgv.Columns.Contains("MaToa")) dgv.Columns["MaToa"].Visible = false;
+                c.MaCanHo,
+                TenCanHo = "Căn " + c.SoCanHo,
+                TenToa = toas.ContainsKey(c.MaToa) ? toas[c.MaToa] : c.MaToa,
+                TenLoai = loais.ContainsKey(c.MaLoai) ? loais[c.MaLoai] : c.MaLoai,
+                c.DienTich,
+                c.GiaThueNiemYet,
+                c.TienCocNiemYet,
+                c.SoCanHo,
+                c.TangSo,
+                c.TinhTrang
+            }).ToList();
+
+            dgv.DataSource = new BindingList<object>(list.Cast<object>().ToList());
         }
 
         private void Dgv_SelectionChanged(object sender, EventArgs e)
         {
             if (dgv.CurrentRow == null) return;
-            var c = dgv.CurrentRow.DataBoundItem as CanHo;
+            var maCanHo = dgv.CurrentRow.Cells["MaCanHo"].Value?.ToString();
+            if (string.IsNullOrEmpty(maCanHo)) return;
+            var c = _canHoSvc.LayTheoMa(maCanHo);
             if (c == null) return;
 
             // Hien thi du lieu cua dong duoc chon

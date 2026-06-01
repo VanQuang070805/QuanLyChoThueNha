@@ -116,11 +116,12 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<DoanhThuTheoThangDto> DoanhThuTheoKy(DateTime tuNgay, DateTime denNgay, string nhomTheo)
         {
+            var denNgayMoc = denNgay.Date.AddDays(1);
             var hoaDons = _uow.HoaDonThanhToans
                 .Find(h => h.TrangThai == "DaTra" &&
                            h.NgayThanhToan.HasValue &&
-                           h.NgayThanhToan.Value.Date >= tuNgay.Date &&
-                           h.NgayThanhToan.Value.Date <= denNgay.Date)
+                           h.NgayThanhToan.Value >= tuNgay.Date &&
+                           h.NgayThanhToan.Value < denNgayMoc)
                 .ToList();
 
             var data = hoaDons
@@ -141,10 +142,11 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<DoanhThuTheoThangDto> CongNoTheoKy(DateTime tuNgay, DateTime denNgay, string nhomTheo)
         {
-            var hoaDons = _uow.HoaDonThanhToans.GetAll()
-                .Where(h => h.NgayDaoHan.Date >= tuNgay.Date &&
-                            h.NgayDaoHan.Date <= denNgay.Date &&
-                            (h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan"))
+            var denNgayMoc = denNgay.Date.AddDays(1);
+            var hoaDons = _uow.HoaDonThanhToans
+                .Find(h => h.NgayDaoHan >= tuNgay.Date &&
+                           h.NgayDaoHan < denNgayMoc &&
+                           (h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan"))
                 .ToList();
 
             var data = hoaDons
@@ -183,8 +185,12 @@ namespace QuanLyChoThueNha.BLL.Services
         public int HopDongHieuLuc()     => _uow.HopDongs.Count(h => h.TrangThai == "HieuLuc");
         public int HoaDonChuaTra()      => _uow.HoaDonThanhToans.Count(h => h.TrangThai == "ChuaTra");
         public int HopDongMoiTrongThang(int thang, int nam) => _uow.HopDongs.Count(h => h.NgayTao.Month == thang && h.NgayTao.Year == nam);
-        public int HopDongMoiTrongKhoang(DateTime tuNgay, DateTime denNgay) =>
-            _uow.HopDongs.Count(h => h.NgayTao.Date >= tuNgay.Date && h.NgayTao.Date <= denNgay.Date);
+        public int HopDongMoiTrongKhoang(DateTime tuNgay, DateTime denNgay)
+        {
+            var tuNgayMoc = tuNgay.Date;
+            var denNgayMoc = denNgay.Date.AddDays(1);
+            return _uow.HopDongs.Count(h => h.NgayTao >= tuNgayMoc && h.NgayTao < denNgayMoc);
+        }
         public decimal TongCongNo() => _uow.HoaDonThanhToans.GetAll()
             .Where(h => h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan")
             .Sum(h => Math.Max(0, h.SoTienPhaiTra - h.SoTienDaTra));
@@ -355,11 +361,12 @@ namespace QuanLyChoThueNha.BLL.Services
                 .Where(h => !string.IsNullOrWhiteSpace(h.MaHopDong))
                 .GroupBy(h => h.MaHopDong)
                 .ToDictionary(g => g.Key, g => g.First());
+            var denNgayMoc = denNgay.Date.AddDays(1);
             var hoaDons = _uow.HoaDonThanhToans
                 .Find(h => h.TrangThai == "DaTra" &&
                            h.NgayThanhToan.HasValue &&
-                           h.NgayThanhToan.Value.Date >= tuNgay.Date &&
-                           h.NgayThanhToan.Value.Date <= denNgay.Date)
+                           h.NgayThanhToan.Value >= tuNgay.Date &&
+                           h.NgayThanhToan.Value < denNgayMoc)
                 .ToList();
 
             return hoaDons

@@ -14,14 +14,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 {
     public class frmKhachHangHome : MaterialForm
     {
-        private readonly CanHoService _canHoService = new CanHoService();
-        private readonly ToaService _toaService = new ToaService();
-        private readonly PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
-        private readonly HopDongService _hopDongService = new HopDongService();
-        private readonly HoaDonThanhToanService _hoaDonService = new HoaDonThanhToanService();
-        private readonly PhieuXuLyViPhamService _viPhamService = new PhieuXuLyViPhamService();
-        private readonly KhachThueService _khachThueService = new KhachThueService();
-        private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
+        private CanHoService _canHoService = new CanHoService();
+        private ToaService _toaService = new ToaService();
+        private PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
+        private HopDongService _hopDongService = new HopDongService();
+        private HoaDonThanhToanService _hoaDonService = new HoaDonThanhToanService();
+        private PhieuXuLyViPhamService _viPhamService = new PhieuXuLyViPhamService();
+        private KhachThueService _khachThueService = new KhachThueService();
+        private TaiKhoanService _taiKhoanService = new TaiKhoanService();
 
         private FlowLayoutPanel roomCards;
         private DataGridView gridPhieuDatTruoc;
@@ -148,6 +148,17 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private void TaiDuLieu()
         {
             if (roomCards == null || gridPhieuDatTruoc == null || gridHopDong == null || gridHoaDon == null || gridViPham == null) return;
+            
+            // BỔ SUNG: Khởi tạo lại các dịch vụ để tránh EF caching dữ liệu cũ
+            _canHoService = new CanHoService();
+            _toaService = new ToaService();
+            _phieuDatTruocService = new PhieuDatTruocService();
+            _hopDongService = new HopDongService();
+            _hoaDonService = new HoaDonThanhToanService();
+            _viPhamService = new PhieuXuLyViPhamService();
+            _khachThueService = new KhachThueService();
+            _taiKhoanService = new TaiKhoanService();
+
             lblHeader.Text = string.Format("Xin chao {0} [{1}]", SessionContext.HoTen, SessionContext.MaNguoiDung);
             GuiThongBaoPhieuHetHanMoi();
             TaiPhieuDatTruoc();
@@ -163,7 +174,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .ToList();
             var canHos = _canHoService.LayTatCa().GroupBy(c => c.MaCanHo).ToDictionary(g => g.Key, g => g.First());
             var toas = _toaService.LayTatCa().GroupBy(t => t.MaToa).ToDictionary(g => g.Key, g => g.First());
-
+ 
             gridPhieuDatTruoc.DataSource = new BindingList<object>(phieus.Select(p => new
             {
                 p.MaPhieuDatTruoc,
@@ -176,6 +187,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 p.PhuongThucThanhToan,
                 p.GhiChu
             }).Cast<object>().ToList());
+            DinhDangGrid(gridPhieuDatTruoc);
         }
 
         private void GuiThongBaoPhieuHetHanMoi()
@@ -356,6 +368,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .ToList();
             var canHos = _canHoService.LayTatCa().GroupBy(c => c.MaCanHo).ToDictionary(g => g.Key, g => g.First());
             var toas = _toaService.LayTatCa().GroupBy(t => t.MaToa).ToDictionary(g => g.Key, g => g.First());
+            var hopDongMap = hopDongs.ToDictionary(h => h.MaHopDong, h => h);
+
             gridHopDong.DataSource = new BindingList<object>(hopDongs.Select(h => new
             {
                 h.MaHopDong,
@@ -369,35 +383,115 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 CocConPhaiNop = h.TienCocConPhaiNop,
                 h.TrangThai
             }).Cast<object>().ToList());
-
+ 
             var maHopDongs = hopDongs.Select(h => h.MaHopDong).ToList();
             var hoaDons = maHopDongs
                 .SelectMany(ma => _hoaDonService.LayTheoHopDong(ma))
                 .OrderByDescending(h => h.NgayDaoHan)
                 .ToList();
-            gridHoaDon.DataSource = new BindingList<HoaDonThanhToan>(hoaDons);
-            foreach (DataGridViewColumn column in gridHoaDon.Columns)
-            {
-                if (column.Name == "MaNguoiThaoTac" || column.Name == "VaiTroNguoiThaoTac" ||
-                    column.Name == "MaNhanVienThu" || column.Name == "MaViPham")
-                    column.Visible = false;
-            }
-
+            
+            gridHoaDon.DataSource = new BindingList<object>(hoaDons.Select(h => {
+                var hd = hopDongMap.ContainsKey(h.MaHopDong) ? hopDongMap[h.MaHopDong] : null;
+                var maCanHo = hd?.MaCanHo;
+                return new {
+                    h.MaHoaDon,
+                    h.MaHopDong,
+                    TenCanHo = maCanHo != null ? LayTenCanHo(maCanHo, canHos) : "",
+                    TenToa = maCanHo != null ? LayTenToa(maCanHo, canHos, toas) : "",
+                    h.MaLoaiHoaDon,
+                    h.KyThanhToan,
+                    h.ChiSoDienCu,
+                    h.ChiSoDienMoi,
+                    h.ChiSoNuocCu,
+                    h.ChiSoNuocMoi,
+                    h.SoTienPhaiTra,
+                    h.SoTienDaTra,
+                    h.NgayDaoHan,
+                    h.NgayThanhToan,
+                    h.TrangThai,
+                    h.PhuongThucThanhToan
+                };
+            }).Cast<object>().ToList());
+ 
             var viPhams = maHopDongs
                 .SelectMany(ma => _viPhamService.LayTheoHopDong(ma))
                 .OrderByDescending(v => v.NgayGhiNhan)
                 .ToList();
-            gridViPham.DataSource = new BindingList<object>(viPhams.Select(v => new
-            {
-                v.MaViPham,
-                v.MaHopDong,
-                v.LoaiViPham,
-                v.MoTa,
-                v.PhiBoiThuong,
-                v.TruVaoCoc,
-                v.TinhTrang,
-                v.NgayGhiNhan
+            
+            gridViPham.DataSource = new BindingList<object>(viPhams.Select(v => {
+                var hd = hopDongMap.ContainsKey(v.MaHopDong) ? hopDongMap[v.MaHopDong] : null;
+                var maCanHo = hd?.MaCanHo;
+                return new
+                {
+                    v.MaViPham,
+                    v.MaHopDong,
+                    TenCanHo = maCanHo != null ? LayTenCanHo(maCanHo, canHos) : "",
+                    TenToa = maCanHo != null ? LayTenToa(maCanHo, canHos, toas) : "",
+                    v.LoaiViPham,
+                    v.MoTa,
+                    v.PhiBoiThuong,
+                    v.TruVaoCoc,
+                    v.TinhTrang,
+                    v.NgayGhiNhan
+                };
             }).Cast<object>().ToList());
+
+            DinhDangGrid(gridHopDong);
+            DinhDangGrid(gridHoaDon);
+            DinhDangGrid(gridViPham);
+        }
+ 
+        private void DinhDangGrid(DataGridView dgv)
+        {
+            foreach (DataGridViewColumn col in dgv.Columns)
+            {
+                switch (col.Name)
+                {
+                    case "MaPhieuDatTruoc": col.HeaderText = "Mã phiếu"; break;
+                    case "TenCanHo": col.HeaderText = "Tên căn hộ"; break;
+                    case "TenToa": col.HeaderText = "Tên tòa"; break;
+                    case "SoTienDatCoc": col.HeaderText = "Tiền đặt cọc"; break;
+                    case "NgayDatCoc": col.HeaderText = "Ngày đặt cọc"; break;
+                    case "NgayHetHan": col.HeaderText = "Ngày hết hạn"; break;
+                    case "TrangThai": col.HeaderText = "Trạng thái"; break;
+                    case "PhuongThucThanhToan": col.HeaderText = "Phương thức"; break;
+                    case "GhiChu": col.HeaderText = "Ghi chú"; break;
+
+                    case "MaHopDong": col.HeaderText = "Mã hợp đồng"; break;
+                    case "NgayBatDau": col.HeaderText = "Ngày bắt đầu"; break;
+                    case "NgayKetThuc": col.HeaderText = "Ngày kết thúc"; break;
+                    case "GiaThueChot": col.HeaderText = "Giá thuê chốt"; break;
+                    case "TienCocChot": col.HeaderText = "Tiền cọc chốt"; break;
+                    case "CocTruocDaTru": col.HeaderText = "Cọc trước đã trừ"; break;
+                    case "CocConPhaiNop": col.HeaderText = "Cọc còn phải nộp"; break;
+
+                    case "MaHoaDon": col.HeaderText = "Mã hóa đơn"; break;
+                    case "MaLoaiHoaDon": col.HeaderText = "Loại hóa đơn"; break;
+                    case "KyThanhToan": col.HeaderText = "Kỳ thanh toán"; break;
+                    case "ChiSoDienCu": col.HeaderText = "Chỉ số điện cũ"; break;
+                    case "ChiSoDienMoi": col.HeaderText = "Chỉ số điện mới"; break;
+                    case "ChiSoNuocCu": col.HeaderText = "Chỉ số nước cũ"; break;
+                    case "ChiSoNuocMoi": col.HeaderText = "Chỉ số nước mới"; break;
+                    case "SoTienPhaiTra": col.HeaderText = "Số tiền phải trả"; break;
+                    case "SoTienDaTra": col.HeaderText = "Số tiền đã trả"; break;
+                    case "NgayDaoHan": col.HeaderText = "Ngày đáo hạn"; break;
+                    case "NgayThanhToan": col.HeaderText = "Ngày thanh toán"; break;
+
+                    case "MaViPham": col.HeaderText = "Mã vi phạm"; break;
+                    case "LoaiViPham": col.HeaderText = "Loại vi phạm"; break;
+                    case "MoTa": col.HeaderText = "Mô tả"; break;
+                    case "PhiBoiThuong": col.HeaderText = "Phí bồi thường"; break;
+                    case "TruVaoCoc": col.HeaderText = "Trừ vào cọc"; break;
+                    case "TinhTrang": col.HeaderText = "Tình trạng"; break;
+                    case "NgayGhiNhan": col.HeaderText = "Ngày ghi nhận"; break;
+                }
+
+                if (col.Name.Contains("Tien") || col.Name.Contains("Gia") || col.Name.Contains("Phi") || col.Name.Contains("Coc"))
+                {
+                    col.DefaultCellStyle.Format = "N0";
+                    col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+            }
         }
 
         private string LayTenCanHo(string maCanHo, IDictionary<string, CanHo> canHos)
@@ -424,8 +518,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-
-            var hoaDon = gridHoaDon.CurrentRow.DataBoundItem as HoaDonThanhToan;
+ 
+            var maHoaDon = gridHoaDon.CurrentRow.Cells["MaHoaDon"].Value?.ToString();
+            if (string.IsNullOrEmpty(maHoaDon)) return;
+            var hoaDon = _hoaDonService.LayTheoMa(maHoaDon);
             if (hoaDon == null) return;
             if (hoaDon.SoTienPhaiTra <= hoaDon.SoTienDaTra)
             {

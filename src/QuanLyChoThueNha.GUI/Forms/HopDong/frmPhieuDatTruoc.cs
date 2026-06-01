@@ -5,6 +5,7 @@ using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Forms.Shared;
 using QuanLyChoThueNha.Model.Entities;
+using System.Windows.Forms;
 
 namespace QuanLyChoThueNha.GUI.Forms.HopDong
 {
@@ -114,6 +115,41 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 return;
             }
             ReloadData();
+        }
+
+        protected override void AfterGridBound()
+        {
+            if (!Grid.Columns.Contains("Toa"))
+            {
+                Grid.Columns.Insert(2, new DataGridViewTextBoxColumn
+                {
+                    Name = "Toa",
+                    HeaderText = "Tên tòa",
+                    ReadOnly = true
+                });
+            }
+
+            var canHoService = new CanHoService();
+            var toaService = new ToaService();
+            var canHos = canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
+            var toas = toaService.LayTatCa().ToDictionary(t => t.MaToa);
+
+            foreach (DataGridViewRow row in Grid.Rows)
+            {
+                var phieu = row.DataBoundItem as PhieuDatTruoc;
+                if (phieu == null) continue;
+
+                CanHo canHo;
+                if (canHos.TryGetValue(phieu.MaCanHo, out canHo))
+                {
+                    Toa toa;
+                    row.Cells["Toa"].Value = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
+                }
+                else
+                {
+                    row.Cells["Toa"].Value = string.Empty;
+                }
+            }
         }
     }
 }

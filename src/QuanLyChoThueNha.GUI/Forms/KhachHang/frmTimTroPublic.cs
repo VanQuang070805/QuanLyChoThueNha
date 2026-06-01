@@ -20,14 +20,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 {
     public class frmTimTroPublic : MaterialForm
     {
-        private readonly CanHoService _canHoService = new CanHoService();
-        private readonly KhuVucService _khuVucService = new KhuVucService();
-        private readonly ToaService _toaService = new ToaService();
-        private readonly LoaiCanHoService _loaiService = new LoaiCanHoService();
-        private readonly TienNghiService _tienNghiService = new TienNghiService();
-        private readonly KhachThueService _khachThueService = new KhachThueService();
-        private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
-        private readonly PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
+        private CanHoService _canHoService = new CanHoService();
+        private KhuVucService _khuVucService = new KhuVucService();
+        private ToaService _toaService = new ToaService();
+        private LoaiCanHoService _loaiService = new LoaiCanHoService();
+        private TienNghiService _tienNghiService = new TienNghiService();
+        private KhachThueService _khachThueService = new KhachThueService();
+        private TaiKhoanService _taiKhoanService = new TaiKhoanService();
+        private PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
 
         private readonly FlowLayoutPanel _roomCards = new FlowLayoutPanel();
         private readonly ComboBox _cboKhuVuc = new ComboBox();
@@ -559,6 +559,16 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private void LamMoiDuLieu()
         {
+            // BỔ SUNG: Khởi tạo lại các dịch vụ để làm mới EF cache khi bấm làm mới
+            _canHoService = new CanHoService();
+            _khuVucService = new KhuVucService();
+            _toaService = new ToaService();
+            _loaiService = new LoaiCanHoService();
+            _tienNghiService = new TienNghiService();
+            _khachThueService = new KhachThueService();
+            _taiKhoanService = new TaiKhoanService();
+            _phieuDatTruocService = new PhieuDatTruocService();
+
             _dangLamMoiBoLoc = true;
             NapBoLoc();
             _txtTimKiem.Clear();

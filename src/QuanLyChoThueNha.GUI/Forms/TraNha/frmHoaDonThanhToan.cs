@@ -194,17 +194,49 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 Grid.Columns.Insert(2, new DataGridViewTextBoxColumn
                 {
                     Name = "Phong",
-                    HeaderText = "Can ho",
+                    HeaderText = "Tên căn hộ",
                     ReadOnly = true
                 });
             }
+            if (!Grid.Columns.Contains("Toa"))
+            {
+                Grid.Columns.Insert(3, new DataGridViewTextBoxColumn
+                {
+                    Name = "Toa",
+                    HeaderText = "Tên tòa",
+                    ReadOnly = true
+                });
+            }
+
+            var canHoService = new CanHoService();
+            var toaService = new ToaService();
+            var canHos = canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
+            var toas = toaService.LayTatCa().ToDictionary(t => t.MaToa);
 
             foreach (DataGridViewRow row in Grid.Rows)
             {
                 var hoaDon = row.DataBoundItem as HoaDonThanhToan;
                 if (hoaDon == null) continue;
                 var hopDong = _hopDongService.LayTheoMa(hoaDon.MaHopDong);
-                row.Cells["Phong"].Value = hopDong == null ? string.Empty : TenCanHo(hopDong.MaCanHo);
+                if (hopDong != null)
+                {
+                    row.Cells["Phong"].Value = TenCanHo(hopDong.MaCanHo);
+                    CanHo canHo;
+                    if (canHos.TryGetValue(hopDong.MaCanHo, out canHo))
+                    {
+                        Toa toa;
+                        row.Cells["Toa"].Value = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
+                    }
+                    else
+                    {
+                        row.Cells["Toa"].Value = string.Empty;
+                    }
+                }
+                else
+                {
+                    row.Cells["Phong"].Value = string.Empty;
+                    row.Cells["Toa"].Value = string.Empty;
+                }
             }
         }
 

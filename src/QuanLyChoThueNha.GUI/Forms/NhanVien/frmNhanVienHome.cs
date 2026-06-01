@@ -9,6 +9,7 @@ using QuanLyChoThueNha.BLL.Services;
 using QuanLyChoThueNha.GUI.Forms.KhachHang;
 using QuanLyChoThueNha.GUI.Helpers;
 using QuanLyChoThueNha.Model.Entities;
+using HopDongEntity = QuanLyChoThueNha.Model.Entities.HopDong;
 
 namespace QuanLyChoThueNha.GUI.Forms.NhanVien
 {
@@ -118,11 +119,16 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             AddKpi("HD sap het han", hopDongSapHetHan.Count.ToString("N0"), Color.FromArgb(123, 31, 162));
             AddKpi("Hoa don can xu ly", hoaDonCanTheoDoi.Count.ToString("N0"), Color.FromArgb(198, 40, 40));
 
+            var canHos = _canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
+            var toas = new ToaService().LayTatCa().ToDictionary(t => t.MaToa);
+            var hopDongs = _hopDongService.LayTatCa().ToDictionary(hd => hd.MaHopDong);
+
             _gridDatPhong.DataSource = new BindingList<object>(phieuCanXuLy.Select(p => new
             {
                 p.MaPhieuDatTruoc,
                 p.MaKhach,
-                p.MaCanHo,
+                TenCanHo = canHos.ContainsKey(p.MaCanHo) ? "Căn " + canHos[p.MaCanHo].SoCanHo : p.MaCanHo,
+                TenToa = canHos.ContainsKey(p.MaCanHo) && toas.ContainsKey(canHos[p.MaCanHo].MaToa) ? toas[canHos[p.MaCanHo].MaToa].TenToa : "",
                 p.SoTienDatCoc,
                 p.NgayDatCoc,
                 p.NgayHetHan,
@@ -133,22 +139,34 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             {
                 h.MaHopDong,
                 h.MaKhach,
-                h.MaCanHo,
+                TenCanHo = canHos.ContainsKey(h.MaCanHo) ? "Căn " + canHos[h.MaCanHo].SoCanHo : h.MaCanHo,
+                TenToa = canHos.ContainsKey(h.MaCanHo) && toas.ContainsKey(canHos[h.MaCanHo].MaToa) ? toas[canHos[h.MaCanHo].MaToa].TenToa : "",
                 h.NgayKetThuc,
                 SoNgayConLai = Math.Max(0, (h.NgayKetThuc.Date - DateTime.Today).Days),
                 h.TrangThai
             }).Cast<object>().ToList());
 
-            _gridHoaDon.DataSource = new BindingList<object>(hoaDonCanTheoDoi.Select(h => new
-            {
-                h.MaHoaDon,
-                h.MaHopDong,
-                h.KyThanhToan,
-                h.SoTienPhaiTra,
-                h.SoTienDaTra,
-                h.NgayDaoHan,
-                h.TrangThai
+            _gridHoaDon.DataSource = new BindingList<object>(hoaDonCanTheoDoi.Select(h => {
+                HopDongEntity hd = null;
+                hopDongs.TryGetValue(h.MaHopDong, out hd);
+                var maCanHo = hd?.MaCanHo;
+                return new
+                {
+                    h.MaHoaDon,
+                    h.MaHopDong,
+                    TenCanHo = maCanHo != null && canHos.ContainsKey(maCanHo) ? "Căn " + canHos[maCanHo].SoCanHo : "",
+                    TenToa = maCanHo != null && canHos.ContainsKey(maCanHo) && toas.ContainsKey(canHos[maCanHo].MaToa) ? toas[canHos[maCanHo].MaToa].TenToa : "",
+                    h.KyThanhToan,
+                    h.SoTienPhaiTra,
+                    h.SoTienDaTra,
+                    h.NgayDaoHan,
+                    h.TrangThai
+                };
             }).Cast<object>().ToList());
+
+            DinhDangGrid(_gridDatPhong);
+            DinhDangGrid(_gridHopDong);
+            DinhDangGrid(_gridHoaDon);
         }
 
         private void GuiThongBaoPhieuHetHanMoi()
@@ -296,6 +314,44 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 AutoSize = true
             });
             _kpiPanel.Controls.Add(panel);
+        }
+
+        private void DinhDangGrid(DataGridView dgv)
+        {
+            foreach (DataGridViewColumn col in dgv.Columns)
+            {
+                switch (col.Name)
+                {
+                    case "MaPhieuDatTruoc": col.HeaderText = "Mã phiếu"; break;
+                    case "MaKhach": col.HeaderText = "Mã khách"; break;
+                    case "TenCanHo": col.HeaderText = "Tên căn hộ"; break;
+                    case "TenToa": col.HeaderText = "Tên tòa"; break;
+                    case "SoTienDatCoc": col.HeaderText = "Tiền đặt cọc"; break;
+                    case "NgayDatCoc": col.HeaderText = "Ngày đặt cọc"; break;
+                    case "NgayHetHan": col.HeaderText = "Ngày hết hạn"; break;
+                    case "TrangThai": col.HeaderText = "Trạng thái"; break;
+                    case "PhuongThucThanhToan": col.HeaderText = "Phương thức"; break;
+
+                    case "MaHopDong": col.HeaderText = "Mã hợp đồng"; break;
+                    case "NgayBatDau": col.HeaderText = "Ngày bắt đầu"; break;
+                    case "NgayKetThuc": col.HeaderText = "Ngày kết thúc"; break;
+                    case "GiaThueChot": col.HeaderText = "Giá thuê chốt"; break;
+                    case "TienCocChot": col.HeaderText = "Tiền cọc chốt"; break;
+                    case "SoNgayConLai": col.HeaderText = "Số ngày còn lại"; break;
+
+                    case "MaHoaDon": col.HeaderText = "Mã hóa đơn"; break;
+                    case "KyThanhToan": col.HeaderText = "Kỳ thanh toán"; break;
+                    case "SoTienPhaiTra": col.HeaderText = "Số tiền phải trả"; break;
+                    case "SoTienDaTra": col.HeaderText = "Số tiền đã trả"; break;
+                    case "NgayDaoHan": col.HeaderText = "Ngày đáo hạn"; break;
+                }
+
+                if (col.Name.Contains("Tien") || col.Name.Contains("Gia") || col.Name.Contains("Phi") || col.Name.Contains("Coc"))
+                {
+                    col.DefaultCellStyle.Format = "N0";
+                    col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+            }
         }
     }
 }

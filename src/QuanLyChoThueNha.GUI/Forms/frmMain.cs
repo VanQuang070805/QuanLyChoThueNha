@@ -142,6 +142,27 @@ namespace QuanLyChoThueNha.GUI.Forms
 
             AddLogoutButton();
             CapNhatKichThuocMenu();
+
+            // Đồng bộ trạng thái Visible của các control designer để các bài test / smoke test phản ánh đúng quyền truy cập
+            btnDashboard.Visible = !laKhach && (laAdmin || qDashboard);
+            btnKhachHangHome.Visible = laKhach;
+            btnKhuVuc.Visible = laAdmin || (laNhanVien && qTaiSan);
+            btnToa.Visible = laAdmin || (laNhanVien && qTaiSan);
+            btnLoaiCanHo.Visible = laAdmin || (laNhanVien && qTaiSan);
+            btnCanHo.Visible = laAdmin || (laNhanVien && qTaiSan);
+            btnTienNghi.Visible = laAdmin || (laNhanVien && qTaiSan);
+            btnGiaDichVu.Visible = laAdmin || (laNhanVien && qTaiSan);
+            btnKhachThue.Visible = laAdmin || (laNhanVien && qHopDong);
+            btnPhieuDatTruoc.Visible = laAdmin || (laNhanVien && qHopDong);
+            btnHopDong.Visible = laAdmin || (laNhanVien && qHopDong);
+            btnGiaHan.Visible = laAdmin || (laNhanVien && qHopDong);
+            btnLoaiHoaDon.Visible = laAdmin || (laNhanVien && qThanhToan);
+            btnHoaDon.Visible = laAdmin || (laNhanVien && qThanhToan);
+            btnPhieuTraNha.Visible = laAdmin || (laNhanVien && qThanhToan);
+            btnViPham.Visible = laAdmin || (laNhanVien && qThanhToan);
+            btnQuanLyTaiKhoan.Visible = laAdmin;
+            btnQuanLyTaiKhoanKhach.Visible = laAdmin;
+            btnBaoCao.Visible = laAdmin || (laNhanVien && qBaoCao);
         }
 
         private void CapNhatKichThuocMenu()

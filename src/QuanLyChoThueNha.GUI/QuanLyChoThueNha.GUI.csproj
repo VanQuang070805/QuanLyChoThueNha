@@ -156,6 +156,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Helpers\EmailNotificationHelper.cs" />
+    <Compile Include="Helpers\GridFormatterHelper.cs" />
     <Compile Include="Forms\Shared\CrudFormBase.cs" />
     <Compile Include="Forms\Shared\frmHuongDanSuDung.cs">
       <SubType>Form</SubType>
