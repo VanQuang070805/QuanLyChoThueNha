@@ -15,8 +15,6 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         public frmGiaHanHopDong() : base("Quan ly Gia han hop dong", Fields())
         {
-            AddCommandButton("Chap thuan", BtnChapThuan_Click);
-            AddCommandButton("Tu choi", BtnTuChoi_Click);
             var hopDongEditor = GetEditor("MaHopDong") as ComboBox;
             if (hopDongEditor != null)
                 hopDongEditor.SelectedIndexChanged += delegate { DienNgayKetThucCu(); };
@@ -62,7 +60,12 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 SetEditorValue("NgayKetThucCu", hopDong.NgayKetThuc);
         }
 
-        protected override IEnumerable<GiaHanHopDong> GetItems() { return _service.LayTatCa(); }
+        protected override IEnumerable<GiaHanHopDong> GetItems()
+        {
+            var items = _service.LayTatCa().ToList();
+            GanThongTinHienThi(items);
+            return items;
+        }
 
         protected override bool AddItem(GiaHanHopDong item, out string error)
         {
@@ -101,6 +104,57 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             item.NgayDuyet = DateTime.Now;
             _service.Sua(item);
             ReloadData();
+        }
+
+        protected override void AfterGridBound()
+        {
+            GridDisplayHelper.AddTextColumn(Grid, "TenCanHo", "Tên căn hộ", 2, 125);
+            GridDisplayHelper.AddTextColumn(Grid, "TenToa", "Tên tòa", 3, 115);
+            GridDisplayHelper.AddTextColumn(Grid, "TenNhanVien", "Tên nhân viên", 4, 130);
+            GridDisplayHelper.HideColumn(Grid, "MaNhanVien");
+            GridDisplayHelper.SetFillWeight(Grid, "MaGiaHan", 90);
+            GridDisplayHelper.SetFillWeight(Grid, "MaHopDong", 95);
+            GridDisplayHelper.SetFillWeight(Grid, "TenCanHo", 125);
+            GridDisplayHelper.SetFillWeight(Grid, "TenToa", 110);
+            GridDisplayHelper.SetFillWeight(Grid, "TenNhanVien", 130);
+            GridDisplayHelper.SetFillWeight(Grid, "TrangThai", 105);
+            GridDisplayHelper.BalanceGrid(Grid);
+        }
+
+        private static void GanThongTinHienThi(IEnumerable<GiaHanHopDong> items)
+        {
+            var hopDongService = new HopDongService();
+            var canHoService = new CanHoService();
+            var toaService = new ToaService();
+            var hopDongs = hopDongService.LayTatCa().ToDictionary(h => h.MaHopDong);
+            var canHos = canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
+            var toas = toaService.LayTatCa().ToDictionary(t => t.MaToa);
+            var nhanViens = new NhanVienPhanQuyenService().LayNhanVien()
+                .GroupBy(n => n.MaNhanVien)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
+
+            foreach (var giaHan in items)
+            {
+                giaHan.TenNhanVien = TenNhanVien(giaHan.MaNhanVien, nhanViens);
+                giaHan.TenCanHo = string.Empty;
+                giaHan.TenToa = string.Empty;
+
+                QuanLyChoThueNha.Model.Entities.HopDong hopDong;
+                if (!hopDongs.TryGetValue(giaHan.MaHopDong, out hopDong)) continue;
+                CanHo canHo;
+                if (!canHos.TryGetValue(hopDong.MaCanHo, out canHo)) continue;
+
+                giaHan.TenCanHo = "Căn " + canHo.SoCanHo;
+                Toa toa;
+                giaHan.TenToa = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
+            }
+        }
+
+        private static string TenNhanVien(string maNhanVien, IDictionary<string, string> nhanViens)
+        {
+            if (string.IsNullOrWhiteSpace(maNhanVien)) return "Admin";
+            string hoTen;
+            return nhanViens.TryGetValue(maNhanVien, out hoTen) ? hoTen : maNhanVien;
         }
     }
 }

@@ -305,7 +305,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             string loi;
             if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (!_svc.Them(txtTen.Text, cboQuan.SelectedItem.ToString(), cboThanhPho.SelectedItem.ToString(),
-                    SessionContext.MaNguoiDung, out loi, (double)numViDo.Value, (double)numKinhDo.Value))
+                    SessionContext.LaAdmin ? SessionContext.MaNguoiDung : null, out loi,
+                    (double)numViDo.Value, (double)numKinhDo.Value))
             {
                 MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -337,7 +338,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             if (MessageBox.Show("Xoa khu vuc dang chon?", "Xac nhan", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             try
             {
-                _svc.Xoa(_svc.LayTheoMa(txtMa.Text));
+                string loi;
+                if (!_svc.XoaKhuVuc(txtMa.Text, out loi))
+                {
+                    MessageBox.Show(loi, "Khong the xoa", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 TaiDuLieu();
                 XoaTrong();
             }

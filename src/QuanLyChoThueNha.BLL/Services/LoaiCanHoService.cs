@@ -26,5 +26,19 @@ namespace QuanLyChoThueNha.BLL.Services
             base.Them(loai);
             return true;
         }
+
+        public bool XoaLoaiCanHo(string maLoai, out string loi)
+        {
+            loi = string.Empty;
+            var loai = LayTheoMa(maLoai);
+            if (loai == null) { loi = "Khong tim thay loai can ho."; return false; }
+            if (_uow.CanHos.Any(c => c.MaLoai == maLoai))
+            {
+                loi = "Khong the xoa loai can ho vi dang co can ho su dung loai nay.";
+                return false;
+            }
+            Xoa(loai);
+            return true;
+        }
     }
 }

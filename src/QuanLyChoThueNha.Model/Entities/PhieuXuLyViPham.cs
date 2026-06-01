@@ -19,6 +19,15 @@ namespace QuanLyChoThueNha.Model.Entities
         [MaxLength(50)]
         public string MaNhanVien { get; set; }
 
+        [NotMapped]
+        public string TenNhanVien { get; set; }
+
+        [NotMapped]
+        public string TenCanHo { get; set; }
+
+        [NotMapped]
+        public string TenToa { get; set; }
+
         [MaxLength(50)]
         public string MaNguoiThaoTac { get; set; }
 

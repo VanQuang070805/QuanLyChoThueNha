@@ -310,6 +310,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
             ReloadData();
             EnterViewMode();
+            RefreshDetailEditors();
         }
 
         private void BtnThemMoi_Click(object sender, EventArgs e)
@@ -466,6 +467,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             txtEmail.Text       = vm.Email;
             txtSdt.Text         = vm.SoDienThoai;
             chkTrangThai.Checked = vm.TrangThai;
+            RefreshDetailEditors();
         }
 
         private KhachTaiKhoanVM CurrentVM()
@@ -482,9 +484,35 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             dtpNgaySinh.Value = DateTime.Today.AddYears(-18);
             chkTrangThai.Checked = false;
             UpdateActionButtons();
+            RefreshDetailEditors();
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────────
+
+        private void RefreshDetailEditors()
+        {
+            var controls = new Control[]
+            {
+                txtMaKhach, txtMaTaiKhoan, txtTenDangNhap, txtHoTen, txtCmnd,
+                txtDiaChi, txtEmail, txtSdt, dtpNgaySinh, chkTrangThai
+            };
+
+            foreach (var control in controls)
+            {
+                control.Invalidate();
+                control.Refresh();
+            }
+
+            if (!IsHandleCreated) return;
+            BeginInvoke(new Action(() =>
+            {
+                foreach (var control in controls)
+                {
+                    control.Invalidate();
+                    control.Refresh();
+                }
+            }));
+        }
 
         private MaterialTextBox Txt(string hint, bool readOnly)
         {

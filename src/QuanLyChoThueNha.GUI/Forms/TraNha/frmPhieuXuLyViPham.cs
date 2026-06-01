@@ -47,7 +47,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             };
         }
 
-        protected override IEnumerable<PhieuXuLyViPham> GetItems() { return _service.LayTatCa(); }
+        protected override IEnumerable<PhieuXuLyViPham> GetItems()
+        {
+            var items = _service.LayTatCa().ToList();
+            GanThongTinHienThi(items);
+            return items;
+        }
 
         protected override bool AddItem(PhieuXuLyViPham item, out string error)
         {
@@ -75,6 +80,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         protected override void AfterGridBound()
         {
+            GridDisplayHelper.AddTextColumn(Grid, "TenCanHo", "Tên căn hộ", 2, 125);
+            GridDisplayHelper.AddTextColumn(Grid, "TenToa", "Tên tòa", 3, 115);
+            GridDisplayHelper.AddTextColumn(Grid, "TenNhanVien", "Tên nhân viên", 4, 130);
+
             if (!Grid.Columns.Contains("TenCanHo"))
             {
                 Grid.Columns.Insert(2, new DataGridViewTextBoxColumn
@@ -101,11 +110,15 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             var canHos = canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
             var toas = toaService.LayTatCa().ToDictionary(t => t.MaToa);
             var hopDongs = hopDongService.LayTatCa().ToDictionary(h => h.MaHopDong);
+            var nhanViens = new NhanVienPhanQuyenService().LayNhanVien()
+                .GroupBy(n => n.MaNhanVien)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
 
             foreach (DataGridViewRow row in Grid.Rows)
             {
                 var viPham = row.DataBoundItem as PhieuXuLyViPham;
                 if (viPham == null) continue;
+                row.Cells["TenNhanVien"].Value = TenNhanVien(viPham.MaNhanVien, nhanViens);
 
                 HopDongEntity hopDong;
                 if (hopDongs.TryGetValue(viPham.MaHopDong, out hopDong))
@@ -121,6 +134,55 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 }
                 row.Cells["TenCanHo"].Value = string.Empty;
                 row.Cells["TenToa"].Value = string.Empty;
+            }
+
+            GridDisplayHelper.HideColumn(Grid, "MaNhanVien");
+            GridDisplayHelper.SetFillWeight(Grid, "MaViPham", 90);
+            GridDisplayHelper.SetFillWeight(Grid, "MaHopDong", 95);
+            GridDisplayHelper.SetFillWeight(Grid, "MaPhieuTraNha", 95);
+            GridDisplayHelper.SetFillWeight(Grid, "TenCanHo", 125);
+            GridDisplayHelper.SetFillWeight(Grid, "TenToa", 110);
+            GridDisplayHelper.SetFillWeight(Grid, "TenNhanVien", 130);
+            GridDisplayHelper.SetFillWeight(Grid, "LoaiViPham", 120);
+            GridDisplayHelper.SetFillWeight(Grid, "MoTa", 155);
+            GridDisplayHelper.SetFillWeight(Grid, "TinhTrang", 95);
+            GridDisplayHelper.SetMoneyColumn(Grid, "PhiBoiThuong");
+            GridDisplayHelper.BalanceGrid(Grid);
+        }
+
+        private static string TenNhanVien(string maNhanVien, IDictionary<string, string> nhanViens)
+        {
+            if (string.IsNullOrWhiteSpace(maNhanVien)) return "Admin";
+            string hoTen;
+            return nhanViens.TryGetValue(maNhanVien, out hoTen) ? hoTen : maNhanVien;
+        }
+
+        private static void GanThongTinHienThi(IEnumerable<PhieuXuLyViPham> items)
+        {
+            var hopDongService = new HopDongService();
+            var canHoService = new CanHoService();
+            var toaService = new ToaService();
+            var canHos = canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
+            var toas = toaService.LayTatCa().ToDictionary(t => t.MaToa);
+            var hopDongs = hopDongService.LayTatCa().ToDictionary(h => h.MaHopDong);
+            var nhanViens = new NhanVienPhanQuyenService().LayNhanVien()
+                .GroupBy(n => n.MaNhanVien)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
+
+            foreach (var viPham in items)
+            {
+                viPham.TenNhanVien = TenNhanVien(viPham.MaNhanVien, nhanViens);
+                viPham.TenCanHo = string.Empty;
+                viPham.TenToa = string.Empty;
+
+                HopDongEntity hopDong;
+                if (!hopDongs.TryGetValue(viPham.MaHopDong, out hopDong)) continue;
+                CanHo canHo;
+                if (!canHos.TryGetValue(hopDong.MaCanHo, out canHo)) continue;
+
+                viPham.TenCanHo = "Căn " + canHo.SoCanHo;
+                Toa toa;
+                viPham.TenToa = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
             }
         }
     }

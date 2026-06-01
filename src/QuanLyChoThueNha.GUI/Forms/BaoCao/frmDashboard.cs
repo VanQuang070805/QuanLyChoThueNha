@@ -98,6 +98,8 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 _kpiPanel.Controls.Clear();
                 AddKpi("Tổng căn hộ", _service.TongCanHo().ToString("N0"), Color.FromArgb(37, 99, 235));
                 AddKpi("Đang thuê", _service.CanHoDangThue().ToString("N0"), Color.FromArgb(22, 163, 74));
+                AddKpi("Tổng doanh thu", _service.TongDoanhThu().ToString("N0"), Color.FromArgb(14, 116, 144));
+                AddKpi("Số hóa đơn", _service.TongHoaDon().ToString("N0"), Color.FromArgb(124, 58, 237));
                 AddKpi("Doanh thu tháng", _service.DoanhThuThang(now.Month, now.Year).ToString("N0"), Color.FromArgb(245, 124, 0));
                 AddKpi("Hóa đơn chưa trả", _service.HoaDonChuaTra().ToString("N0"), Color.FromArgb(220, 38, 38));
 
@@ -170,7 +172,8 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
 
         private void ResizeKpis()
         {
-            var width = Math.Max(220, (_kpiPanel.ClientSize.Width - 48) / 4);
+            var count = Math.Max(1, _kpiPanel.Controls.Count);
+            var width = Math.Max(180, (_kpiPanel.ClientSize.Width - (12 * Math.Max(0, count - 1))) / count);
             if (_kpiPanel.ClientSize.Width < 900) width = Math.Max(240, (_kpiPanel.ClientSize.Width - 36) / 2);
             foreach (Control control in _kpiPanel.Controls)
                 control.Width = width;

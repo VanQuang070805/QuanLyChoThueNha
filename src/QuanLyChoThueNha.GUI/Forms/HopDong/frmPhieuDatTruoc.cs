@@ -52,7 +52,12 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             };
         }
 
-        protected override IEnumerable<PhieuDatTruoc> GetItems() { return _service.LayTatCa(); }
+        protected override IEnumerable<PhieuDatTruoc> GetItems()
+        {
+            var items = _service.LayTatCa().ToList();
+            GanThongTinHienThi(items);
+            return items;
+        }
 
         protected override bool AddItem(PhieuDatTruoc item, out string error)
         {
@@ -119,37 +124,53 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         protected override void AfterGridBound()
         {
-            if (!Grid.Columns.Contains("Toa"))
-            {
-                Grid.Columns.Insert(2, new DataGridViewTextBoxColumn
-                {
-                    Name = "Toa",
-                    HeaderText = "Tên tòa",
-                    ReadOnly = true
-                });
-            }
+            GridDisplayHelper.AddTextColumn(Grid, "TenCanHo", "Tên căn hộ", 2, 125);
+            GridDisplayHelper.AddTextColumn(Grid, "TenToa", "Tên tòa", 3, 115);
+            GridDisplayHelper.AddTextColumn(Grid, "TenNhanVien", "Tên nhân viên", 5, 130);
+            GridDisplayHelper.HideColumn(Grid, "MaCanHo");
+            GridDisplayHelper.HideColumn(Grid, "MaNhanVien");
+            GridDisplayHelper.HideColumn(Grid, "Toa");
+            GridDisplayHelper.SetFillWeight(Grid, "MaPhieuDatTruoc", 105);
+            GridDisplayHelper.SetFillWeight(Grid, "TenCanHo", 125);
+            GridDisplayHelper.SetFillWeight(Grid, "TenToa", 110);
+            GridDisplayHelper.SetFillWeight(Grid, "MaKhach", 100);
+            GridDisplayHelper.SetFillWeight(Grid, "TenNhanVien", 130);
+            GridDisplayHelper.SetFillWeight(Grid, "TrangThai", 105);
+            GridDisplayHelper.SetFillWeight(Grid, "PhuongThucThanhToan", 110);
+            GridDisplayHelper.SetMoneyColumn(Grid, "SoTienDatCoc");
+            GridDisplayHelper.BalanceGrid(Grid);
+        }
 
+        private static void GanThongTinHienThi(IEnumerable<PhieuDatTruoc> items)
+        {
             var canHoService = new CanHoService();
             var toaService = new ToaService();
             var canHos = canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
             var toas = toaService.LayTatCa().ToDictionary(t => t.MaToa);
+            var nhanViens = new NhanVienPhanQuyenService().LayNhanVien()
+                .GroupBy(n => n.MaNhanVien)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
 
-            foreach (DataGridViewRow row in Grid.Rows)
+            foreach (var phieu in items)
             {
-                var phieu = row.DataBoundItem as PhieuDatTruoc;
-                if (phieu == null) continue;
+                phieu.TenNhanVien = TenNhanVien(phieu.MaNhanVien, nhanViens);
+                phieu.TenCanHo = string.Empty;
+                phieu.TenToa = string.Empty;
 
                 CanHo canHo;
-                if (canHos.TryGetValue(phieu.MaCanHo, out canHo))
-                {
-                    Toa toa;
-                    row.Cells["Toa"].Value = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
-                }
-                else
-                {
-                    row.Cells["Toa"].Value = string.Empty;
-                }
+                if (!canHos.TryGetValue(phieu.MaCanHo, out canHo)) continue;
+
+                phieu.TenCanHo = "Căn " + canHo.SoCanHo;
+                Toa toa;
+                phieu.TenToa = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
             }
+        }
+
+        private static string TenNhanVien(string maNhanVien, IDictionary<string, string> nhanViens)
+        {
+            if (string.IsNullOrWhiteSpace(maNhanVien)) return "Admin";
+            string hoTen;
+            return nhanViens.TryGetValue(maNhanVien, out hoTen) ? hoTen : maNhanVien;
         }
     }
 }

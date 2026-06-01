@@ -64,14 +64,14 @@ namespace QuanLyChoThueNha.BLL.Services
         // ── Doanh thu theo tháng ──────────────────────────────────────────
         public IEnumerable<DoanhThuTheoThangDto> DoanhThuTheoThang(int nam)
         {
-            var hoaDons = HoaDonDaTraTrongNam(nam);
+            var hoaDons = HoaDonGhiNhanTrongNam(nam);
 
             var data = hoaDons
-                .GroupBy(h => h.NgayThanhToan.Value.Month)
+                .GroupBy(h => h.NgayDaoHan.Month)
                 .Select(g => new DoanhThuTheoThangDto
                 {
                     Thang    = $"T{g.Key:D2}/{nam}",
-                    TongThu  = g.Sum(h => h.SoTienDaTra),
+                    TongThu  = g.Sum(h => h.SoTienPhaiTra),
                     SoHoaDon = g.Count()
                 })
                 .OrderBy(d => d.Thang)
@@ -118,18 +118,16 @@ namespace QuanLyChoThueNha.BLL.Services
         {
             var denNgayMoc = denNgay.Date.AddDays(1);
             var hoaDons = _uow.HoaDonThanhToans
-                .Find(h => h.TrangThai == "DaTra" &&
-                           h.NgayThanhToan.HasValue &&
-                           h.NgayThanhToan.Value >= tuNgay.Date &&
-                           h.NgayThanhToan.Value < denNgayMoc)
+                .Find(h => h.NgayDaoHan >= tuNgay.Date &&
+                           h.NgayDaoHan < denNgayMoc)
                 .ToList();
 
             var data = hoaDons
-                .GroupBy(h => TaoNhanKy(h.NgayThanhToan.Value.Date, nhomTheo))
+                .GroupBy(h => TaoNhanKy(h.NgayDaoHan.Date, nhomTheo))
                 .ToDictionary(g => g.Key, g => new DoanhThuTheoThangDto
                 {
                     Thang = g.Key,
-                    TongThu = g.Sum(h => h.SoTienDaTra),
+                    TongThu = g.Sum(h => h.SoTienPhaiTra),
                     SoHoaDon = g.Count()
                 });
 
@@ -184,6 +182,8 @@ namespace QuanLyChoThueNha.BLL.Services
         public int CanHoTrong()         => _uow.CanHos.Count(c => c.TinhTrang == "Trong");
         public int HopDongHieuLuc()     => _uow.HopDongs.Count(h => h.TrangThai == "HieuLuc");
         public int HoaDonChuaTra()      => _uow.HoaDonThanhToans.Count(h => h.TrangThai == "ChuaTra");
+        public int TongHoaDon()         => _uow.HoaDonThanhToans.Count();
+        public decimal TongDoanhThu()   => _uow.HoaDonThanhToans.GetAll().Sum(h => h.SoTienPhaiTra);
         public int HopDongMoiTrongThang(int thang, int nam) => _uow.HopDongs.Count(h => h.NgayTao.Month == thang && h.NgayTao.Year == nam);
         public int HopDongMoiTrongKhoang(DateTime tuNgay, DateTime denNgay)
         {
@@ -205,12 +205,10 @@ namespace QuanLyChoThueNha.BLL.Services
         public decimal DoanhThuThang(int thang, int nam)
         {
             var ds = _uow.HoaDonThanhToans.Find(h =>
-                h.TrangThai == "DaTra" &&
-                h.NgayThanhToan.HasValue &&
-                h.NgayThanhToan.Value.Month == thang &&
-                h.NgayThanhToan.Value.Year  == nam);
+                h.NgayDaoHan.Month == thang &&
+                h.NgayDaoHan.Year  == nam);
             decimal tong = 0;
-            foreach (var h in ds) tong += h.SoTienDaTra;
+            foreach (var h in ds) tong += h.SoTienPhaiTra;
             return tong;
         }
 
@@ -336,18 +334,18 @@ namespace QuanLyChoThueNha.BLL.Services
                 .Where(h => !string.IsNullOrWhiteSpace(h.MaHopDong))
                 .GroupBy(h => h.MaHopDong)
                 .ToDictionary(g => g.Key, g => g.First());
-            return HoaDonDaTraTrongNam(nam)
+            return HoaDonGhiNhanTrongNam(nam)
                 .Select(h =>
                 {
                     HopDong hopDong;
                     hopDongMap.TryGetValue(h.MaHopDong, out hopDong);
-                    return new { MaCanHo = hopDong == null ? h.MaHopDong : hopDong.MaCanHo, h.SoTienDaTra };
+                    return new { MaCanHo = hopDong == null ? h.MaHopDong : hopDong.MaCanHo, h.SoTienPhaiTra };
                 })
                 .GroupBy(x => x.MaCanHo)
                 .Select(g => new BaoCaoHangMucDto
                 {
                     Ten = g.Key,
-                    GiaTri = g.Sum(x => x.SoTienDaTra),
+                    GiaTri = g.Sum(x => x.SoTienPhaiTra),
                     SoLuong = g.Count()
                 })
                 .OrderByDescending(x => x.GiaTri)
@@ -363,10 +361,8 @@ namespace QuanLyChoThueNha.BLL.Services
                 .ToDictionary(g => g.Key, g => g.First());
             var denNgayMoc = denNgay.Date.AddDays(1);
             var hoaDons = _uow.HoaDonThanhToans
-                .Find(h => h.TrangThai == "DaTra" &&
-                           h.NgayThanhToan.HasValue &&
-                           h.NgayThanhToan.Value >= tuNgay.Date &&
-                           h.NgayThanhToan.Value < denNgayMoc)
+                .Find(h => h.NgayDaoHan >= tuNgay.Date &&
+                           h.NgayDaoHan < denNgayMoc)
                 .ToList();
 
             return hoaDons
@@ -374,13 +370,13 @@ namespace QuanLyChoThueNha.BLL.Services
                 {
                     HopDong hopDong;
                     hopDongMap.TryGetValue(h.MaHopDong, out hopDong);
-                    return new { MaCanHo = hopDong == null ? h.MaHopDong : hopDong.MaCanHo, h.SoTienDaTra };
+                    return new { MaCanHo = hopDong == null ? h.MaHopDong : hopDong.MaCanHo, h.SoTienPhaiTra };
                 })
                 .GroupBy(x => x.MaCanHo)
                 .Select(g => new BaoCaoHangMucDto
                 {
                     Ten = g.Key,
-                    GiaTri = g.Sum(x => x.SoTienDaTra),
+                    GiaTri = g.Sum(x => x.SoTienPhaiTra),
                     SoLuong = g.Count()
                 })
                 .OrderByDescending(x => x.GiaTri)
@@ -404,11 +400,10 @@ namespace QuanLyChoThueNha.BLL.Services
             return result;
         }
 
-        private List<HoaDonThanhToan> HoaDonDaTraTrongNam(int nam)
+        private List<HoaDonThanhToan> HoaDonGhiNhanTrongNam(int nam)
         {
             return _uow.HoaDonThanhToans
-                .Find(h => h.TrangThai == "DaTra" && h.NgayThanhToan.HasValue &&
-                           h.NgayThanhToan.Value.Year == nam)
+                .Find(h => h.NgayDaoHan.Year == nam)
                 .ToList();
         }
 

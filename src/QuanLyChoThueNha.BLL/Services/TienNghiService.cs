@@ -25,6 +25,20 @@ namespace QuanLyChoThueNha.BLL.Services
             base.Them(tn);
             return true;
         }
+
+        public bool XoaTienNghi(string maTienNghi, out string loi)
+        {
+            loi = string.Empty;
+            var tienNghi = LayTheoMa(maTienNghi);
+            if (tienNghi == null) { loi = "Khong tim thay tien nghi."; return false; }
+            if (_uow.TienNghiCuaCanHos.Any(t => t.MaTienNghi == maTienNghi))
+            {
+                loi = "Khong the xoa tien nghi vi dang duoc gan cho can ho.";
+                return false;
+            }
+            Xoa(tienNghi);
+            return true;
+        }
     }
 
     public class GiaDichVuService : BaseService<GiaDichVu>

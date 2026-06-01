@@ -123,10 +123,30 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         protected override IEnumerable<HoaDonThanhToan> GetItems()
         {
             var items = _service.LayTatCa().ToList();
+            var canHos = new CanHoService().LayTatCa()
+                .GroupBy(c => c.MaCanHo)
+                .ToDictionary(g => g.Key, g => g.First());
+            var toas = new ToaService().LayTatCa()
+                .GroupBy(t => t.MaToa)
+                .ToDictionary(g => g.Key, g => g.First());
+            var nhanViens = new NhanVienPhanQuyenService().LayNhanVien()
+                .GroupBy(n => n.MaNhanVien)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
             foreach (var item in items)
             {
                 var hopDong = _hopDongService.LayTheoMa(item.MaHopDong);
-                item.Phong = hopDong == null ? string.Empty : TenCanHo(hopDong.MaCanHo);
+                item.Phong = string.Empty;
+                item.Toa = string.Empty;
+                item.TenNhanVien = TenNhanVien(item.MaNhanVienThu, nhanViens);
+                if (hopDong == null) continue;
+
+                item.Phong = TenCanHo(hopDong.MaCanHo);
+                CanHo canHo;
+                if (canHos.TryGetValue(hopDong.MaCanHo, out canHo))
+                {
+                    Toa toa;
+                    item.Toa = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
+                }
             }
             return items;
         }
@@ -189,6 +209,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         private void ThemCotPhong()
         {
+            if (Grid.Columns.Contains("Phong"))
+                Grid.Columns["Phong"].HeaderText = "Tên căn hộ";
+            GridDisplayHelper.AddTextColumn(Grid, "Phong", "Tên căn hộ", 2, 125);
+            GridDisplayHelper.AddTextColumn(Grid, "Toa", "Tên tòa", 3, 115);
+            GridDisplayHelper.AddTextColumn(Grid, "TenNhanVien", "Tên nhân viên", 4, 130);
+
             if (!Grid.Columns.Contains("Phong"))
             {
                 Grid.Columns.Insert(2, new DataGridViewTextBoxColumn
@@ -212,11 +238,15 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             var toaService = new ToaService();
             var canHos = canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
             var toas = toaService.LayTatCa().ToDictionary(t => t.MaToa);
+            var nhanViens = new NhanVienPhanQuyenService().LayNhanVien()
+                .GroupBy(n => n.MaNhanVien)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
 
             foreach (DataGridViewRow row in Grid.Rows)
             {
                 var hoaDon = row.DataBoundItem as HoaDonThanhToan;
                 if (hoaDon == null) continue;
+                row.Cells["TenNhanVien"].Value = TenNhanVien(hoaDon.MaNhanVienThu, nhanViens);
                 var hopDong = _hopDongService.LayTheoMa(hoaDon.MaHopDong);
                 if (hopDong != null)
                 {
@@ -246,6 +276,13 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             return canHo == null ? maCanHo : string.Format("Can {0}", canHo.SoCanHo);
         }
 
+        private static string TenNhanVien(string maNhanVien, IDictionary<string, string> nhanViens)
+        {
+            if (string.IsNullOrWhiteSpace(maNhanVien)) return "Admin";
+            string hoTen;
+            return nhanViens.TryGetValue(maNhanVien, out hoTen) ? hoTen : maNhanVien;
+        }
+
         private void AnCotKyThuat()
         {
             var hiddenColumns = new[]
@@ -266,6 +303,18 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                     Grid.Columns[columnName].Visible = false;
                 }
             }
+            GridDisplayHelper.HideColumn(Grid, "MaNhanVienThu");
+            GridDisplayHelper.SetFillWeight(Grid, "MaHoaDon", 85);
+            GridDisplayHelper.SetFillWeight(Grid, "MaHopDong", 95);
+            GridDisplayHelper.SetFillWeight(Grid, "Phong", 120);
+            GridDisplayHelper.SetFillWeight(Grid, "Toa", 110);
+            GridDisplayHelper.SetFillWeight(Grid, "TenNhanVien", 125);
+            GridDisplayHelper.SetFillWeight(Grid, "KyThanhToan", 85);
+            GridDisplayHelper.SetFillWeight(Grid, "TrangThai", 90);
+            GridDisplayHelper.SetFillWeight(Grid, "PhuongThucThanhToan", 105);
+            GridDisplayHelper.SetMoneyColumn(Grid, "SoTienPhaiTra");
+            GridDisplayHelper.SetMoneyColumn(Grid, "SoTienDaTra");
+            GridDisplayHelper.BalanceGrid(Grid);
         }
 
         // Lấy mã hợp đồng đang chọn trên combo (dùng chung cho nhiều nút).

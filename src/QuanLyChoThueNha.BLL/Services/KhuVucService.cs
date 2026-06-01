@@ -50,5 +50,19 @@ namespace QuanLyChoThueNha.BLL.Services
             base.Them(kv);
             return true;
         }
+
+        public bool XoaKhuVuc(string maKhuVuc, out string loi)
+        {
+            loi = string.Empty;
+            var khuVuc = LayTheoMa(maKhuVuc);
+            if (khuVuc == null) { loi = "Khong tim thay khu vuc."; return false; }
+            if (_uow.Toas.Any(t => t.MaKhuVuc == maKhuVuc))
+            {
+                loi = "Khong the xoa khu vuc vi dang co toa nha thuoc khu vuc nay.";
+                return false;
+            }
+            Xoa(khuVuc);
+            return true;
+        }
     }
 }

@@ -43,5 +43,24 @@ namespace QuanLyChoThueNha.BLL.Services
         {
             return Tim(t => t.MaKhuVuc == maKhuVuc);
         }
+
+        public bool XoaToa(string maToa, out string loi)
+        {
+            loi = string.Empty;
+            var toa = LayTheoMa(maToa);
+            if (toa == null) { loi = "Khong tim thay toa nha."; return false; }
+            if (_uow.CanHos.Any(c => c.MaToa == maToa))
+            {
+                loi = "Khong the xoa toa nha vi dang co can ho thuoc toa nay.";
+                return false;
+            }
+            if (_uow.GiaDichVus.Any(g => g.MaToa == maToa))
+            {
+                loi = "Khong the xoa toa nha vi dang co bang gia dich vu lien quan.";
+                return false;
+            }
+            Xoa(toa);
+            return true;
+        }
     }
 }

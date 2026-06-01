@@ -539,6 +539,8 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                     }
 
                     var groupWidth = area.Width / Math.Max(1, _labels.Count);
+                    var visibleLabelCount = Math.Max(1d, area.Width / 58d);
+                    var labelStep = Math.Max(1, (int)Math.Ceiling(_labels.Count / visibleLabelCount));
                     for (var i = 0; i < _labels.Count; i++)
                     {
                         var a = i < _valuesA.Count ? _valuesA[i] : 0;
@@ -549,7 +551,8 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                         var barW = Math.Max(4, groupWidth / 5);
                         g.FillRectangle(blue, x, area.Bottom - hA, barW, hA);
                         g.FillRectangle(red, x + barW + 3, area.Bottom - hB, barW, hB);
-                        g.DrawString(_labels[i].Replace("/" + DateTime.Today.Year, ""), font, text, area.Left + i * groupWidth + 2, area.Bottom + 6);
+                        if (i % labelStep == 0 || i == _labels.Count - 1)
+                            g.DrawString(_labels[i].Replace("/" + DateTime.Today.Year, ""), font, text, area.Left + i * groupWidth + 2, area.Bottom + 6);
                     }
 
                     DrawLegend(g, _legendA, _legendB);

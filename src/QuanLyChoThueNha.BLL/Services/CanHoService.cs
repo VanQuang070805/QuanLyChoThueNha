@@ -24,6 +24,12 @@ namespace QuanLyChoThueNha.BLL.Services
             return tinhTrang == "DaDatCoc" || tinhTrang == "DangThue";
         }
 
+        private static bool LaPhieuDatTruocDaDong(string trangThai)
+        {
+            return trangThai == PhieuDatTruocService.Huy ||
+                   trangThai == PhieuDatTruocService.HetHan;
+        }
+
         private string TinhTrangTheoNghiepVu(CanHo canHo)
         {
             if (canHo == null) return null;
@@ -128,6 +134,64 @@ namespace QuanLyChoThueNha.BLL.Services
             base.Sua(canHo);
         }
 
+        public bool XoaCanHo(string maCanHo, out string loi)
+        {
+            loi = string.Empty;
+            var canHo = LayTheoMa(maCanHo);
+            if (canHo == null) { loi = "Khong tim thay can ho."; return false; }
+
+            var phieusDatTruoc = _uow.PhieuDatTruocs.Find(p => p.MaCanHo == maCanHo).ToList();
+            if (phieusDatTruoc.Any(p => !LaPhieuDatTruocDaDong(p.TrangThai)))
+            {
+                loi = "Khong the xoa can ho vi da co phieu dat truoc dang xu ly.";
+                return false;
+            }
+            if (phieusDatTruoc.Any(p => _uow.HopDongs.Any(h => h.MaPhieuDatTruoc == p.MaPhieuDatTruoc)))
+            {
+                loi = "Khong the xoa can ho vi phieu dat truoc da duoc dung de ky hop dong.";
+                return false;
+            }
+            if (_uow.HopDongs.Any(h => h.MaCanHo == maCanHo))
+            {
+                loi = "Khong the xoa can ho vi da co hop dong lien quan.";
+                return false;
+            }
+            if (_uow.HinhAnhNhas.Any(h => h.MaCanHo == maCanHo))
+            {
+                loi = "Khong the xoa can ho vi dang co hinh anh lien quan.";
+                return false;
+            }
+            if (_uow.TienNghiCuaCanHos.Any(t => t.MaCanHo == maCanHo))
+            {
+                loi = "Khong the xoa can ho vi dang co tien nghi duoc gan.";
+                return false;
+            }
+
+            _uow.BeginTransaction();
+            try
+            {
+                foreach (var phieu in phieusDatTruoc)
+                {
+                    var emailLogs = _uow.EmailLogs.Find(e => e.MaPhieuDatTruoc == phieu.MaPhieuDatTruoc).ToList();
+                    if (emailLogs.Count > 0) _uow.EmailLogs.RemoveRange(emailLogs);
+                    _uow.PhieuDatTruocs.Remove(phieu);
+                }
+
+                _uow.CanHos.Remove(canHo);
+                _uow.Complete();
+                _uow.CommitTransaction();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _uow.RollbackTransaction();
+                var inner = ex;
+                while (inner.InnerException != null) inner = inner.InnerException;
+                loi = inner.Message;
+                return false;
+            }
+        }
+
         public void ThemTienNghi(string maCanHo, string maTienNghi, string ghiChu = null)
         {
             var canHo = _uow.CanHos.GetById(maCanHo);
@@ -144,6 +208,26 @@ namespace QuanLyChoThueNha.BLL.Services
             var item = _uow.TienNghiCuaCanHos.FirstOrDefault(t => t.MaCanHo == maCanHo && t.MaTienNghi == maTienNghi);
             if (item == null) return;
             _uow.TienNghiCuaCanHos.Remove(item);
+            _uow.Complete();
+        }
+
+        public void DongBoTienNghi(string maCanHo, IEnumerable<string> maTienNghis)
+        {
+            if (string.IsNullOrWhiteSpace(maCanHo) || _uow.CanHos.GetById(maCanHo) == null) return;
+            var selected = new HashSet<string>((maTienNghis ?? Enumerable.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+            var current = _uow.TienNghiCuaCanHos.Find(t => t.MaCanHo == maCanHo).ToList();
+
+            foreach (var item in current.Where(t => !selected.Contains(t.MaTienNghi)).ToList())
+                _uow.TienNghiCuaCanHos.Remove(item);
+
+            var currentIds = new HashSet<string>(current.Select(t => t.MaTienNghi));
+            foreach (var maTienNghi in selected.Where(id => !currentIds.Contains(id)))
+            {
+                if (_uow.TienNghis.GetById(maTienNghi) == null) continue;
+                _uow.TienNghiCuaCanHos.Add(new TienNghiCuaCanHo { MaCanHo = maCanHo, MaTienNghi = maTienNghi });
+            }
+
             _uow.Complete();
         }
 

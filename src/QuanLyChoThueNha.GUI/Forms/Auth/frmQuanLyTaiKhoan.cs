@@ -14,6 +14,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         public frmQuanLyTaiKhoan() : base("Quan ly Tai khoan", Fields())
         {
+            HideDeleteButton();
             AddCommandButton("Tao moi", BtnTaoMoi_Click);
             AddCommandButton("Khoa", BtnKhoa_Click);
             AddCommandButton("Mo khoa", BtnMoKhoa_Click);

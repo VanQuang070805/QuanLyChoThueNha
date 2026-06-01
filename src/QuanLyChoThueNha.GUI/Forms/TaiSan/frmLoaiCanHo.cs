@@ -42,9 +42,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         protected override bool DeleteItem(LoaiCanHo item, out string error)
         {
-            error = string.Empty;
-            _service.Xoa(item);
-            return true;
+            return _service.XoaLoaiCanHo(item.MaLoai, out error);
         }
     }
 }

@@ -338,12 +338,12 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         private void Grid_SelectionChanged(object sender, EventArgs e)
         {
-            if (_mode == FormMode.Adding) return;
             if (grid.CurrentRow == null) return;
             var khach = grid.CurrentRow.DataBoundItem as KhachThue;
             if (khach == null) return;
             BindToForm(khach);
             EnterViewMode();
+            RefreshDetailEditors();
         }
 
         private void BindToForm(KhachThue khach)
@@ -359,6 +359,32 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             txtMatKhau.Clear();
             txtEmail.Clear();
             txtSdt.Clear();
+            RefreshDetailEditors();
+        }
+
+        private void RefreshDetailEditors()
+        {
+            var controls = new Control[]
+            {
+                txtMaKhach, txtMaTaiKhoan, txtHoTen, txtCmnd, txtDiaChi,
+                txtTenDangNhap, txtMatKhau, txtEmail, txtSdt, dtpNgaySinh
+            };
+
+            foreach (var control in controls)
+            {
+                control.Invalidate();
+                control.Refresh();
+            }
+
+            if (!IsHandleCreated) return;
+            BeginInvoke(new Action(() =>
+            {
+                foreach (var control in controls)
+                {
+                    control.Invalidate();
+                    control.Refresh();
+                }
+            }));
         }
 
         // ── Validation / Read ────────────────────────────────────────────────────
