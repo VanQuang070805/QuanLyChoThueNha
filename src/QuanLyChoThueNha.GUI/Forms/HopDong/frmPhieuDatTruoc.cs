@@ -14,6 +14,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         public frmPhieuDatTruoc() : base("Quan ly Phieu dat truoc", Fields())
         {
+            HideDeleteButton();
             AddCommandButton("Xac nhan da nhan coc", BtnXacNhanCoc_Click);
             AddCommandButton("Huy phieu", BtnHuyPhieu_Click);
         }

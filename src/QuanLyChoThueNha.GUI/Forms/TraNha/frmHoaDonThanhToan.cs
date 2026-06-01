@@ -18,9 +18,17 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         public frmHoaDonThanhToan() : base("Quan ly Hoa don thanh toan", Fields())
         {
+            HideDeleteButton();
             AddCommandButton("Tinh dien/nuoc/dich vu", BtnTinhDichVu_Click);
             AddCommandButton("Ghi nhan thanh toan", BtnThanhToan_Click);
+            var hopDongEditor = GetEditor("MaHopDong") as ComboBox;
+            if (hopDongEditor != null)
+                hopDongEditor.SelectedIndexChanged += delegate { CapNhatTheoHopDongDangChon(); };
+            var kyEditor = GetEditor("KyThanhToan") as ComboBox;
+            if (kyEditor != null)
+                kyEditor.SelectedIndexChanged += delegate { CapNhatNgayDaoHanTheoKy(); };
             PrePopulateNhanVien();
+            CapNhatTheoHopDongDangChon();
         }
 
         protected override void OnAfterAdd() { PrePopulateNhanVien(); }
@@ -38,27 +46,33 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             var khachById = khachService.LayTatCa()
                 .GroupBy(k => k.MaKhach)
                 .ToDictionary(g => g.Key, g => g.First());
+            var canHoById = new CanHoService().LayTatCa()
+                .GroupBy(c => c.MaCanHo)
+                .ToDictionary(g => g.Key, g => g.First());
             var hopDongOptions = hopDongService.LayTatCa()
                 .Where(h => h.TrangThai == "HieuLuc")
                 .OrderBy(h => LayTenKhach(h, khachById))
                 .ThenBy(h => h.MaCanHo)
                 .Select(h => new ComboOption(h.MaHopDong,
-                    string.Format("{0} | {1} | Phong {2} | {3:dd/MM/yyyy}-{4:dd/MM/yyyy}",
+                    string.Format("{0} | {1} | {2} | {3:dd/MM/yyyy}-{4:dd/MM/yyyy}",
                         h.MaHopDong,
                         LayTenKhach(h, khachById),
-                        h.MaCanHo,
+                        LayTenCanHo(h.MaCanHo, canHoById),
                         h.NgayBatDau,
                         h.NgayKetThuc)))
                 .ToList();
-            var kyOptions = Enumerable.Range(1, 12)
-                .Select(m => string.Format("{0:00}/{1}", m, DateTime.Today.Year))
+            var kyOptions = hopDongService.LayTatCa()
+                .Where(h => h.TrangThai == "HieuLuc")
+                .SelectMany(TaoKyTrongHopDong)
+                .Distinct()
+                .OrderBy(x => x)
                 .ToArray();
 
             return new[]
             {
                 new FieldDefinition("MaHoaDon", "Ma hoa don", typeof(string), true),
                 FieldDefinition.Lookup("MaHopDong", "Hop dong", hopDongOptions),
-                new FieldDefinition("Phong", "Phong", typeof(string), true),
+                new FieldDefinition("Phong", "Can ho", typeof(string), true),
                 new FieldDefinition("MaNhanVienThu", "Ma nhan vien thu", typeof(string), true),
                 new FieldDefinition("KyThanhToan", "Ky thanh toan", typeof(string), false, kyOptions),
                 // BỔ SUNG (Bước 3): các trường chỉ số điện/nước. ChiSoCu tự điền, chỉ nhập ChiSoMoi.
@@ -70,7 +84,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 new FieldDefinition("NgayThanhToan", "Ngay thanh toan", typeof(DateTime?)),
                 new FieldDefinition("TrangThai", "Trang thai", typeof(string), true,
                     new[] { "ChuaTra", "DaTra", "TraThieu", "QuaHan" }),
-                new FieldDefinition("PhuongThucThanhToan", "Phuong thuc")
+                new FieldDefinition("PhuongThucThanhToan", "Phuong thuc", typeof(string), false,
+                    new[] { "ChuyenKhoan", "TienMat" })
             };
         }
 
@@ -85,13 +100,33 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 : hopDong.MaKhach;
         }
 
+        private static string LayTenCanHo(string maCanHo, IDictionary<string, CanHo> canHoById)
+        {
+            CanHo canHo;
+            return canHoById.TryGetValue(maCanHo, out canHo)
+                ? string.Format("Can {0} ({1})", canHo.SoCanHo, maCanHo)
+                : maCanHo;
+        }
+
+        private static IEnumerable<string> TaoKyTrongHopDong(HopDongEntity hopDong)
+        {
+            if (hopDong == null) yield break;
+            var current = new DateTime(hopDong.NgayBatDau.Year, hopDong.NgayBatDau.Month, 1);
+            var last = new DateTime(hopDong.NgayKetThuc.Year, hopDong.NgayKetThuc.Month, 1);
+            while (current <= last)
+            {
+                yield return current.ToString("MM/yyyy");
+                current = current.AddMonths(1);
+            }
+        }
+
         protected override IEnumerable<HoaDonThanhToan> GetItems()
         {
             var items = _service.LayTatCa().ToList();
             foreach (var item in items)
             {
                 var hopDong = _hopDongService.LayTheoMa(item.MaHopDong);
-                item.Phong = hopDong == null ? string.Empty : hopDong.MaCanHo;
+                item.Phong = hopDong == null ? string.Empty : TenCanHo(hopDong.MaCanHo);
             }
             return items;
         }
@@ -159,7 +194,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 Grid.Columns.Insert(2, new DataGridViewTextBoxColumn
                 {
                     Name = "Phong",
-                    HeaderText = "Phong",
+                    HeaderText = "Can ho",
                     ReadOnly = true
                 });
             }
@@ -169,8 +204,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 var hoaDon = row.DataBoundItem as HoaDonThanhToan;
                 if (hoaDon == null) continue;
                 var hopDong = _hopDongService.LayTheoMa(hoaDon.MaHopDong);
-                row.Cells["Phong"].Value = hopDong == null ? string.Empty : hopDong.MaCanHo;
+                row.Cells["Phong"].Value = hopDong == null ? string.Empty : TenCanHo(hopDong.MaCanHo);
             }
+        }
+
+        private string TenCanHo(string maCanHo)
+        {
+            var canHo = new CanHoService().LayTheoMa(maCanHo);
+            return canHo == null ? maCanHo : string.Format("Can {0}", canHo.SoCanHo);
         }
 
         private void AnCotKyThuat()
@@ -202,6 +243,43 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             return hopDongEditor == null || hopDongEditor.SelectedValue == null
                 ? string.Empty
                 : hopDongEditor.SelectedValue.ToString();
+        }
+
+        private void CapNhatTheoHopDongDangChon()
+        {
+            var maHopDong = LayMaHopDongDangChon();
+            var hopDong = string.IsNullOrWhiteSpace(maHopDong) ? null : _hopDongService.LayTheoMa(maHopDong);
+            if (hopDong == null) return;
+
+            SetEditorValue("Phong", TenCanHo(hopDong.MaCanHo));
+            var kyEditor = GetEditor("KyThanhToan") as ComboBox;
+            if (kyEditor != null)
+            {
+                var current = kyEditor.SelectedItem == null ? null : kyEditor.SelectedItem.ToString();
+                kyEditor.Items.Clear();
+                var kys = TaoKyTrongHopDong(hopDong).ToArray();
+                kyEditor.Items.AddRange(kys);
+                if (kys.Length > 0)
+                    kyEditor.SelectedItem = kys.Contains(current) ? current : kys[0];
+            }
+            CapNhatNgayDaoHanTheoKy();
+        }
+
+        private void CapNhatNgayDaoHanTheoKy()
+        {
+            var maHopDong = LayMaHopDongDangChon();
+            var hopDong = string.IsNullOrWhiteSpace(maHopDong) ? null : _hopDongService.LayTheoMa(maHopDong);
+            var kyEditor = GetEditor("KyThanhToan") as ComboBox;
+            if (hopDong == null || kyEditor == null || kyEditor.SelectedItem == null) return;
+
+            DateTime thang;
+            if (!DateTime.TryParseExact("01/" + kyEditor.SelectedItem, "dd/MM/yyyy",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out thang)) return;
+            var cuoiThang = thang.AddMonths(1).AddDays(-1);
+            var ngayDaoHan = cuoiThang > hopDong.NgayKetThuc.Date ? hopDong.NgayKetThuc.Date : cuoiThang;
+            if (ngayDaoHan < hopDong.NgayBatDau.Date) ngayDaoHan = hopDong.NgayBatDau.Date;
+            SetEditorValue("NgayDaoHan", ngayDaoHan);
         }
 
         // Đọc giá trị double từ một editor NumericUpDown trên form.

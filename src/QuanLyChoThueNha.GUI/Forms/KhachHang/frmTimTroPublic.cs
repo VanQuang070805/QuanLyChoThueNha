@@ -34,13 +34,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly ComboBox _cboToa = new ComboBox();
         private readonly ComboBox _cboLoai = new ComboBox();
         private readonly NumericUpDown _numBanKinh = new NumericUpDown();
-        private readonly NumericUpDown _numGiaTu = new NumericUpDown();
-        private readonly NumericUpDown _numGiaDen = new NumericUpDown();
+        private readonly PlaceholderTextBox _txtGiaTu = new PlaceholderTextBox();
+        private readonly PlaceholderTextBox _txtGiaDen = new PlaceholderTextBox();
         private readonly PlaceholderTextBox _txtTimKiem = new PlaceholderTextBox();
         private readonly MaterialLabel _lblCount = new MaterialLabel();
         private readonly WebView2 _mapView = new WebView2();
         private Panel _detailOverlay;
         private Panel _detailPopup;
+        private bool _dangLamMoiBoLoc;
 
         private class FilterOption
         {
@@ -153,10 +154,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             _numBanKinh.Value = 3;
             _numBanKinh.ValueChanged += delegate { TaiDanhSachTro(); };
 
-            SetupMoney(_numGiaTu);
-            SetupMoney(_numGiaDen);
-            _numGiaTu.ValueChanged += delegate { TaiDanhSachTro(); };
-            _numGiaDen.ValueChanged += delegate { TaiDanhSachTro(); };
+            SetupMoneyText(_txtGiaTu, "0");
+            SetupMoneyText(_txtGiaDen, "0");
+            _txtGiaTu.TextChanged += delegate { TaiDanhSachTro(); };
+            _txtGiaDen.TextChanged += delegate { TaiDanhSachTro(); };
 
             root.Controls.Add(CreateFilterPanel(), 0, 1);
 
@@ -413,8 +414,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             AddFilterCell(grid, "Bán kính", _numBanKinh, 2);
             AddFilterCell(grid, "Tòa", _cboToa, 3);
             AddFilterCell(grid, "Loại phòng", _cboLoai, 4);
-            AddFilterCell(grid, "Giá từ", _numGiaTu, 5);
-            AddFilterCell(grid, "Giá đến", _numGiaDen, 6);
+            AddFilterCell(grid, "Giá từ", _txtGiaTu, 5);
+            AddFilterCell(grid, "Giá đến", _txtGiaDen, 6);
 
             grid.Controls.Add(new Label
             {
@@ -495,6 +496,33 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             number.DecimalPlaces = 0;
         }
 
+        private void SetupMoneyText(PlaceholderTextBox textbox, string placeholder)
+        {
+            textbox.BorderStyle = BorderStyle.None;
+            textbox.Font = new Font("Segoe UI", 10F);
+            textbox.BackColor = Color.White;
+            textbox.Placeholder = placeholder;
+            textbox.KeyPress += delegate(object sender, KeyPressEventArgs e)
+            {
+                if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+                    e.Handled = true;
+            };
+            textbox.Leave += delegate
+            {
+                decimal value;
+                if (TryReadMoney(textbox, out value) && value > 0)
+                    textbox.Text = value.ToString("N0");
+            };
+        }
+
+        private static bool TryReadMoney(TextBox textbox, out decimal value)
+        {
+            value = 0;
+            if (textbox == null || string.IsNullOrWhiteSpace(textbox.Text)) return false;
+            var raw = textbox.Text.Replace(".", string.Empty).Replace(",", string.Empty).Trim();
+            return decimal.TryParse(raw, out value);
+        }
+
         private void NapBoLoc()
         {
             var selectedKhuVuc = _cboKhuVuc.SelectedValue == null ? string.Empty : _cboKhuVuc.SelectedValue.ToString();
@@ -531,13 +559,23 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private void LamMoiDuLieu()
         {
+            _dangLamMoiBoLoc = true;
             NapBoLoc();
+            _txtTimKiem.Clear();
+            _txtGiaTu.Clear();
+            _txtGiaDen.Clear();
+            _numBanKinh.Value = 3;
+            if (_cboKhuVuc.Items.Count > 0) _cboKhuVuc.SelectedIndex = 0;
+            if (_cboToa.Items.Count > 0) _cboToa.SelectedIndex = 0;
+            if (_cboLoai.Items.Count > 0) _cboLoai.SelectedIndex = 0;
+            _dangLamMoiBoLoc = false;
             TaiDanhSachTro();
         }
 
         private void TaiDanhSachTro()
         {
             if (_roomCards == null) return;
+            if (_dangLamMoiBoLoc) return;
             _roomCards.Controls.Clear();
             GuiThongBaoPhieuHetHanMoi();
 
@@ -580,14 +618,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 var maLoai = _cboLoai.SelectedValue.ToString();
                 data = data.Where(c => c.MaLoai == maLoai);
             }
-            if (_numGiaTu.Value > 0)
+            decimal giaTu;
+            if (TryReadMoney(_txtGiaTu, out giaTu) && giaTu > 0)
             {
-                var giaTu = _numGiaTu.Value;
                 data = data.Where(c => c.GiaThueNiemYet >= giaTu);
             }
-            if (_numGiaDen.Value > 0)
+            decimal giaDen;
+            if (TryReadMoney(_txtGiaDen, out giaDen) && giaDen > 0)
             {
-                var giaDen = _numGiaDen.Value;
                 data = data.Where(c => c.GiaThueNiemYet <= giaDen);
             }
 

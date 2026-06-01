@@ -34,6 +34,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private ComboBox cboLoai;
         private ComboBox cboTinhTrang;
         private ComboBox cboTienNghi;
+        private Label lblTinhTrangHienTai;
         private NumericUpDown numDienTich;
         private NumericUpDown numGiaThue;
         private NumericUpDown numTienCoc;
@@ -47,6 +48,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private MaterialButton btnXoa;
         private MaterialButton btnLamMoi;
         private Label _lblMsg;
+        private string _tinhTrangHienTai = "Trong";
 
         public frmCanHo()
         {
@@ -124,7 +126,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             numTang = CreateNumber(1, 200, 0);
             txtSoCanHo = CreateTextBox("VD: A101", false);
             cboTinhTrang = CreateComboBox();
-            cboTinhTrang.Items.AddRange(new object[] { "Trong", "DaDatCoc", "DangThue", "BaoTri" });
+            cboTinhTrang.Items.AddRange(new object[] { "Trong", "BaoTri" });
+            lblTinhTrangHienTai = new Label
+            {
+                Dock = DockStyle.Top,
+                AutoSize = false,
+                Height = 24,
+                ForeColor = Color.FromArgb(75, 85, 99)
+            };
             txtMoTa = CreateTextBox("Ghi chu", false);
             txtMoTa.Multiline = true;
             txtMoTa.Height = 72;
@@ -151,6 +160,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             AddField(right, "Tang so *", numTang);
             AddField(right, "So can ho", txtSoCanHo);
             AddField(right, "Tinh trang", cboTinhTrang);
+            right.Controls.Add(lblTinhTrangHienTai);
             AddField(right, "Mo ta", txtMoTa);
             AddField(right, "Tien nghi", cboTienNghi);
             AddField(right, "Tien nghi da gan", lblTienNghi);
@@ -232,7 +242,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             cboToa.Enabled        = enabled;
             cboLoai.Enabled       = enabled;
-            cboTinhTrang.Enabled  = enabled;
+            cboTinhTrang.Enabled  = enabled && _tinhTrangHienTai != "DaDatCoc" && _tinhTrangHienTai != "DangThue";
             numDienTich.Enabled   = enabled;
             numGiaThue.Enabled    = enabled;
             numTienCoc.Enabled    = enabled;
@@ -319,6 +329,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private void TaoCotBang()
         {
             dgv.Columns.Clear();
+            AddDisplayColumn("TenCanHo", "Tên căn hộ", 90);
+            AddDisplayColumn("TenToa", "Tên tòa", 100);
             AddGridColumn("MaCanHo", "Mã căn hộ", 90);
             AddGridColumn("MaToa", "Tòa", 80);
             AddGridColumn("MaLoai", "Loại", 80);
@@ -348,6 +360,18 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             dgv.Columns.Add(column);
         }
 
+        private void AddDisplayColumn(string name, string header, int minWidth)
+        {
+            dgv.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = name,
+                HeaderText = header,
+                MinimumWidth = minWidth,
+                ReadOnly = true,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            });
+        }
+
         private void NapComboBox()
         {
             cboToa.DisplayMember = "TenToa";
@@ -368,6 +392,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private void TaiDuLieu()
         {
             dgv.DataSource = new BindingList<CanHo>(_canHoSvc.LayTatCa().OrderBy(c => c.MaCanHo).ToList());
+            ApDungCotTenCanHoToa();
             dgv.ClearSelection();
         }
 
@@ -383,6 +408,22 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                     TextFormatHelper.ContainsNormalized(c.TinhTrang, kw));
             }
             dgv.DataSource = new BindingList<CanHo>(data.OrderBy(c => c.MaCanHo).ToList());
+            ApDungCotTenCanHoToa();
+        }
+
+        private void ApDungCotTenCanHoToa()
+        {
+            var toas = _toaSvc.LayTatCa().GroupBy(t => t.MaToa).ToDictionary(g => g.Key, g => g.First());
+            foreach (DataGridViewRow row in dgv.Rows)
+            {
+                var canHo = row.DataBoundItem as CanHo;
+                if (canHo == null) continue;
+                row.Cells["TenCanHo"].Value = "Can " + canHo.SoCanHo;
+                Toa toa;
+                row.Cells["TenToa"].Value = toas.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
+            }
+            if (dgv.Columns.Contains("MaCanHo")) dgv.Columns["MaCanHo"].Visible = false;
+            if (dgv.Columns.Contains("MaToa")) dgv.Columns["MaToa"].Visible = false;
         }
 
         private void Dgv_SelectionChanged(object sender, EventArgs e)
@@ -407,9 +448,23 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             numTienCoc.Value  = Clamp(c.TienCocNiemYet, numTienCoc.Minimum, numTienCoc.Maximum);
             numTang.Value     = Clamp(c.TangSo, numTang.Minimum, numTang.Maximum);
             txtSoCanHo.Text   = c.SoCanHo.ToString();
-            cboTinhTrang.SelectedItem = c.TinhTrang;
+            _tinhTrangHienTai = c.TinhTrang;
+            if (c.TinhTrang == "Trong" || c.TinhTrang == "BaoTri")
+                cboTinhTrang.SelectedItem = c.TinhTrang;
+            else
+                cboTinhTrang.SelectedIndex = -1;
+            lblTinhTrangHienTai.Text = "Tinh trang hien tai: " + HienThiTinhTrang(c.TinhTrang);
             txtMoTa.Text = c.MoTa;
             NapTienNghiVaAnh(c.MaCanHo);
+        }
+
+        private string HienThiTinhTrang(string tinhTrang)
+        {
+            if (tinhTrang == "DaDatCoc") return "Da dat coc (tu phieu dat truoc)";
+            if (tinhTrang == "DangThue") return "Dang thue (tu hop dong)";
+            if (tinhTrang == "Trong") return "Con trong";
+            if (tinhTrang == "BaoTri") return "Bao tri";
+            return tinhTrang;
         }
 
         private void NapTienNghiVaAnh(string maCanHo)
@@ -621,6 +676,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private void XoaTrong()
         {
             txtMa.Clear();
+            _tinhTrangHienTai = "Trong";
             txtSoCanHo.Clear();
             txtMoTa.Clear();
             numDienTich.Value = 0;
@@ -630,6 +686,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             if (cboToa.Items.Count > 0) cboToa.SelectedIndex = 0;
             if (cboLoai.Items.Count > 0) cboLoai.SelectedIndex = 0;
             if (cboTinhTrang.Items.Count > 0) cboTinhTrang.SelectedIndex = 0;
+            if (lblTinhTrangHienTai != null) lblTinhTrangHienTai.Text = "Chi duoc chon Trong hoac BaoTri. DaDatCoc/DangThue do he thong cap nhat.";
             lblTienNghi.Text = "Chon can ho de xem tien nghi.";
             if (picAnh.Image != null)
             {

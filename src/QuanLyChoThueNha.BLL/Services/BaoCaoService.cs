@@ -167,7 +167,7 @@ namespace QuanLyChoThueNha.BLL.Services
         public IEnumerable<TinhTrangCanHoDto> TinhTrangCanHo()
         {
             return _uow.CanHos.GetAll()
-                .GroupBy(c => c.TinhTrang)
+                .GroupBy(c => string.IsNullOrWhiteSpace(c.TinhTrang) ? "Khong ro" : c.TinhTrang)
                 .Select(g => new TinhTrangCanHoDto
                 {
                     TinhTrang = g.Key,
@@ -218,7 +218,10 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<HopDongCanhBaoDto> HopDongCanhBao(int soNgay = 45)
         {
-            var khachMap = _uow.KhachThues.GetAll().ToDictionary(k => k.MaKhach, k => k.HoTen);
+            var khachMap = _uow.KhachThues.GetAll()
+                .Where(k => !string.IsNullOrWhiteSpace(k.MaKhach))
+                .GroupBy(k => k.MaKhach)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
             return HopDongSapHetHan(soNgay)
                 .OrderBy(h => h.NgayKetThuc)
                 .Select(h => new HopDongCanhBaoDto
@@ -236,8 +239,14 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<CongNoDto> CongNoQuaHan()
         {
-            var hopDongMap = _uow.HopDongs.GetAll().ToDictionary(h => h.MaHopDong);
-            var khachMap = _uow.KhachThues.GetAll().ToDictionary(k => k.MaKhach, k => k.HoTen);
+            var hopDongMap = _uow.HopDongs.GetAll()
+                .Where(h => !string.IsNullOrWhiteSpace(h.MaHopDong))
+                .GroupBy(h => h.MaHopDong)
+                .ToDictionary(g => g.Key, g => g.First());
+            var khachMap = _uow.KhachThues.GetAll()
+                .Where(k => !string.IsNullOrWhiteSpace(k.MaKhach))
+                .GroupBy(k => k.MaKhach)
+                .ToDictionary(g => g.Key, g => g.First().HoTen);
             return _uow.HoaDonThanhToans.GetAll()
                 .Where(h => h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan")
                 .OrderBy(h => h.NgayDaoHan)
@@ -264,8 +273,14 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<BaoCaoHangMucDto> LoaiCanHoDuocThueNhieuNhat(int top = 10)
         {
-            var canHoMap = _uow.CanHos.GetAll().ToDictionary(c => c.MaCanHo);
-            var loaiMap = _uow.LoaiCanHos.GetAll().ToDictionary(l => l.MaLoai, l => l.TenLoai);
+            var canHoMap = _uow.CanHos.GetAll()
+                .Where(c => !string.IsNullOrWhiteSpace(c.MaCanHo))
+                .GroupBy(c => c.MaCanHo)
+                .ToDictionary(g => g.Key, g => g.First());
+            var loaiMap = _uow.LoaiCanHos.GetAll()
+                .Where(l => !string.IsNullOrWhiteSpace(l.MaLoai))
+                .GroupBy(l => l.MaLoai)
+                .ToDictionary(g => g.Key, g => g.First().TenLoai);
             return _uow.HopDongs.GetAll()
                 .Where(h => h.TrangThai == "HieuLuc" || h.TrangThai == "HetHan")
                 .Select(h =>
@@ -285,15 +300,22 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<BaoCaoHangMucDto> TinhTrangTheoKhuVuc()
         {
-            var toas = _uow.Toas.GetAll().ToDictionary(t => t.MaToa);
-            var khuVucs = _uow.KhuVucs.GetAll().ToDictionary(k => k.MaKhuVuc, k => k.TenKhuVuc);
+            var toas = _uow.Toas.GetAll()
+                .Where(t => !string.IsNullOrWhiteSpace(t.MaToa))
+                .GroupBy(t => t.MaToa)
+                .ToDictionary(g => g.Key, g => g.First());
+            var khuVucs = _uow.KhuVucs.GetAll()
+                .Where(k => !string.IsNullOrWhiteSpace(k.MaKhuVuc))
+                .GroupBy(k => k.MaKhuVuc)
+                .ToDictionary(g => g.Key, g => g.First().TenKhuVuc);
             return _uow.CanHos.GetAll()
                 .Select(c =>
                 {
                     Toa toa;
                     if (!toas.TryGetValue(c.MaToa, out toa)) return null;
                     var tenKhuVuc = khuVucs.ContainsKey(toa.MaKhuVuc) ? khuVucs[toa.MaKhuVuc] : toa.MaKhuVuc;
-                    return new { Ten = tenKhuVuc + " - " + c.TinhTrang };
+                    var tinhTrang = string.IsNullOrWhiteSpace(c.TinhTrang) ? "Khong ro" : c.TinhTrang;
+                    return new { Ten = (string.IsNullOrWhiteSpace(tenKhuVuc) ? "Khong ro" : tenKhuVuc) + " - " + tinhTrang };
                 })
                 .Where(x => x != null)
                 .GroupBy(x => x.Ten)
@@ -304,7 +326,10 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<BaoCaoHangMucDto> TopCanHoDoanhThu(int nam, int top = 5)
         {
-            var hopDongMap = _uow.HopDongs.GetAll().ToDictionary(h => h.MaHopDong);
+            var hopDongMap = _uow.HopDongs.GetAll()
+                .Where(h => !string.IsNullOrWhiteSpace(h.MaHopDong))
+                .GroupBy(h => h.MaHopDong)
+                .ToDictionary(g => g.Key, g => g.First());
             return HoaDonDaTraTrongNam(nam)
                 .Select(h =>
                 {
@@ -326,7 +351,10 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<BaoCaoHangMucDto> TopCanHoDoanhThu(DateTime tuNgay, DateTime denNgay, int top = 5)
         {
-            var hopDongMap = _uow.HopDongs.GetAll().ToDictionary(h => h.MaHopDong);
+            var hopDongMap = _uow.HopDongs.GetAll()
+                .Where(h => !string.IsNullOrWhiteSpace(h.MaHopDong))
+                .GroupBy(h => h.MaHopDong)
+                .ToDictionary(g => g.Key, g => g.First());
             var hoaDons = _uow.HoaDonThanhToans
                 .Find(h => h.TrangThai == "DaTra" &&
                            h.NgayThanhToan.HasValue &&

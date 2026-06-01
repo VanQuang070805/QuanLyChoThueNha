@@ -118,6 +118,12 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _commandPanel.Controls.Add(control);
         }
 
+        protected void HideDeleteButton()
+        {
+            if (_btnDelete != null)
+                _btnDelete.Visible = false;
+        }
+
         protected T CurrentItem
         {
             get

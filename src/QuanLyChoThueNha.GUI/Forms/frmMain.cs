@@ -21,6 +21,10 @@ namespace QuanLyChoThueNha.GUI.Forms
         private FlowLayoutPanel _menuGroups;
         private FlowLayoutPanel _menuItems;
         private string _activeMenuKey;
+        private bool _dangDangXuat;
+
+        public Form FormDangNhapNguon { get; set; }
+        public bool DangDangXuat { get { return _dangDangXuat; } }
 
         private class MenuItemInfo
         {
@@ -284,7 +288,16 @@ namespace QuanLyChoThueNha.GUI.Forms
             if (confirm != DialogResult.Yes) return;
 
             new AuthService().DangXuat();
-            new frmLogin().Show();
+            _dangDangXuat = true;
+            if (FormDangNhapNguon != null && !FormDangNhapNguon.IsDisposed)
+            {
+                FormDangNhapNguon.Show();
+                FormDangNhapNguon.Activate();
+            }
+            else
+            {
+                new frmLogin().Show();
+            }
             Close();
         }
 

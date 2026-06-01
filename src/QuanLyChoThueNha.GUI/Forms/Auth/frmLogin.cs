@@ -61,8 +61,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             if (string.IsNullOrWhiteSpace(txtTenDangNhap.Text) ||
                 string.IsNullOrWhiteSpace(txtMatKhau.Text))
             {
-                MessageBox.Show("Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ tÃªn Ä‘Äƒng nháº­p vÃ  máº­t kháº©u.",
-                    "ThÃ´ng bÃ¡o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.",
+                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -76,7 +76,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             if (!ketQua)
             {
                 // BÆ°á»›c 2 â€” Dá»¯ liá»‡u SAI: cáº£nh bÃ¡o lá»—i
-                MessageBox.Show(loi, "ÄÄƒng nháº­p tháº¥t báº¡i",
+                MessageBox.Show(loi, "Đăng nhập thất bại",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 txtMatKhau.Clear();
                 txtMatKhau.Focus();
@@ -91,10 +91,20 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                     "Sai cong dang nhap", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            var frmMain = new frmMain();
+            var frmMain = new frmMain { FormDangNhapNguon = this };
             frmMain.Show();
             this.Hide();
-            frmMain.FormClosed += (s, args) => this.Close();
+            frmMain.FormClosed += (s, args) =>
+            {
+                if (frmMain.DangDangXuat)
+                {
+                    txtMatKhau.Clear();
+                    txtTenDangNhap.Clear();
+                    txtTenDangNhap.Focus();
+                    return;
+                }
+                this.Close();
+            };
         }
 
         private void btnThoat_Click(object sender, EventArgs e)
@@ -112,4 +122,3 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         }
     }
 }
-

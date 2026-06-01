@@ -19,6 +19,61 @@ namespace QuanLyChoThueNha.BLL.Services
             return MaGenerator.Sinh("CH", max);
         }
 
+        private static bool LaTrangThaiHeThong(string tinhTrang)
+        {
+            return tinhTrang == "DaDatCoc" || tinhTrang == "DangThue";
+        }
+
+        private string TinhTrangTheoNghiepVu(CanHo canHo)
+        {
+            if (canHo == null) return null;
+
+            var coHopDongHieuLuc = _uow.HopDongs.Any(h =>
+                h.MaCanHo == canHo.MaCanHo &&
+                h.TrangThai == "HieuLuc" &&
+                h.NgayBatDau <= DateTime.Today &&
+                h.NgayKetThuc >= DateTime.Today);
+            if (coHopDongHieuLuc) return "DangThue";
+
+            var coPhieuDatTruocMo = _uow.PhieuDatTruocs.Any(p =>
+                p.MaCanHo == canHo.MaCanHo &&
+                p.NgayHetHan >= DateTime.Now &&
+                (p.TrangThai == PhieuDatTruocService.ChoThanhToanCoc ||
+                 p.TrangThai == PhieuDatTruocService.DaThanhToanCoc ||
+                 p.TrangThai == PhieuDatTruocService.ChoKy));
+            if (coPhieuDatTruocMo) return "DaDatCoc";
+
+            return LaTrangThaiHeThong(canHo.TinhTrang) ? "Trong" : canHo.TinhTrang;
+        }
+
+        private void DongBoTinhTrangTheoNghiepVu()
+        {
+            var changed = false;
+            foreach (var canHo in _uow.CanHos.GetAll())
+            {
+                var tinhTrangDung = TinhTrangTheoNghiepVu(canHo);
+                if (!string.IsNullOrWhiteSpace(tinhTrangDung) && canHo.TinhTrang != tinhTrangDung)
+                {
+                    canHo.TinhTrang = tinhTrangDung;
+                    _uow.CanHos.Update(canHo);
+                    changed = true;
+                }
+            }
+            if (changed) _uow.Complete();
+        }
+
+        public override IEnumerable<CanHo> LayTatCa()
+        {
+            DongBoTinhTrangTheoNghiepVu();
+            return base.LayTatCa();
+        }
+
+        public override CanHo LayTheoMa(object ma)
+        {
+            DongBoTinhTrangTheoNghiepVu();
+            return base.LayTheoMa(ma);
+        }
+
         public bool Them(CanHo canHo, out string loi)
         {
             loi = string.Empty;
@@ -40,6 +95,7 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<CanHo> LayTheoTinhTrang(string tinhTrang)
         {
+            DongBoTinhTrangTheoNghiepVu();
             return Tim(c => c.TinhTrang == tinhTrang);
         }
 
@@ -50,10 +106,26 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public void CapNhatTinhTrang(string maCanHo, string tinhTrangMoi)
         {
+            if (LaTrangThaiHeThong(tinhTrangMoi)) return;
             var canHo = LayTheoMa(maCanHo);
             if (canHo == null) return;
+            if (TinhTrangTheoNghiepVu(canHo) != canHo.TinhTrang) return;
             canHo.TinhTrang = tinhTrangMoi;
             Sua(canHo);
+        }
+
+        public override void Sua(CanHo canHo)
+        {
+            var current = _uow.CanHos.GetById(canHo.MaCanHo);
+            if (current != null)
+            {
+                var tinhTrangTheoHeThong = TinhTrangTheoNghiepVu(current);
+                if (tinhTrangTheoHeThong == "DaDatCoc" || tinhTrangTheoHeThong == "DangThue")
+                    canHo.TinhTrang = tinhTrangTheoHeThong;
+                else if (LaTrangThaiHeThong(canHo.TinhTrang))
+                    canHo.TinhTrang = "Trong";
+            }
+            base.Sua(canHo);
         }
 
         public void ThemTienNghi(string maCanHo, string maTienNghi, string ghiChu = null)

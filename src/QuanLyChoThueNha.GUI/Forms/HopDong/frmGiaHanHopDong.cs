@@ -26,10 +26,19 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         {
             var hopDongOptions = new HopDongService().LayTatCa()
                 .Where(h => h.TrangThai == "HieuLuc")
-                .OrderBy(h => h.NgayKetThuc)
-                .Select(h => new ComboOption(h.MaHopDong,
-                    string.Format("{0} | Khach {1} | Phong {2} | Het han {3:dd/MM/yyyy}",
-                        h.MaHopDong, h.MaKhach, h.MaCanHo, h.NgayKetThuc)))
+                .Select(h => new
+                {
+                    HopDong = h,
+                    Khach = new KhachThueService().LayTheoMa(h.MaKhach),
+                    CanHo = new CanHoService().LayTheoMa(h.MaCanHo)
+                })
+                .OrderBy(x => x.HopDong.NgayKetThuc)
+                .Select(x => new ComboOption(x.HopDong.MaHopDong,
+                    string.Format("{0} | {1} | {2} | Het han {3:dd/MM/yyyy}",
+                        x.HopDong.MaHopDong,
+                        x.Khach == null ? x.HopDong.MaKhach : x.Khach.HoTen,
+                        x.CanHo == null ? x.HopDong.MaCanHo : "Can " + x.CanHo.SoCanHo,
+                        x.HopDong.NgayKetThuc)))
                 .ToList();
 
             return new[]
@@ -37,7 +46,6 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 new FieldDefinition("MaGiaHan", "Ma gia han", typeof(string), true),
                 FieldDefinition.Lookup("MaHopDong", "Ma hop dong", hopDongOptions),
                 new FieldDefinition("MaNhanVien", "Ma nhan vien", typeof(string), true),
-                new FieldDefinition("NgayKetThucCu", "Ngay ket thuc cu", typeof(DateTime), true),
                 new FieldDefinition("NgayKetThucMoi", "Ngay ket thuc moi", typeof(DateTime)),
                 new FieldDefinition("NgayYeuCau", "Ngay yeu cau", typeof(DateTime), true),
                 new FieldDefinition("NgayDuyet", "Ngay duyet", typeof(DateTime?))

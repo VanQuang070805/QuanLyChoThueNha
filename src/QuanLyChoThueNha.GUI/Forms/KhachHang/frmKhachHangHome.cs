@@ -161,11 +161,14 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 .Where(p => p.MaKhach == SessionContext.MaNguoiDung)
                 .OrderByDescending(p => p.NgayDatCoc)
                 .ToList();
+            var canHos = _canHoService.LayTatCa().GroupBy(c => c.MaCanHo).ToDictionary(g => g.Key, g => g.First());
+            var toas = _toaService.LayTatCa().GroupBy(t => t.MaToa).ToDictionary(g => g.Key, g => g.First());
 
             gridPhieuDatTruoc.DataSource = new BindingList<object>(phieus.Select(p => new
             {
                 p.MaPhieuDatTruoc,
-                p.MaCanHo,
+                TenCanHo = LayTenCanHo(p.MaCanHo, canHos),
+                TenToa = LayTenToa(p.MaCanHo, canHos, toas),
                 p.SoTienDatCoc,
                 p.NgayDatCoc,
                 p.NgayHetHan,

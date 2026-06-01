@@ -127,6 +127,21 @@ namespace QuanLyChoThueNha.BLL.Services
                 loi = "Chi duoc tao hoa don trong thoi han hop dong con hieu luc.";
                 return false;
             }
+            DateTime kyHoaDon;
+            if (!DateTime.TryParseExact("01/" + hoaDon.KyThanhToan, "dd/MM/yyyy",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out kyHoaDon))
+            {
+                loi = "Ky thanh toan khong hop le.";
+                return false;
+            }
+            var dauKy = kyHoaDon.Date;
+            var cuoiKy = kyHoaDon.AddMonths(1).AddDays(-1).Date;
+            if (cuoiKy < hopDong.NgayBatDau.Date || dauKy > hopDong.NgayKetThuc.Date)
+            {
+                loi = "Ky thanh toan nam ngoai thoi han hop dong.";
+                return false;
+            }
             if (_uow.LoaiHoaDons.GetById(hoaDon.MaLoaiHoaDon) == null) { loi = "Loai hoa don khong ton tai."; return false; }
             // BỔ SUNG: không cho lập 2 hóa đơn cùng KỲ + cùng LOẠI trên cùng 1 hợp đồng (tránh trùng).
             if (_uow.HoaDonThanhToans.Any(h => h.MaHopDong == hoaDon.MaHopDong
@@ -308,6 +323,7 @@ namespace QuanLyChoThueNha.BLL.Services
                 phieu.TienHoanCoc = tienHoanCoc;
                 AuditHelper.GanNguoiThaoTac(phieu);
                 _uow.PhieuTraNhas.Add(phieu);
+                _uow.Complete();
 
                 // Đánh dấu các phiếu vi phạm đã được khấu trừ vào cọc + liên kết về phiếu trả nhà.
                 foreach (var v in dsViPham)

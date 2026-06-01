@@ -85,9 +85,37 @@ namespace QuanLyChoThueNha.BLL.Services
             _uow.Complete();
         }
 
+        private void GiaiPhongCanHoDaHuyHoacHetHan()
+        {
+            var phieusDong = _uow.PhieuDatTruocs
+                .Find(p => p.TrangThai == Huy || p.TrangThai == HetHan)
+                .ToList();
+            var changed = false;
+            foreach (var p in phieusDong)
+            {
+                var conPhieuMoKhac = _uow.PhieuDatTruocs.Any(x =>
+                    x.MaCanHo == p.MaCanHo &&
+                    x.MaPhieuDatTruoc != p.MaPhieuDatTruoc &&
+                    (x.TrangThai == ChoThanhToanCoc ||
+                     x.TrangThai == DaThanhToanCoc ||
+                     x.TrangThai == ChoKy));
+                if (conPhieuMoKhac) continue;
+
+                var canHo = _uow.CanHos.GetById(p.MaCanHo);
+                if (canHo != null && canHo.TinhTrang == "DaDatCoc")
+                {
+                    canHo.TinhTrang = "Trong";
+                    _uow.CanHos.Update(canHo);
+                    changed = true;
+                }
+            }
+            if (changed) _uow.Complete();
+        }
+
         public override IEnumerable<PhieuDatTruoc> LayTatCa()
         {
             CapNhatPhieuHetHan();
+            GiaiPhongCanHoDaHuyHoacHetHan();
             return base.LayTatCa();
         }
 
