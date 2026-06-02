@@ -25,6 +25,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         {
             TaoBoLocToa();
             TaoBoLocTrangThai();
+            Grid.CellFormatting += Grid_CellFormatting;
             var canHoEditor = GetEditor("MaCanHo") as ComboBox;
             if (canHoEditor != null)
                 canHoEditor.SelectedIndexChanged += delegate { DienPhieuVaKhachTheoCanHo(); };
@@ -116,10 +117,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         protected override IEnumerable<HopDongEntity> GetItems()
         {
-            var data = _service.LayTatCa();
-            if (_trangThaiFilter != "TatCa")
-                data = data.Where(h => _service.TrangThaiHienThi(h) == _trangThaiFilter);
-            return data;
+            return _service.LayTatCa();
         }
 
         protected override IEnumerable<string> GridColumnNames()
@@ -243,7 +241,9 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
                 // Hiển thị tiếng Việt trong cột TrangThai
                 if (Grid.Columns.Contains("TrangThai"))
+                {
                     row.Cells["TrangThai"].ToolTipText = HienThiTrangThai(status);
+                }
 
                 CanHo canHo;
                 if (canHos.TryGetValue(hd.MaCanHo, out canHo))
@@ -256,6 +256,18 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                     row.Cells["Toa"].Value = string.Empty;
                 }
             }
+        }
+
+        private void Grid_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || !Grid.Columns.Contains("TrangThai")) return;
+            if (Grid.Columns[e.ColumnIndex].Name != "TrangThai") return;
+
+            var row = Grid.Rows[e.RowIndex];
+            var hd = row.DataBoundItem as HopDongEntity;
+            var status = hd == null ? ChuanHoaTrangThaiLuu(e.Value == null ? null : e.Value.ToString()) : _service.TrangThaiHienThi(hd);
+            e.Value = HienThiTrangThai(status);
+            e.FormattingApplied = true;
         }
 
         private static string ChuanHoaTrangThaiLuu(string trangThai)

@@ -63,7 +63,7 @@ namespace QuanLyChoThueNha.DAL.Repositories
         public IRepository<PhieuXuLyViPham>  PhieuXuLyViPhams   => _phieuXuLyViPhams   ?? (_phieuXuLyViPhams   = new Repository<PhieuXuLyViPham>(_context));
         public IRepository<EmailLog>         EmailLogs          => _emailLogs          ?? (_emailLogs          = new Repository<EmailLog>(_context));
 
-        // ── Lưu & Transaction ──────────────────────────────────────────────
+        // ── Lưu & Transaction ──────────────────────────────────────────────o
         public int Complete() => _context.SaveChanges();
 
         public void BeginTransaction() => _transaction = _context.Database.BeginTransaction();

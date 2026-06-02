@@ -22,11 +22,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         private static IEnumerable<FieldDefinition> Fields()
         {
             var hopDongService = new HopDongService();
-            var hopDongOptions = hopDongService.LayTatCa()
-                .Where(h => h.TrangThai == "HieuLuc")
+            var hopDongOptions = hopDongService.LayCoTheLapPhieuTraNha()
                 .OrderBy(h => h.MaHopDong)
                 .Select(h => new ComboOption(h.MaHopDong,
-                    string.Format("{0} - {1} - {2}", h.MaHopDong, h.MaCanHo, h.TrangThai)))
+                    string.Format("{0} - {1} - Con hieu luc", h.MaHopDong, h.MaCanHo)))
                 .ToList();
 
             return new[]

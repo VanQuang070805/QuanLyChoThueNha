@@ -89,7 +89,7 @@ namespace QuanLyChoThueNha.BLL.Services
                 loi = "Khong co tai khoan can cap nhat.";
                 return false;
             }
-            if (vaiTroNguoiThucHien != "Admin")
+            if (!LaAdmin(vaiTroNguoiThucHien))
             {
                 loi = "Chi Admin moi duoc cap nhat tai khoan.";
                 return false;
@@ -143,7 +143,7 @@ namespace QuanLyChoThueNha.BLL.Services
         public bool DoiTrangThai(string maTaiKhoan, bool trangThaiMoi, string vaiTroNguoiThucHien, out string loi)
         {
             loi = string.Empty;
-            if (vaiTroNguoiThucHien != "Admin")
+            if (!LaAdmin(vaiTroNguoiThucHien))
             {
                 loi = "Chi Admin moi duoc khoa/mo khoa tai khoan.";
                 return false;
@@ -164,6 +164,21 @@ namespace QuanLyChoThueNha.BLL.Services
             tk.TrangThai = trangThaiMoi;
             Sua(tk);
             return true;
+        }
+
+        private bool LaAdmin(string vaiTroNguoiThucHien)
+        {
+            if (string.Equals((vaiTroNguoiThucHien ?? string.Empty).Trim(), "Admin", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (!string.IsNullOrWhiteSpace(SessionContext.MaTaiKhoan))
+            {
+                var tkDangNhap = _uow.TaiKhoans.GetById(SessionContext.MaTaiKhoan);
+                return tkDangNhap != null &&
+                       string.Equals((tkDangNhap.VaiTro ?? string.Empty).Trim(), "Admin", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
         }
 
         public void DoiTrangThai(string maTaiKhoan, bool trangThaiMoi)

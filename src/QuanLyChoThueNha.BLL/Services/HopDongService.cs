@@ -126,11 +126,33 @@ namespace QuanLyChoThueNha.BLL.Services
             return Tim(h => h.TrangThai == "HieuLuc" && h.NgayKetThuc <= ngayCanhBao);
         }
 
+        public IEnumerable<HopDong> LayCoTheLapPhieuTraNha()
+        {
+            CapNhatHopDongHetHan();
+            var homNay = DateTime.Today;
+            var hopDongDaTraNha = new HashSet<string>(
+                _uow.PhieuTraNhas.GetAll()
+                    .Where(p => !string.IsNullOrWhiteSpace(p.MaHopDong))
+                    .Select(p => p.MaHopDong));
+
+            return _uow.HopDongs
+                .Find(h => h.TrangThai == "HieuLuc" &&
+                           h.NgayBatDau <= homNay &&
+                           h.NgayKetThuc >= homNay)
+                .ToList()
+                .Where(h =>
+                {
+                    if (hopDongDaTraNha.Contains(h.MaHopDong)) return false;
+                    var canHo = _uow.CanHos.GetById(h.MaCanHo);
+                    return canHo != null && canHo.TinhTrang == "DangThue";
+                });
+        }
+
         public string TrangThaiHienThi(HopDong hopDong)
         {
             if (hopDong == null) return string.Empty;
             if (hopDong.TrangThai == "HieuLuc" && hopDong.NgayKetThuc < DateTime.Today) return "HetHan";
-            if (hopDong.TrangThai == "HieuLuc" && hopDong.NgayKetThuc <= DateTime.Today.AddMonths(1)) return "SapHetHan";
+            if (hopDong.TrangThai == "HieuLuc" && hopDong.NgayKetThuc <= DateTime.Today.AddDays(30)) return "SapHetHan";
             return hopDong.TrangThai;
         }
 

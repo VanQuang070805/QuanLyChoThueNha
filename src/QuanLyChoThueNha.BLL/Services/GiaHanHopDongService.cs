@@ -308,6 +308,24 @@ namespace QuanLyChoThueNha.BLL.Services
 
             var hd = _uow.HopDongs.GetById(phieu.MaHopDong);
             if (hd == null) { loi = "Hop dong khong ton tai."; return false; }
+            if (hd.TrangThai != "HieuLuc" || hd.NgayBatDau > DateTime.Today || hd.NgayKetThuc < DateTime.Today)
+            {
+                loi = "Chi lap phieu tra nha cho hop dong con hieu luc.";
+                return false;
+            }
+
+            var canHoDangThue = _uow.CanHos.GetById(hd.MaCanHo);
+            if (canHoDangThue == null)
+            {
+                loi = "Can ho cua hop dong khong ton tai.";
+                return false;
+            }
+            if (canHoDangThue.TinhTrang != "DangThue")
+            {
+                loi = "Chi lap phieu tra nha cho can ho dang thue. Sau khi lap phieu, can ho se chuyen ve Trong.";
+                return false;
+            }
+
             if (_uow.PhieuTraNhas.Any(p => p.MaHopDong == phieu.MaHopDong))
             {
                 loi = "Hop dong nay da co phieu tra nha.";

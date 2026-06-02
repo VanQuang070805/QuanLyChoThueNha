@@ -88,7 +88,11 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             _cboKyBaoCao.Items.AddRange(new object[] { "Ngày", "Tuần", "Tháng", "Năm" });
             _cboKyBaoCao.SelectedIndex = 2;
             _cboKyBaoCao.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-            _cboKyBaoCao.SelectedIndexChanged += delegate { CapNhatDinhDangMocBaoCao(); };
+            _cboKyBaoCao.SelectedIndexChanged += delegate
+            {
+                CapNhatDinhDangMocBaoCao();
+                if (IsHandleCreated) LoadReport();
+            };
             toolbar.Controls.Add(_cboKyBaoCao, 2, 0);
 
             toolbar.Controls.Add(new Label
@@ -100,6 +104,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             }, 3, 0);
             _dtpMocBaoCao.Value = DateTime.Today;
             _dtpMocBaoCao.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            _dtpMocBaoCao.ValueChanged += delegate { if (IsHandleCreated) LoadReport(); };
             toolbar.Controls.Add(_dtpMocBaoCao, 4, 0);
 
             var btnXem = new RoundedButton
@@ -279,7 +284,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 LoadKpis(tuNgay, denNgay);
                 LoadCharts(tuNgay, denNgay, nhomTheo);
                 _gridCanhBao.DataSource = _service.HopDongCanhBao(45).ToList();
-                _gridCongNo.DataSource = _service.CongNoQuaHan().ToList();
+                _gridCongNo.DataSource = _service.CongNoQuaHan(tuNgay, denNgay).ToList();
                 DinhDangGrids();
             }
             catch (Exception ex)
@@ -331,7 +336,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             _kpiPanel.Controls.Clear();
             AddKpi("Tổng doanh thu", _service.DoanhThuTheoKy(tuNgay, denNgay, "Ngay").Sum(x => x.TongThu).ToString("N0") + " VNĐ", Color.FromArgb(4, 86, 197));
             AddKpi("Tỷ lệ lấp đầy", _service.TyLeLapDay().ToString("N1") + "%", Color.FromArgb(245, 158, 11));
-            AddKpi("Công nợ", _service.TongCongNo().ToString("N0") + " VNĐ", Color.FromArgb(239, 68, 68));
+            AddKpi("Công nợ", _service.TongCongNo(tuNgay, denNgay).ToString("N0") + " VNĐ", Color.FromArgb(239, 68, 68));
             AddKpi("Hợp đồng mới", _service.HopDongMoiTrongKhoang(tuNgay, denNgay).ToString("N0"), Color.FromArgb(16, 185, 129));
             ResizeKpis();
         }
@@ -496,7 +501,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                     using (var wb = new XLWorkbook())
                     {
                         WriteSheet(wb, "Doanh thu", _service.DoanhThuTheoKy(tuNgay, denNgay, nhomTheo).Select(x => new { x.Thang, x.TongThu, x.SoHoaDon }).ToList());
-                        WriteSheet(wb, "Công nợ", _service.CongNoQuaHan().ToList());
+                        WriteSheet(wb, "Cong no", _service.CongNoQuaHan(tuNgay, denNgay).ToList());
                         WriteSheet(wb, "Hop dong canh bao", _service.HopDongCanhBao(45).ToList());
                         WriteSheet(wb, "Loai nha", _service.LoaiCanHoDuocThueNhieuNhat(10).ToList());
                         WriteSheet(wb, "Top can ho", _service.TopCanHoDoanhThu(tuNgay, denNgay, 5).ToList());

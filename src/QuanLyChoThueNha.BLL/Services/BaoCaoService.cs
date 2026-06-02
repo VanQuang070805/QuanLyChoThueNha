@@ -195,6 +195,17 @@ namespace QuanLyChoThueNha.BLL.Services
             .Where(h => h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan")
             .Sum(h => Math.Max(0, h.SoTienPhaiTra - h.SoTienDaTra));
 
+        public decimal TongCongNo(DateTime tuNgay, DateTime denNgay)
+        {
+            var tuNgayMoc = tuNgay.Date;
+            var denNgayMoc = denNgay.Date.AddDays(1);
+            return _uow.HoaDonThanhToans.GetAll()
+                .Where(h => h.NgayDaoHan >= tuNgayMoc &&
+                            h.NgayDaoHan < denNgayMoc &&
+                            (h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan"))
+                .Sum(h => Math.Max(0, h.SoTienPhaiTra - h.SoTienDaTra));
+        }
+
         public double TyLeLapDay()
         {
             var tong = TongCanHo();
@@ -243,6 +254,16 @@ namespace QuanLyChoThueNha.BLL.Services
 
         public IEnumerable<CongNoDto> CongNoQuaHan()
         {
+            return CongNoQuaHan(null, null);
+        }
+
+        public IEnumerable<CongNoDto> CongNoQuaHan(DateTime tuNgay, DateTime denNgay)
+        {
+            return CongNoQuaHan((DateTime?)tuNgay.Date, denNgay.Date.AddDays(1));
+        }
+
+        private IEnumerable<CongNoDto> CongNoQuaHan(DateTime? tuNgayMoc, DateTime? denNgayMoc)
+        {
             var hopDongMap = _uow.HopDongs.GetAll()
                 .Where(h => !string.IsNullOrWhiteSpace(h.MaHopDong))
                 .GroupBy(h => h.MaHopDong)
@@ -252,7 +273,9 @@ namespace QuanLyChoThueNha.BLL.Services
                 .GroupBy(k => k.MaKhach)
                 .ToDictionary(g => g.Key, g => g.First().HoTen);
             return _uow.HoaDonThanhToans.GetAll()
-                .Where(h => h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan")
+                .Where(h => (h.TrangThai == "ChuaTra" || h.TrangThai == "TraThieu" || h.TrangThai == "QuaHan") &&
+                            (!tuNgayMoc.HasValue || h.NgayDaoHan >= tuNgayMoc.Value) &&
+                            (!denNgayMoc.HasValue || h.NgayDaoHan < denNgayMoc.Value))
                 .OrderBy(h => h.NgayDaoHan)
                 .Select(h =>
                 {

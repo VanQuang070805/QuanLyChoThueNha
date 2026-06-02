@@ -19,11 +19,22 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         private static IEnumerable<FieldDefinition> Fields()
         {
+            var canHoById = new CanHoService().LayTatCa()
+                .GroupBy(c => c.MaCanHo)
+                .ToDictionary(g => g.Key, g => g.First());
+            var toaById = new ToaService().LayTatCa()
+                .GroupBy(t => t.MaToa)
+                .ToDictionary(g => g.Key, g => g.First());
+
             var hopDongOptions = new HopDongService().LayTatCa()
                 .Where(h => h.TrangThai == "HieuLuc")
                 .OrderBy(h => h.MaHopDong)
                 .Select(h => new ComboOption(h.MaHopDong,
-                    string.Format("{0} | Khach {1} | Phong {2}", h.MaHopDong, h.MaKhach, h.MaCanHo)))
+                    string.Format("{0} | Khach {1} | {2} | {3}",
+                        h.MaHopDong,
+                        h.MaKhach,
+                        LayTenCanHo(h.MaCanHo, canHoById),
+                        LayTenToa(h.MaCanHo, canHoById, toaById))))
                 .ToList();
 
             return new[]
@@ -141,6 +152,24 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             if (string.IsNullOrWhiteSpace(maNhanVien)) return "Admin";
             string hoTen;
             return nhanViens.TryGetValue(maNhanVien, out hoTen) ? hoTen : maNhanVien;
+        }
+
+        private static string LayTenCanHo(string maCanHo, IDictionary<string, CanHo> canHoById)
+        {
+            CanHo canHo;
+            return canHoById.TryGetValue(maCanHo, out canHo) ? "Can " + canHo.SoCanHo : maCanHo;
+        }
+
+        private static string LayTenToa(
+            string maCanHo,
+            IDictionary<string, CanHo> canHoById,
+            IDictionary<string, Toa> toaById)
+        {
+            CanHo canHo;
+            if (!canHoById.TryGetValue(maCanHo, out canHo)) return string.Empty;
+
+            Toa toa;
+            return toaById.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
         }
 
         private static void GanThongTinHienThi(IEnumerable<PhieuXuLyViPham> items)
