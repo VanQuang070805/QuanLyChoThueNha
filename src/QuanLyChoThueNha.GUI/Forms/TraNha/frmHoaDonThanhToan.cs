@@ -31,7 +31,19 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             CapNhatTheoHopDongDangChon();
         }
 
-        protected override void OnAfterAdd() { PrePopulateNhanVien(); }
+        protected override void OnAfterAdd()
+        {
+            PrePopulateNhanVien();
+            var kyEditor = GetEditor("KyThanhToan") as ComboBox;
+            if (kyEditor != null)
+            {
+                var kyHienTai = DateTime.Now.ToString("MM/yyyy");
+                kyEditor.Items.Clear();
+                kyEditor.Items.Add(kyHienTai);
+                kyEditor.SelectedIndex = 0;
+                kyEditor.DropDownStyle = ComboBoxStyle.DropDownList;
+            }
+        }
 
         private void PrePopulateNhanVien()
         {
@@ -61,12 +73,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                         h.NgayBatDau,
                         h.NgayKetThuc)))
                 .ToList();
-            var kyOptions = hopDongService.LayTatCa()
-                .Where(h => h.TrangThai == "HieuLuc")
-                .SelectMany(TaoKyTrongHopDong)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToArray();
+            var kyOptions = new[] { DateTime.Now.ToString("MM/yyyy") };
 
             return new[]
             {
@@ -336,12 +343,11 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             var kyEditor = GetEditor("KyThanhToan") as ComboBox;
             if (kyEditor != null)
             {
-                var current = kyEditor.SelectedItem == null ? null : kyEditor.SelectedItem.ToString();
+                // Chỉ hiển thị kỳ tháng/năm hiện tại khi tạo hóa đơn mới
+                var kyHienTai = DateTime.Now.ToString("MM/yyyy");
                 kyEditor.Items.Clear();
-                var kys = TaoKyTrongHopDong(hopDong).ToArray();
-                kyEditor.Items.AddRange(kys);
-                if (kys.Length > 0)
-                    kyEditor.SelectedItem = kys.Contains(current) ? current : kys[0];
+                kyEditor.Items.Add(kyHienTai);
+                kyEditor.SelectedIndex = 0;
             }
             CapNhatNgayDaoHanTheoKy();
         }
