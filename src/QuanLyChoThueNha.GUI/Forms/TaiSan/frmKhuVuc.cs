@@ -37,10 +37,15 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private NumericUpDown numViDo;
         private NumericUpDown numKinhDo;
         private RoundedButton btnThem;
+        private RoundedButton btnLuu;
         private RoundedButton btnSua;
         private RoundedButton btnXoa;
+        private RoundedButton btnHuy;
         private RoundedButton btnLamMoi;
         private RoundedButton btnLayToaDo;
+
+        private enum FormMode { View, Adding, Editing }
+        private FormMode _mode = FormMode.View;
 
         public frmKhuVuc()
         {
@@ -113,17 +118,21 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             AddField(right, "Kinh độ (lng)", numKinhDo);
 
             var commands = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true, Margin = new Padding(0, 12, 0, 0) };
-            btnThem = CreateButton("Thêm", btnThem_Click);
-            btnSua = CreateButton("Sửa", btnSua_Click);
-            btnXoa = CreateButton("Xóa", btnXoa_Click);
-            btnLamMoi = CreateButton("Làm mới", delegate { TaiDuLieu(); XoaTrong(); });
+            btnThem     = CreateButton("Thêm",     btnThem_Click);
+            btnLuu      = CreateButton("Lưu",      btnLuu_Click);
+            btnSua      = CreateButton("Sửa",      btnSua_Click);
+            btnXoa      = CreateButton("Xóa",      btnXoa_Click);
+            btnHuy      = CreateButton("Hủy",      btnHuy_Click);
             btnLayToaDo = CreateButton("Lấy tọa độ", btnLayToaDo_Click);
-            commands.Controls.AddRange(new Control[] { btnThem, btnSua, btnXoa, btnLayToaDo, btnLamMoi });
+            btnLamMoi   = CreateButton("Làm mới",  delegate { TaiDuLieu(); XoaTrong(); EnterViewMode(); });
+            commands.Controls.AddRange(new Control[] { btnThem, btnLuu, btnSua, btnXoa, btnHuy, btnLayToaDo, btnLamMoi });
             right.Controls.Add(commands);
 
             root.Controls.Add(left, 0, 0);
             root.Controls.Add(right, 1, 0);
             Controls.Add(root);
+
+            EnterViewMode();
         }
 
         private MaterialTextBox CreateTextBox(string hint, bool readOnly)
@@ -214,33 +223,45 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
             if (text == "Thêm")
             {
-                btn.BackColor = Color.FromArgb(37, 99, 235); // blue-600
+                btn.BackColor  = Color.FromArgb(37, 99, 235);  // blue-600
                 btn.BorderColor = Color.FromArgb(29, 78, 216); // blue-700
-                btn.ForeColor = Color.White;
+                btn.ForeColor  = Color.White;
             }
             else if (text == "Sửa")
             {
-                btn.BackColor = Color.FromArgb(245, 158, 11); // amber-500
-                btn.BorderColor = Color.FromArgb(217, 119, 6); // amber-600
-                btn.ForeColor = Color.White;
+                btn.BackColor  = Color.FromArgb(245, 158, 11);  // amber-500
+                btn.BorderColor = Color.FromArgb(217, 119, 6);  // amber-600
+                btn.ForeColor  = Color.White;
             }
             else if (text == "Xóa")
             {
-                btn.BackColor = Color.FromArgb(239, 68, 68); // red-500
-                btn.BorderColor = Color.FromArgb(220, 38, 38); // red-600
-                btn.ForeColor = Color.White;
+                btn.BackColor  = Color.FromArgb(239, 68, 68);   // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38);  // red-600
+                btn.ForeColor  = Color.White;
+            }
+            else if (text == "Lưu")
+            {
+                btn.BackColor  = Color.FromArgb(16, 185, 129);  // emerald-500
+                btn.BorderColor = Color.FromArgb(5, 150, 105);  // emerald-600
+                btn.ForeColor  = Color.White;
+            }
+            else if (text == "Hủy")
+            {
+                btn.BackColor  = Color.FromArgb(239, 68, 68);   // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38);  // red-600
+                btn.ForeColor  = Color.White;
             }
             else if (text == "Lấy tọa độ")
             {
-                btn.BackColor = Color.FromArgb(6, 182, 212); // cyan-500
-                btn.BorderColor = Color.FromArgb(8, 145, 178); // cyan-600
-                btn.ForeColor = Color.White;
+                btn.BackColor  = Color.FromArgb(6, 182, 212);   // cyan-500
+                btn.BorderColor = Color.FromArgb(8, 145, 178);  // cyan-600
+                btn.ForeColor  = Color.White;
             }
-            else // "Làm mới" or other
+            else // "Làm mới" và các nút khác
             {
-                btn.BackColor = Color.FromArgb(107, 114, 128); // gray-500
-                btn.BorderColor = Color.FromArgb(75, 85, 99); // gray-600
-                btn.ForeColor = Color.White;
+                btn.BackColor  = Color.FromArgb(99, 102, 241);  // indigo-500
+                btn.BorderColor = Color.FromArgb(79, 70, 229);  // indigo-600
+                btn.ForeColor  = Color.White;
             }
 
             btn.Click += handler;
@@ -302,6 +323,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void Dgv_SelectionChanged(object sender, EventArgs e)
         {
+            if (_mode != FormMode.View) return; // không đổi state khi đang nhập
             if (dgv.CurrentRow == null) return;
             var kv = dgv.CurrentRow.DataBoundItem as KhuVuc;
             if (kv == null) return;
@@ -313,6 +335,62 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             ChonGiaTri(cboQuan, kv.Quan);
             numViDo.Value = ClampCoordinate(kv.ViDo, numViDo.Minimum, numViDo.Maximum);
             numKinhDo.Value = ClampCoordinate(kv.KinhDo, numKinhDo.Minimum, numKinhDo.Maximum);
+            btnSua.Enabled = true;
+            btnXoa.Enabled = true;
+        }
+
+        /// <summary>Vào trạng thái View: hiện Thêm/Sửa/Xóa/Làm mới, ẩn Lưu/Hủy.</summary>
+        private void EnterViewMode()
+        {
+            _mode = FormMode.View;
+            bool hasRow = !string.IsNullOrWhiteSpace(txtMa.Text);
+            SetInputsReadOnly(true);
+
+            btnThem.Visible = true;  btnThem.Enabled = true;
+            btnSua.Visible  = true;  btnSua.Enabled  = hasRow;
+            btnXoa.Visible  = true;  btnXoa.Enabled  = hasRow;
+            btnLamMoi.Visible = true;
+            btnLuu.Visible  = false;
+            btnHuy.Visible  = false;
+        }
+
+        /// <summary>Vào trạng thái Adding: chỉ Lưu và Hủy khả dụng.</summary>
+        private void EnterAddMode()
+        {
+            _mode = FormMode.Adding;
+            XoaTrong();
+            SetInputsReadOnly(false);
+
+            btnThem.Visible = false;
+            btnSua.Visible  = false;
+            btnXoa.Visible  = false;
+            btnLamMoi.Visible = false;
+            btnLuu.Visible  = true;  btnLuu.Enabled  = true;
+            btnHuy.Visible  = true;  btnHuy.Enabled  = true;
+        }
+
+        /// <summary>Vào trạng thái Editing: chỉ Lưu và Hủy khả dụng.</summary>
+        private void EnterEditMode()
+        {
+            _mode = FormMode.Editing;
+            SetInputsReadOnly(false);
+
+            btnThem.Visible = false;
+            btnSua.Visible  = false;
+            btnXoa.Visible  = false;
+            btnLamMoi.Visible = false;
+            btnLuu.Visible  = true;  btnLuu.Enabled  = true;
+            btnHuy.Visible  = true;  btnHuy.Enabled  = true;
+        }
+
+        private void SetInputsReadOnly(bool readOnly)
+        {
+            txtTen.ReadOnly = readOnly;
+            cboThanhPho.Enabled = !readOnly;
+            cboQuan.Enabled = !readOnly;
+            numViDo.Enabled = !readOnly;
+            numKinhDo.Enabled = !readOnly;
+            btnLayToaDo.Enabled = !readOnly;
         }
 
         private void ChonGiaTri(ComboBox combo, string value)
@@ -349,38 +427,51 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void btnThem_Click(object sender, EventArgs e)
         {
+            EnterAddMode();
+        }
+
+        private void btnLuu_Click(object sender, EventArgs e)
+        {
             string loi;
             if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Lỗi nhập liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (!_svc.Them(txtTen.Text, cboQuan.SelectedItem.ToString(), cboThanhPho.SelectedItem.ToString(),
+
+            if (_mode == FormMode.Adding)
+            {
+                if (!_svc.Them(txtTen.Text, cboQuan.SelectedItem.ToString(), cboThanhPho.SelectedItem.ToString(),
                     SessionContext.LaAdmin ? SessionContext.MaNguoiDung : null, out loi,
                     (double)numViDo.Value, (double)numKinhDo.Value))
-            {
-                MessageBox.Show(loi, "Lỗi nhập liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                {
+                    MessageBox.Show(loi, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                TaiDuLieu();
+                XoaTrong();
+                EnterViewMode();
             }
-            TaiDuLieu();
-            XoaTrong();
+            else if (_mode == FormMode.Editing)
+            {
+                var kv = _svc.LayTheoMa(txtMa.Text);
+                if (kv == null) return;
+                kv.TenKhuVuc = txtTen.Text.Trim();
+                kv.Quan = cboQuan.SelectedItem.ToString();
+                kv.ThanhPho = cboThanhPho.SelectedItem.ToString();
+                kv.ViDo = (double)numViDo.Value;
+                kv.KinhDo = (double)numKinhDo.Value;
+                _svc.Sua(kv);
+                TaiDuLieu();
+                EnterViewMode();
+            }
         }
 
         private void btnSua_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtMa.Text)) { MessageBox.Show("Chọn khu vực cần sửa."); return; }
-            string loi;
-            if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Lỗi nhập liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-
-            var kv = _svc.LayTheoMa(txtMa.Text);
-            if (kv == null) return;
-            kv.TenKhuVuc = txtTen.Text.Trim();
-            kv.Quan = cboQuan.SelectedItem.ToString();
-            kv.ThanhPho = cboThanhPho.SelectedItem.ToString();
-            kv.ViDo = (double)numViDo.Value;
-            kv.KinhDo = (double)numKinhDo.Value;
-            _svc.Sua(kv);
-            TaiDuLieu();
+            EnterEditMode();
         }
 
         private void btnXoa_Click(object sender, EventArgs e)
         {
+            if (_mode != FormMode.View) return;
             if (string.IsNullOrWhiteSpace(txtMa.Text)) { MessageBox.Show("Chọn khu vực cần xóa."); return; }
             if (MessageBox.Show("Xóa khu vực đang chọn?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             try
@@ -393,11 +484,19 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 }
                 TaiDuLieu();
                 XoaTrong();
+                EnterViewMode();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Không thể xóa vì có dữ liệu liên quan: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void btnHuy_Click(object sender, EventArgs e)
+        {
+            TaiDuLieu();
+            XoaTrong();
+            EnterViewMode();
         }
 
         private void btnLayToaDo_Click(object sender, EventArgs e)

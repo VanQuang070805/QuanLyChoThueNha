@@ -60,7 +60,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private RoundedButton btnSua;
         private RoundedButton btnThemMoi;
-        private RoundedButton btnLamMoi;
+        private RoundedButton btnLuu;
+        private RoundedButton btnHuy;
         private RoundedButton btnKhoa;
         private RoundedButton btnMoKhoa;
         private Label _lblMsg;
@@ -191,18 +192,21 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                 Dock = DockStyle.Top, AutoSize = true, WrapContents = true,
                 Margin = new Padding(0, 12, 0, 0)
             };
-            btnSua    = Btn("Sửa thông tin", BtnSua_Click);
-            btnThemMoi = Btn("Thêm mới", BtnThemMoi_Click);
-            btnLamMoi = Btn("Làm mới",       BtnLamMoi_Click);
-            btnKhoa   = Btn("Khóa",          BtnKhoa_Click);
-            btnMoKhoa = Btn("Mở khóa",       BtnMoKhoa_Click);
-            commands.Controls.Add(btnSua);
+            btnThemMoi = Btn("Thêm mới",    BtnThemMoi_Click);
+            btnLuu     = Btn("Lưu",           BtnLuu_Click);
+            btnSua     = Btn("Sửa thông tin",  BtnSua_Click);
+            btnHuy     = Btn("Hủy",           BtnHuy_Click);
+            btnKhoa    = Btn("Khóa",           BtnKhoa_Click);
+            btnMoKhoa  = Btn("Mở khóa",       BtnMoKhoa_Click);
             commands.Controls.Add(btnThemMoi);
-            commands.Controls.Add(btnLamMoi);
+            commands.Controls.Add(btnLuu);
+            commands.Controls.Add(btnSua);
+            commands.Controls.Add(btnHuy);
             commands.Controls.Add(btnKhoa);
             commands.Controls.Add(btnMoKhoa);
             right.Controls.Add(commands);
             UpdateButtonStyles();
+            EnterViewMode();
 
             root.Controls.Add(left, 0, 0);
             root.Controls.Add(right, 1, 0);
@@ -233,11 +237,19 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         private void EnterViewMode()
         {
             _mode = FormMode.View;
-            HideMsg(); SetEditorsEnabled(false);
-            btnSua.Text    = "Sửa thông tin";
-            btnThemMoi.Text = "Thêm mới";
-            btnLamMoi.Text = "Làm mới";
-            UpdateActionButtons();
+            HideMsg();
+            SetEditorsEnabled(false);
+
+            var item = CurrentVM();
+            bool hasSelection = item != null;
+
+            // View mode: Thêm mới + Sửa + Khóa/Mở khóa — Ẩn Lưu/Hủy
+            btnThemMoi.Visible = true;  btnThemMoi.Enabled = true;
+            btnSua.Visible     = true;  btnSua.Enabled     = hasSelection;
+            btnKhoa.Visible    = true;  btnKhoa.Enabled    = hasSelection && (item != null && item.TrangThai);
+            btnMoKhoa.Visible  = true;  btnMoKhoa.Enabled  = hasSelection && (item != null && !item.TrangThai);
+            btnLuu.Visible     = false;
+            btnHuy.Visible     = false;
             UpdateButtonStyles();
         }
 
@@ -253,20 +265,23 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             SetEditorsEnabled(true);
             txtTenDangNhap.ReadOnly = false;
             txtMatKhau.ReadOnly = false;
-            btnSua.Enabled = false;
-            btnThemMoi.Text = "Lưu";
-            btnLamMoi.Text = "Hủy";
-            btnKhoa.Enabled = false;
-            btnMoKhoa.Enabled = false;
-            txtTenDangNhap.Focus();
+
+            // Adding mode: chỉ Lưu và Hủy
+            btnThemMoi.Visible = false;
+            btnSua.Visible     = false;
+            btnKhoa.Visible    = false;
+            btnMoKhoa.Visible  = false;
+            btnLuu.Visible     = true;  btnLuu.Enabled  = true;
+            btnHuy.Visible     = true;  btnHuy.Enabled  = true;
             UpdateButtonStyles();
+            txtTenDangNhap.Focus();
         }
 
         private void EnterEditMode()
         {
             _mode = FormMode.Editing;
             HideMsg();
-            // Chi cho sua thong tin khach, khong cho sua tai khoan
+            // Chỉ cho sửa thông tin khách, không cho sửa tài khoản
             txtTenDangNhap.ReadOnly = true;
             txtMatKhau.ReadOnly   = true;
             txtHoTen.ReadOnly    = false;
@@ -275,10 +290,14 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             txtEmail.ReadOnly    = false;
             txtSdt.ReadOnly      = false;
             dtpNgaySinh.Enabled  = true;
-            btnSua.Text    = "Lưu";
-            btnLamMoi.Text = "Hủy";
-            btnKhoa.Enabled   = false;
-            btnMoKhoa.Enabled = false;
+
+            // Editing mode: chỉ Lưu và Hủy
+            btnThemMoi.Visible = false;
+            btnSua.Visible     = false;
+            btnKhoa.Visible    = false;
+            btnMoKhoa.Visible  = false;
+            btnLuu.Visible     = true;  btnLuu.Enabled  = true;
+            btnHuy.Visible     = true;  btnHuy.Enabled  = true;
             UpdateButtonStyles();
         }
 
@@ -292,127 +311,100 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             txtEmail.ReadOnly   = !enabled;
             txtSdt.ReadOnly     = !enabled;
             dtpNgaySinh.Enabled = enabled;
-        }
-
-        private void UpdateActionButtons()
-        {
-            if (_mode == FormMode.Adding)
-            {
-                btnSua.Enabled = false;
-                btnThemMoi.Enabled = true;
-                btnLamMoi.Enabled = true;
-                btnKhoa.Enabled = false;
-                btnMoKhoa.Enabled = false;
-                UpdateButtonStyles();
-                return;
-            }
-
-            var item = CurrentVM();
-            bool hasSelection = item != null;
-            btnSua.Enabled    = hasSelection;
-            btnKhoa.Enabled   = hasSelection && item.TrangThai;
-            btnMoKhoa.Enabled = hasSelection && !item.TrangThai;
-            UpdateButtonStyles();
+            chkTrangThai.Enabled = enabled;
         }
 
         // ── Button handlers ──────────────────────────────────────────────────────
 
-        private void BtnSua_Click(object sender, EventArgs e)
-        {
-            if (_mode == FormMode.View)
-            {
-                if (CurrentVM() == null) { ShowMsg("Chọn khách cần sửa."); return; }
-                EnterEditMode();
-                return;
-            }
-            // Edit mode -> luu
-            var vm = CurrentVM();
-            if (vm == null) { ShowMsg("Mất lựa chọn. Bấm 'Hủy' và chọn lại."); return; }
-            var khach = _khachSvc.LayTheoMa(vm.MaKhach);
-            if (khach == null) return;
-            if (string.IsNullOrWhiteSpace(txtHoTen.Text)) { ShowMsg("Họ tên không được để trống."); return; }
-            khach.HoTen  = txtHoTen.Text.Trim();
-            khach.SoCMND = txtCmnd.Text.Trim();
-            khach.DiaChi = txtDiaChi.Text.Trim();
-            khach.NgaySinh = dtpNgaySinh.Value.Date;
-            try
-            {
-                _khachSvc.Sua(khach);
-
-                // Cap nhat email/sdt vao TaiKhoan
-                var tk = _tkSvc.LayTheoMa(vm.MaTaiKhoan);
-                if (tk != null)
-                {
-                    tk.Email        = txtEmail.Text.Trim();
-                    tk.SoDienThoai  = txtSdt.Text.Trim();
-                    _tkSvc.Sua(tk);
-                }
-            }
-            catch (Exception ex)
-            {
-                var inner = ex;
-                while (inner.InnerException != null) inner = inner.InnerException;
-                ShowMsg("Lỗi lưu dữ liệu: " + inner.Message);
-                return;
-            }
-
-            ReloadData();
-            EnterViewMode();
-            RefreshDetailEditors();
-        }
-
+        /// <summary>Thêm mới: chỉ chuyển sang Adding mode.</summary>
         private void BtnThemMoi_Click(object sender, EventArgs e)
         {
-            if (_mode != FormMode.Adding)
-            {
-                EnterAddMode();
-                return;
-            }
-
-            string loi;
-            var khach = DocKhachTuForm();
-            try
-            {
-                if (!_khachSvc.TaoKhachKemTaiKhoan(khach, txtTenDangNhap.Text.Trim(),
-                    txtMatKhau.Text, txtEmail.Text.Trim(), txtSdt.Text.Trim(), out loi))
-                {
-                    ShowMsg(loi);
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                var inner = ex;
-                while (inner.InnerException != null) inner = inner.InnerException;
-                ShowMsg("Lỗi lưu dữ liệu: " + inner.Message);
-                return;
-            }
-
-            ReloadData();
-            EnterViewMode();
-            ShowMsg("Đã thêm tài khoản khách.", false);
+            EnterAddMode();
         }
 
-        private void BtnLamMoi_Click(object sender, EventArgs e)
+        /// <summary>Lưu: lưu bản ghi mới (Adding) hoặc lưu thay đổi (Editing).</summary>
+        private void BtnLuu_Click(object sender, EventArgs e)
         {
             if (_mode == FormMode.Adding)
             {
+                string loi;
+                var khach = DocKhachTuForm();
+                try
+                {
+                    if (!_khachSvc.TaoKhachKemTaiKhoan(khach, txtTenDangNhap.Text.Trim(),
+                        txtMatKhau.Text, txtEmail.Text.Trim(), txtSdt.Text.Trim(), out loi))
+                    {
+                        ShowMsg(loi);
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var inner = ex;
+                    while (inner.InnerException != null) inner = inner.InnerException;
+                    ShowMsg("Lỗi lưu dữ liệu: " + inner.Message);
+                    return;
+                }
                 ReloadData();
-                grid.ClearSelection();
-                ClearForm();
                 EnterViewMode();
-                return;
+                ShowMsg("Đã thêm tài khoản khách.", false);
             }
+            else if (_mode == FormMode.Editing)
+            {
+                var vm = CurrentVM();
+                if (vm == null) { ShowMsg("Mất lựa chọn. Bấm Hủy và chọn lại."); return; }
+                var khach = _khachSvc.LayTheoMa(vm.MaKhach);
+                if (khach == null) return;
+                if (string.IsNullOrWhiteSpace(txtHoTen.Text)) { ShowMsg("Họ tên không được để trống."); return; }
+                khach.HoTen   = txtHoTen.Text.Trim();
+                khach.SoCMND  = txtCmnd.Text.Trim();
+                khach.DiaChi  = txtDiaChi.Text.Trim();
+                khach.NgaySinh = dtpNgaySinh.Value.Date;
+                try
+                {
+                    _khachSvc.Sua(khach);
+                    var tk = _tkSvc.LayTheoMa(vm.MaTaiKhoan);
+                    if (tk != null)
+                    {
+                        tk.Email       = txtEmail.Text.Trim();
+                        tk.SoDienThoai = txtSdt.Text.Trim();
+                        _tkSvc.Sua(tk);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var inner = ex;
+                    while (inner.InnerException != null) inner = inner.InnerException;
+                    ShowMsg("Lỗi lưu dữ liệu: " + inner.Message);
+                    return;
+                }
+                ReloadData();
+                EnterViewMode();
+                RefreshDetailEditors();
+                ShowMsg("Đã cập nhật thành công.", false);
+            }
+        }
 
+        /// <summary>Sửa thông tin: chỉ chuyển sang Editing mode.</summary>
+        private void BtnSua_Click(object sender, EventArgs e)
+        {
+            if (_mode != FormMode.View) return;
+            if (CurrentVM() == null) { ShowMsg("Chọn khách cần sửa."); return; }
+            EnterEditMode();
+        }
+
+        /// <summary>Hủy: hủy Adding/Editing, về View mode.</summary>
+        private void BtnHuy_Click(object sender, EventArgs e)
+        {
             if (_mode == FormMode.Editing)
             {
-                // Huy - khoi phuc tu grid
                 var vm = CurrentVM();
-                if (vm != null) { BindToForm(vm); EnterViewMode(); return; }
+                if (vm != null) { BindToForm(vm); }
             }
             ReloadData();
             grid.ClearSelection();
             ClearForm();
+            EnterViewMode();
         }
 
         private KhachThue DocKhachTuForm()
@@ -579,7 +571,6 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             txtEmail.Clear(); txtSdt.Clear();
             dtpNgaySinh.Value = DateTime.Today.AddYears(-18);
             chkTrangThai.Checked = false;
-            UpdateActionButtons();
             RefreshDetailEditors();
         }
 
@@ -644,9 +635,10 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private void UpdateButtonStyles()
         {
-            ApplyButtonStyle(btnSua);
             ApplyButtonStyle(btnThemMoi);
-            ApplyButtonStyle(btnLamMoi);
+            ApplyButtonStyle(btnLuu);
+            ApplyButtonStyle(btnSua);
+            ApplyButtonStyle(btnHuy);
             ApplyButtonStyle(btnKhoa);
             ApplyButtonStyle(btnMoKhoa);
         }
@@ -692,11 +684,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
                 btn.BorderColor = Color.FromArgb(5, 150, 105); // emerald-600
                 btn.ForeColor = Color.White;
             }
-            else // "Làm mới" or other
+            else // "Làm mới" và các nút khác
             {
-                btn.BackColor = Color.FromArgb(107, 114, 128); // gray-500
-                btn.BorderColor = Color.FromArgb(75, 85, 99); // gray-600
-                btn.ForeColor = Color.White;
+                btn.BackColor  = Color.FromArgb(99, 102, 241);  // indigo-500
+                btn.BorderColor = Color.FromArgb(79, 70, 229);  // indigo-600
+                btn.ForeColor  = Color.White;
             }
         }
 

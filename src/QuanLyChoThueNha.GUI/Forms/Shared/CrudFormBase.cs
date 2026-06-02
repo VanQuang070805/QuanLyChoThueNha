@@ -85,8 +85,10 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
 
         private FormMode _mode = FormMode.View;
         private RoundedButton _btnAdd;
+        private RoundedButton _btnSave;
         private RoundedButton _btnUpdate;
         private RoundedButton _btnDelete;
+        private RoundedButton _btnCancel;
         private RoundedButton _btnRefresh;
         private Label _lblError;
 
@@ -98,7 +100,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _fields = fields.ToList();
             _errorProvider.BlinkStyle = ErrorBlinkStyle.NeverBlink;
             BuildLayout();
-            Load += delegate { ReloadData(); EnterAddMode(); };
+            Load += delegate { ReloadData(); EnterViewMode(); };
         }
 
         protected abstract IEnumerable<T> GetItems();
@@ -344,13 +346,17 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _commandPanel.WrapContents = true;
             _commandPanel.Margin = new Padding(0, 12, 0, 0);
 
-            _btnAdd     = CreateButton("Thêm",    BtnAdd_Click);
-            _btnUpdate  = CreateButton("Sửa",     BtnUpdate_Click);
-            _btnDelete  = CreateButton("Xóa",     BtnDelete_Click);
+            _btnAdd    = CreateButton("Thêm",    BtnAdd_Click);
+            _btnSave   = CreateButton("Lưu",     BtnSave_Click);
+            _btnUpdate = CreateButton("Sửa",     BtnUpdate_Click);
+            _btnDelete = CreateButton("Xóa",     BtnDelete_Click);
+            _btnCancel = CreateButton("Hủy",     BtnCancel_Click);
             _btnRefresh = CreateButton("Làm mới", BtnRefresh_Click);
             _commandPanel.Controls.Add(_btnAdd);
+            _commandPanel.Controls.Add(_btnSave);
             _commandPanel.Controls.Add(_btnUpdate);
             _commandPanel.Controls.Add(_btnDelete);
+            _commandPanel.Controls.Add(_btnCancel);
             _commandPanel.Controls.Add(_btnRefresh);
             UpdateButtonStyles();
 
@@ -515,41 +521,61 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
 
         // ── Mode management ──────────────────────────────────────────────────────
 
-        private void EnterAddMode()
-        {
-            _mode = FormMode.Adding;
-            HideMessage();
-            ClearInputs();               // xoa trang, bo chon grid
-            SetEditorsEnabled(true);     // bat cac truong co the sua
-            _btnAdd.Text     = "Lưu";    _btnAdd.Enabled    = true;
-            _btnUpdate.Text  = "Sửa";    _btnUpdate.Enabled = false;
-            _btnDelete.Enabled = false;
-            _btnRefresh.Text = "Làm mới";
-            UpdateButtonStyles();
-            OnAfterAdd();               // reset ma tu sinh, dien san truong co dinh
-        }
-
+        /// <summary>
+        /// Trạng thái View: hiện Thêm/Sửa/Xóa/Làm mới. Ẩn Lưu/Hủy.
+        /// Sửa và Xóa chỉ enable khi có dòng đang chọn.
+        /// </summary>
         private void EnterViewMode()
         {
             _mode = FormMode.View;
             HideMessage();
-            SetEditorsEnabled(false);   // tat het (chi xem)
-            _btnAdd.Text     = "Thêm";  _btnAdd.Enabled    = true;
-            _btnUpdate.Text  = "Sửa";   _btnUpdate.Enabled = true;
-            _btnDelete.Enabled = true;
-            _btnRefresh.Text = "Làm mới";
+            SetEditorsEnabled(false);
+
+            bool hasRow = CurrentItem != null;
+            _btnAdd.Visible     = true;  _btnAdd.Enabled    = true;
+            _btnUpdate.Visible  = true;  _btnUpdate.Enabled = hasRow;
+            _btnDelete.Visible  = true;  _btnDelete.Enabled = hasRow;
+            _btnRefresh.Visible = true;  _btnRefresh.Enabled = true;
+            _btnSave.Visible    = false;
+            _btnCancel.Visible  = false;
             UpdateButtonStyles();
         }
 
+        /// <summary>
+        /// Trạng thái Adding: form trắng để nhập mới. Chỉ Lưu và Hủy khả dụng.
+        /// </summary>
+        private void EnterAddMode()
+        {
+            _mode = FormMode.Adding;
+            HideMessage();
+            ClearInputs();
+            SetEditorsEnabled(true);
+
+            _btnAdd.Visible     = false;
+            _btnUpdate.Visible  = false;
+            _btnDelete.Visible  = false;
+            _btnRefresh.Visible = false;
+            _btnSave.Visible    = true;  _btnSave.Enabled   = true;
+            _btnCancel.Visible  = true;  _btnCancel.Enabled = true;
+            UpdateButtonStyles();
+            OnAfterAdd();
+        }
+
+        /// <summary>
+        /// Trạng thái Editing: các trường có thể sửa được mở. Chỉ Lưu và Hủy khả dụng.
+        /// </summary>
         private void EnterEditMode()
         {
             _mode = FormMode.Editing;
             HideMessage();
-            SetEditorsEnabled(true);    // bat cac truong duoc phep sua
-            _btnAdd.Text     = "Thêm";  _btnAdd.Enabled    = false;
-            _btnUpdate.Text  = "Lưu";   _btnUpdate.Enabled = true;
-            _btnDelete.Enabled = false;
-            _btnRefresh.Text = "Hủy";
+            SetEditorsEnabled(true);
+
+            _btnAdd.Visible     = false;
+            _btnUpdate.Visible  = false;
+            _btnDelete.Visible  = false;
+            _btnRefresh.Visible = false;
+            _btnSave.Visible    = true;  _btnSave.Enabled   = true;
+            _btnCancel.Visible  = true;  _btnCancel.Enabled = true;
             UpdateButtonStyles();
         }
 
@@ -571,38 +597,33 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
 
         // ── Button handlers ──────────────────────────────────────────────────────
 
+        /// <summary>Thêm: chỉ hoạt động khi ở View mode → chuyển sang Adding mode.</summary>
         private void BtnAdd_Click(object sender, EventArgs e)
         {
-            if (_mode == FormMode.View || _mode == FormMode.Editing)
-            {
-                EnterAddMode();
-                return;
-            }
-            // Adding mode -> luu ban ghi moi
-            var item = ReadInputs(new T(), false);
-            if (!ValidateBeforeSave(item)) return;
-            string error;
-            try
-            {
-                if (!AddItem(item, out error)) { ShowError(error); return; }
-            }
-            catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
-            ReloadData();
             EnterAddMode();
         }
 
-        private void BtnUpdate_Click(object sender, EventArgs e)
+        /// <summary>Lưu: lưu bản ghi mới (Adding) hoặc bản ghi đang sửa (Editing).</summary>
+        private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (_mode == FormMode.View)
+            if (_mode == FormMode.Adding)
             {
-                if (CurrentItem == null) { ShowError("Chon dong can sua."); return; }
-                EnterEditMode();
-                return;
+                var item = ReadInputs(new T(), false);
+                if (!ValidateBeforeSave(item)) return;
+                string error;
+                try
+                {
+                    if (!AddItem(item, out error)) { ShowError(error); return; }
+                }
+                catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
+                ReloadData();
+                EnterViewMode();
+                ShowInfo("Đã lưu thành công.");
             }
-            if (_mode == FormMode.Editing)
+            else if (_mode == FormMode.Editing)
             {
                 var item = CurrentItem;
-                if (item == null) { ShowError("Mat lua chon. Bam 'Huy' va chon lai."); return; }
+                if (item == null) { ShowError("Mất lựa chọn. Bấm Hủy và chọn lại."); return; }
                 ReadInputs(item, true);
                 if (!ValidateBeforeSave(item)) return;
                 string error;
@@ -612,15 +633,25 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 }
                 catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
                 ReloadData();
-                EnterAddMode();
+                EnterViewMode();
+                ShowInfo("Đã cập nhật thành công.");
             }
+        }
+
+        /// <summary>Sửa: chỉ hoạt động khi ở View mode và có dòng được chọn.</summary>
+        private void BtnUpdate_Click(object sender, EventArgs e)
+        {
+            if (_mode != FormMode.View) return;
+            if (CurrentItem == null) { ShowError("Chọn dòng cần sửa."); return; }
+            EnterEditMode();
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
+            if (_mode != FormMode.View) return;
             var item = CurrentItem;
-            if (item == null) { ShowError("Chon dong can xoa."); return; }
-            if (MessageBox.Show("Xoa ban ghi dang chon?", "Xac nhan", MessageBoxButtons.YesNo,
+            if (item == null) { ShowError("Chọn dòng cần xóa."); return; }
+            if (MessageBox.Show("Xóa bản ghi đang chọn?", "Xác nhận", MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question) != DialogResult.Yes) return;
             string error;
             try
@@ -629,26 +660,32 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             }
             catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
             ReloadData();
-            EnterAddMode();
+            EnterViewMode();
+            ShowInfo("Đã xóa thành công.");
+        }
+
+        /// <summary>Hủy: hủy Adding/Editing, về View mode.</summary>
+        private void BtnCancel_Click(object sender, EventArgs e)
+        {
+            if (_mode == FormMode.Editing)
+            {
+                // Khôi phục dữ liệu gốc từ grid
+                var item = CurrentItem;
+                if (item != null) BindRowToInputs(item);
+            }
+            ReloadData();
+            EnterViewMode();
         }
 
         private void BtnRefresh_Click(object sender, EventArgs e)
         {
-            if (_mode == FormMode.Editing)
-            {
-                // Huy sua: khoi phuc du lieu goc, quay ve xem
-                var item = CurrentItem;
-                if (item != null) BindRowToInputs(item);
-                EnterViewMode();
-                return;
-            }
             OnRefreshRequested();
         }
 
         protected virtual void OnRefreshRequested()
         {
             ReloadData();
-            EnterAddMode();
+            EnterViewMode();
         }
 
         // ── Data binding ─────────────────────────────────────────────────────────
@@ -656,9 +693,16 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         private void BindCurrentToInputs()
         {
             var item = CurrentItem;
-            if (item == null) return;   // khong co lua chon, giu nguyen mode
-            BindRowToInputs(item);
-            EnterViewMode();            // co row duoc chon -> che do xem
+            if (item == null) return;
+            // Chỉ bind nếu đang ở View mode (không được ghi đè khi đang thêm/sửa)
+            if (_mode == FormMode.View)
+            {
+                BindRowToInputs(item);
+                // Cập nhật enable/disable Sửa+Xóa theo selection
+                _btnUpdate.Enabled = true;
+                _btnDelete.Enabled = true;
+                UpdateButtonStyles();
+            }
         }
 
         private void BindRowToInputs(T item)
@@ -870,8 +914,10 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         private void UpdateButtonStyles()
         {
             ApplyButtonStyle(_btnAdd);
+            ApplyButtonStyle(_btnSave);
             ApplyButtonStyle(_btnUpdate);
             ApplyButtonStyle(_btnDelete);
+            ApplyButtonStyle(_btnCancel);
             ApplyButtonStyle(_btnRefresh);
         }
 
@@ -906,15 +952,15 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             }
             else if (txt == "Hủy")
             {
-                btn.BackColor = Color.FromArgb(239, 68, 68); // red-500
-                btn.BorderColor = Color.FromArgb(220, 38, 38); // red-600
-                btn.ForeColor = Color.White;
+                btn.BackColor  = Color.FromArgb(239, 68, 68);   // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38);  // red-600
+                btn.ForeColor  = Color.White;
             }
-            else // "Làm mới" or other
+            else // "Làm mới" và các nut khác
             {
-                btn.BackColor = Color.FromArgb(107, 114, 128); // gray-500
-                btn.BorderColor = Color.FromArgb(75, 85, 99); // gray-600
-                btn.ForeColor = Color.White;
+                btn.BackColor  = Color.FromArgb(99, 102, 241);  // indigo-500
+                btn.BorderColor = Color.FromArgb(79, 70, 229);  // indigo-600
+                btn.ForeColor  = Color.White;
             }
         }
     }
