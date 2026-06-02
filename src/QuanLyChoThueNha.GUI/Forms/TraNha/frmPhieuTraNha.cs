@@ -17,6 +17,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         public frmPhieuTraNha() : base("Quan ly Phieu tra nha", Fields())
         {
             HideDeleteButton();
+            CauHinhNgayTra();
         }
 
         private static IEnumerable<FieldDefinition> Fields()
@@ -54,14 +55,20 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             // Gán mã người lập phiếu (NhanVien hoặc Admin) từ phiên đăng nhập.
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             if (item.NgayTra == DateTime.MinValue) item.NgayTra = DateTime.Today;
+            if (!NgayTraHopLe(item.NgayTra, out error)) return false;
             // KHÔNG tự tính TienHoanCoc ở GUI nữa — toàn bộ logic hoàn cọc/khấu trừ vi phạm
             // đã được dồn về PhieuTraNhaService.LapPhieu để đảm bảo nhất quán.
             return _service.LapPhieu(item, out error);
         }
 
+        protected override void OnAfterAdd()
+        {
+            CauHinhNgayTra();
+        }
+
         protected override bool UpdateItem(PhieuTraNha item, out string error)
         {
-            error = string.Empty;
+            if (!NgayTraHopLe(item.NgayTra, out error)) return false;
             _service.Sua(item);
             return true;
         }
@@ -149,6 +156,24 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             if (string.IsNullOrWhiteSpace(maNhanVien)) return "Admin";
             string hoTen;
             return nhanViens.TryGetValue(maNhanVien, out hoTen) ? hoTen : maNhanVien;
+        }
+
+        private void CauHinhNgayTra()
+        {
+            var picker = GetEditor("NgayTra") as DateTimePicker;
+            if (picker == null) return;
+            picker.MinDate = DateTime.Today;
+            if (picker.Value.Date < DateTime.Today)
+                picker.Value = DateTime.Today;
+        }
+
+        private static bool NgayTraHopLe(DateTime ngayTra, out string error)
+        {
+            error = string.Empty;
+            if (ngayTra.Date >= DateTime.Today) return true;
+
+            error = "Ngay tra khong duoc nho hon ngay hien tai.";
+            return false;
         }
 
         private static void GanThongTinHienThi(IEnumerable<PhieuTraNha> items)

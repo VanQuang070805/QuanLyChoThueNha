@@ -512,8 +512,65 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             var anh = _canHoSvc.LayAnhDaiDien(maCanHo);
             if (anh != null && System.IO.File.Exists(anh.DuongDanAnh))
             {
-                using (var temp = Image.FromFile(anh.DuongDanAnh))
-                    picAnh.Image = new Bitmap(temp);
+                Image preview;
+                string loi;
+                if (TryCreatePreviewImage(anh.DuongDanAnh, out preview, out loi))
+                {
+                    picAnh.Image = preview;
+                }
+                else
+                {
+                    ShowError(loi);
+                }
+            }
+        }
+
+        private bool TryCreatePreviewImage(string path, out Image preview, out string error)
+        {
+            preview = null;
+            error = string.Empty;
+
+            try
+            {
+                using (var stream = new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite))
+                using (var original = Image.FromStream(stream, false, true))
+                {
+                    var maxWidth = picAnh.Width > 0 ? picAnh.Width : 640;
+                    var maxHeight = picAnh.Height > 0 ? picAnh.Height : 360;
+                    var ratio = Math.Min((float)maxWidth / original.Width, (float)maxHeight / original.Height);
+                    if (ratio <= 0) ratio = 1f;
+                    if (ratio > 1f) ratio = 1f;
+
+                    var width = Math.Max(1, (int)(original.Width * ratio));
+                    var height = Math.Max(1, (int)(original.Height * ratio));
+                    var bitmap = new Bitmap(width, height);
+
+                    using (var graphics = Graphics.FromImage(bitmap))
+                    {
+                        graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                        graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                        graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                        graphics.DrawImage(original, 0, 0, width, height);
+                    }
+
+                    preview = bitmap;
+                    return true;
+                }
+            }
+            catch (OutOfMemoryException)
+            {
+                error = "File anh khong hop le, bi loi hoac kich thuoc qua lon.";
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                error = "File duoc chon khong phai anh hop le.";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                error = "Khong the tai anh: " + LayLoiSauCung(ex);
+                return false;
             }
         }
 
@@ -698,8 +755,18 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 dialog.Title = "Chọn ảnh phòng";
                 dialog.Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp;*.gif|All files|*.*";
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                Image preview;
+                string loi;
+                if (!TryCreatePreviewImage(dialog.FileName, out preview, out loi))
+                {
+                    ShowError(loi);
+                    return;
+                }
+
                 _canHoSvc.ThemAnh(txtMa.Text, dialog.FileName, "Ảnh phòng");
-                NapTienNghiVaAnh(txtMa.Text);
+                if (picAnh.Image != null)
+                    picAnh.Image.Dispose();
+                picAnh.Image = preview;
             }
             HideMsg();
         }

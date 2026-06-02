@@ -329,6 +329,11 @@ namespace QuanLyChoThueNha.BLL.Services
             decimal tienHoanCoc = Math.Max(0, hd.TienCocChot - tienKhauTru);
 
             if (phieu.NgayTra == DateTime.MinValue) phieu.NgayTra = DateTime.Today;
+            if (phieu.NgayTra.Date < DateTime.Today)
+            {
+                loi = "Ngay tra khong duoc nho hon ngay hien tai.";
+                return false;
+            }
 
             _uow.BeginTransaction();
             try
