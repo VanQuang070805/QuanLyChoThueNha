@@ -1,0 +1,459 @@
+# Error handled
+
+## 2026-06-01 - SQL sandbox run from scratch
+
+### Context
+
+Created and ran a sandbox database from `docs/DATABASE/01_create_database.sql` through `docs/DATABASE/13_nhanvien_phanquyen.sql`.
+
+Sandbox database:
+
+```text
+QuanLyChoThueNha_Sandbox_Codex
+```
+
+### Error
+
+The first run failed at:
+
+```text
+docs/DATABASE/02_seed_data.sql
+```
+
+SQL Server reported invalid column names in table `GiaDichVu`:
+
+```text
+DonGiaDien
+DonGiaNuoc
+PhiDichVu
+ApDungTuNgay
+ApDungDenNgay
+```
+
+### Cause
+
+`01_create_database.sql` creates `GiaDichVu` with the current schema:
+
+```text
+GiaDien
+GiaNuoc
+GiaDichVuChung
+NgayApDung
+NgayKetThuc
+```
+
+`02_seed_data.sql` was still inserting data using the old column names.
+
+### Fix
+
+Updated `docs/DATABASE/02_seed_data.sql` to insert into the current columns:
+
+```text
+GiaDien
+GiaNuoc
+GiaDichVuChung
+NgayApDung
+NgayKetThuc
+```
+
+### Verification
+
+After the fix:
+
+- Full sandbox run from `01` to `13`: passed.
+- Migration rerun from `04` to `13`: passed.
+- Sandbox table count: `21`.
+- Sample row counts:
+
+```text
+TaiKhoan: 7
+CanHo: 5
+HopDong: 1
+HoaDonThanhToan: 2
+NhanVienQuyen: 10
+```
+
+No additional SQL error was found in the sandbox process.
+
+## 2026-06-01 - Test plan execution on branch guide
+
+### Context
+
+Executed the requested test plan against branch `guide`.
+
+Sandbox database:
+
+```text
+QuanLyChoThueNha_Sandbox_TestPlan_20260601_050048
+```
+
+Baseline checks:
+
+- SQL run from `docs/DATABASE/01_create_database.sql` to `docs/DATABASE/13_nhanvien_phanquyen.sql`: passed.
+- Sandbox table count: `21`.
+- Sample row counts: `TaiKhoan=7`, `CanHo=5`, `HopDong=1`, `HoaDonThanhToan=2`, `NhanVienQuyen=10`.
+- `dotnet build QuanLyChoThueNha.sln`: passed with `0` warnings and `0` errors.
+
+### Confirmed issues
+
+#### NET-TEST-001
+
+- Man hinh: Tim tro cong khai, Quan ly tai khoan khach.
+- Buoc tai hien: tim `toa` khi du lieu la `Tòa`, tim `can` khi du lieu la `căn`, hoac tim ten khach co dau/khong dau.
+- Ket qua thuc te: cac man hinh dang so sanh bang `ToLowerInvariant()` nen khong chuan hoa dau tieng Viet.
+- Ket qua mong muon: tim co dau va khong dau cho ket qua tuong duong.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/KhachHang/frmTimTroPublic.cs`, `src/QuanLyChoThueNha.GUI/Forms/Auth/frmQuanLyTaiKhoanKhach.cs`.
+- Muc do: Medium.
+
+#### NET-TEST-002
+
+- Man hinh: Tim tro cong khai.
+- Buoc tai hien: mo danh sach the phong.
+- Ket qua thuc te: the phong van hien ma loai can ho, vi card render `room.MaLoai`.
+- Ket qua mong muon: bo ma loai tren card, chi hien thong tin de khach hieu nhu toa, can, tang, dien tich, gia, tien coc, tien nghi, trang thai.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/KhachHang/frmTimTroPublic.cs`.
+- Muc do: Low.
+
+#### NET-TEST-003
+
+- Man hinh: Dang ky dat truoc.
+- Buoc tai hien: bam `Dat nhanh` hoac `Chi tiet` roi mo form dang ky.
+- Ket qua thuc te: form van co field `Dia chi`; so dien thoai khong duoc validate bat buoc; tien coc chi can lon hon `0`.
+- Ket qua mong muon: bo dia chi; bat buoc so dien thoai neu nghiep vu yeu cau; tien coc toi thieu `>= 10%` gia phong.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/KhachHang/frmDangKyDatTruoc.cs`.
+- Muc do: High.
+
+#### NET-TEST-004
+
+- Man hinh: Dat truoc thanh cong / QR dat coc.
+- Buoc tai hien: tao phieu dat truoc thanh cong, xem noi dung copy QR/dat coc.
+- Ket qua thuc te: clipboard chi gom ten dang nhap, mat khau tam, ma khach, ma phieu, ma phong, tien coc, noi dung chuyen khoan; chua gom ro so tai khoan nhan tien.
+- Ket qua mong muon: copy du so tai khoan, so tien, noi dung chuyen khoan, ma phieu, ma phong.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/KhachHang/frmTimTroPublic.cs`, `src/QuanLyChoThueNha.GUI/Forms/Shared/frmQrThanhToan.cs`, `src/QuanLyChoThueNha.GUI/Helpers/PaymentQrConfig.cs`.
+- Muc do: Medium.
+
+#### NET-TEST-005
+
+- Man hinh: Quan ly Phieu dat truoc.
+- Buoc tai hien: sua field `Trang thai` tren form phieu dat truoc.
+- Ket qua thuc te: UI cho chon ca cac trang thai he thong `DaThanhToanCoc`, `DaKyHD`, `HetHan`.
+- Ket qua mong muon: cac trang thai he thong chi do nut nghiep vu/job xu ly; nguoi dung khong duoc sua truc tiep.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/HopDong/frmPhieuDatTruoc.cs`.
+- Muc do: High.
+
+#### NET-TEST-006
+
+- Man hinh: Quan ly Phieu dat truoc.
+- Buoc tai hien: xoa phieu dat truoc da duoc lien ket hop dong.
+- Ket qua thuc te: `DeleteItem` goi truc tiep `_service.Xoa(item)` nen nguy co hien loi FK/raw exception khi co hop dong tham chieu `MaPhieuDatTruoc`.
+- Ket qua mong muon: neu khong cho xoa thi bao ro "phieu da lien ket hop dong"; neu cho xoa thi phai co luong huy/vo hieu hoa an toan.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/HopDong/frmPhieuDatTruoc.cs`, `src/QuanLyChoThueNha.BLL/Services/PhieuDatTruocService.cs`.
+- Muc do: Blocker.
+
+#### NET-TEST-007
+
+- Man hinh: Tao hop dong.
+- Buoc tai hien: mo form hop dong, chon can ho va phieu dat truoc.
+- Ket qua thuc te: UI chua co buoc chon toa truoc; danh sach can ho lay tat ca; danh sach phieu dat truoc lay tat ca phieu `ChoKy`, khong loc theo can ho dang chon.
+- Ket qua mong muon: chon toa truoc, can ho chi thuoc toa do; phieu dat truoc va khach thue tu dong loc theo can ho.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/HopDong/frmHopDong.cs`.
+- Muc do: High.
+
+#### NET-TEST-008
+
+- Man hinh: Gia han hop dong.
+- Buoc tai hien: mo form gia han.
+- Ket qua thuc te: UI van hien field `Trang thai`; service chi kiem tra hop dong `HieuLuc`, chua kiem tra can ho co phieu dat truoc dang mo hay khong.
+- Ket qua mong muon: bo field trang thai khoi UI; chi cho gia han hop dong cua can ho dang cho thue va khong co phieu dat truoc dang mo.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/HopDong/frmGiaHanHopDong.cs`, `src/QuanLyChoThueNha.BLL/Services/GiaHanHopDongService.cs`.
+- Muc do: High.
+
+#### NET-TEST-009
+
+- Man hinh: Quan ly Hoa don thanh toan.
+- Buoc tai hien: lap/sua hoa don.
+- Ket qua thuc te: UI cho nhap `SoTienPhaiTra`, `TrangThai`, `MaViPham`; service cho tao hoa don theo ky bat ky cua hop dong hieu luc ma chua doi chieu ky thanh toan nam trong ngay bat dau/ngay ket thuc hop dong.
+- Ket qua mong muon: `SoTienPhaiTra` va `TrangThai` do he thong tinh; bo `MaViPham`; chi lap hoa don trong thoi gian hop dong con hieu luc.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/TraNha/frmHoaDonThanhToan.cs`, `src/QuanLyChoThueNha.BLL/Services/GiaHanHopDongService.cs`.
+- Muc do: High.
+
+#### NET-TEST-010
+
+- Man hinh: Quan ly Hoa don thanh toan.
+- Buoc tai hien: nhap chi so dien/nuoc moi nho hon chi so cu.
+- Ket qua thuc te: service tra loi `Chi so dien moi phai >= chi so dien cu` va `Chi so nuoc moi phai >= chi so nuoc cu`.
+- Ket qua mong muon: bo rang buoc nay neu nghiep vu da chot cho phep dieu chinh chi so.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.BLL/Services/GiaHanHopDongService.cs`.
+- Muc do: Medium.
+
+#### NET-TEST-011
+
+- Man hinh: Xu ly vi pham.
+- Buoc tai hien: mo form phieu xu ly vi pham.
+- Ket qua thuc te: UI cho chon truc tiep `TinhTrang = DaKhauTru`.
+- Ket qua mong muon: khong cho chon truc tiep `DaKhauTru`; khi tick `TruVaoCoc`, he thong tu cap nhat trang thai luc lap phieu tra nha/khau tru coc.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/TraNha/frmPhieuXuLyViPham.cs`, `src/QuanLyChoThueNha.BLL/Services/GiaHanHopDongService.cs`.
+- Muc do: High.
+
+#### NET-TEST-012
+
+- Man hinh: Quan ly Loai hoa don.
+- Buoc tai hien: vao menu Thanh toan.
+- Ket qua thuc te: menu va form `Loai hoa don` van ton tai, database van co bang `LoaiHoaDon` va FK `HoaDonThanhToan.MaLoaiHoaDon`.
+- Ket qua mong muon: neu nghiep vu bo toan bo loai hoa don thi can migration/model/service/UI rieng; khong chi an menu.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/frmMain.cs`, `src/QuanLyChoThueNha.GUI/Forms/TraNha/frmLoaiHoaDon.cs`, `docs/DATABASE/01_create_database.sql`.
+- Muc do: Medium.
+
+#### NET-TEST-013
+
+- Man hinh: Giao dien khach hang.
+- Buoc tai hien: dang nhap khach va xem tab hop dong/hoa don.
+- Ket qua thuc te: hop dong van hien `MaCanHo`; chua co cot ten can ho/ten toa; chua thay tab `Vi pham` trong danh sach tab khach hang.
+- Ket qua mong muon: doi `MaCanHo` thanh thong tin than thien, them `Ten toa`, them trang `Vi pham` lien quan hop dong cua khach.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/KhachHang/frmKhachHangHome.cs`.
+- Muc do: Medium.
+
+#### NET-TEST-014
+
+- Man hinh: Tai san / Can ho.
+- Buoc tai hien: mo quan ly can ho va xem cot audit.
+- Ket qua thuc te: audit `MaNguoiThaoTac`, `VaiTroNguoiThaoTac` da co trong DB/model/service, nhung UI can ho dang hien cot audit nhu cot du lieu thong thuong; chua co nhan dien ro ai thao tac theo phien dang nhap trong cac luong sua/xoa cu the.
+- Ket qua mong muon: audit duoc cap nhat khi them/sua nghiep vu va hien o khu vuc lich su/thong tin phu, khong lam roi bang chinh.
+- File/form/service nghi ngo: `src/QuanLyChoThueNha.GUI/Forms/TaiSan/frmCanHo.cs`, `src/QuanLyChoThueNha.BLL/Helpers/AuditHelper.cs`, `src/QuanLyChoThueNha.BLL/Services/BaseService.cs`.
+- Muc do: Medium.
+
+### Confirmed pass / partial pass
+
+- SQL database bootstrap from scratch currently passes.
+- Build currently passes.
+- Trang tim tro khong dem `Huy`/`HetHan` vao tap phong dang cho coc; `HuyPhieu` co cap nhat `CanHo.TinhTrang = Trong`. Can kiem UI refresh thu cong sau thao tac huy/het han.
+- Tai khoan noi bo an cot `MatKhauHash` trong grid. Khong co bang chung UI hien mat khau that; huong dung van la reset/mat khau tam thay vi giai ma hash.
+
+### Manual checks still required
+
+- Kiem tra WinForms truc tiep cho cac loi layout: form dat truoc co bi thieu thong tin o kich thuoc mac dinh, dashboard co cuon duoc, card phong co responsive du tren cac kich thuoc man hinh.
+- Kiem tra nut dang xuat cua khach trong flow dang nhap that, vi nut dang xuat nam o shell chinh con form khach hang khong tu chua nut rieng.
+
+## 2026-06-01 - Merge check from codex/bugfix-report
+
+### Context
+
+Created a new branch from `guide`, fetched `origin/codex/bugfix-report`, and merged it with `--allow-unrelated-histories` because the branch had a separate Git history.
+
+Conflict strategy:
+
+- The conflicted implementation files were resolved by taking the `codex/bugfix-report` version so the bugfix branch could be evaluated.
+- `error_handled` from `guide` was preserved.
+- The GUI project was adjusted back from `EntityFramework.6.5.2` to the existing repo package `EntityFramework.6.4.4`, because `6.5.2` was not present locally and no `nuget.exe` was available in PATH.
+
+Build verification:
+
+- `dotnet build QuanLyChoThueNha.sln`: passed.
+- Remaining warnings: 14 unresolved optional/package assembly references around ClosedXML/export dependencies, but no compile error.
+
+### Fix status for the 14 tracked issues
+
+#### NET-TEST-001 - Partially fixed
+
+- `TextFormatHelper.NormalizeSearch` was added.
+- Public search and customer account search now use normalized search.
+- Still needs manual UI test for all search boxes outside these two screens.
+
+#### NET-TEST-002 - Not fixed
+
+- Public room cards still render `room.MaLoai` in both detail and card text.
+- File: `src/QuanLyChoThueNha.GUI/Forms/KhachHang/frmTimTroPublic.cs`.
+
+#### NET-TEST-003 - Mostly fixed
+
+- Booking dialog removed address from the visible flow.
+- Phone number is now required.
+- Deposit now validates at least 10% of room price.
+- Still uses message boxes instead of field-level validation, so the "show error at exact field" requirement is not fully done.
+
+#### NET-TEST-004 - Fixed
+
+- Clipboard now includes receiving bank account info through `frmQrThanhToan.SoTaiKhoanNhan`.
+
+#### NET-TEST-005 - Partially fixed
+
+- `TrangThai` is read-only and update blocks some system statuses.
+- However the dropdown list still contains `DaKyHD` and `HetHan`, so the UI is not fully clean.
+
+#### NET-TEST-006 - Fixed
+
+- `PhieuDatTruocService.XoaPhieu` was added and `DeleteItem` now calls it instead of direct delete.
+- This should prevent raw FK conflict when a reservation is linked to a contract.
+
+#### NET-TEST-007 - Partially fixed
+
+- Contract form filters apartments to `Trong` or apartments with `ChoKy` reservations.
+- Selecting apartment auto-fills matching `ChoKy` reservation and tenant.
+- Still no separate tower-first dropdown as requested.
+
+#### NET-TEST-008 - Mostly fixed
+
+- Extension form no longer exposes `TrangThai`.
+- Service now blocks extension if the apartment has open reservations.
+- Needs manual check that the apartment is truly rented, not just contract `HieuLuc`.
+
+#### NET-TEST-009 - Mostly fixed
+
+- `SoTienPhaiTra` and `TrangThai` are read-only in UI.
+- `MaViPham` is forced null in add/update and hidden from grid.
+- Service validates invoice due date within contract period and computes status through `TinhTrangThai`.
+- Still depends on `MaLoaiHoaDon`, so not aligned with the separate "remove invoice type" requirement.
+
+#### NET-TEST-010 - Fixed
+
+- Meter reading calculation no longer reports the old `new index must be >= old index` validation.
+
+#### NET-TEST-011 - Partially fixed
+
+- UI removed direct `DaKhauTru` option.
+- But add/update currently sets `TinhTrang = DaKhauTru` immediately when `TruVaoCoc` is checked, while the requested flow says this should happen when deposit deduction is actually processed.
+
+#### NET-TEST-012 - Partially fixed
+
+- Main menu no longer lists `Loai hoa don`.
+- Model/database/form/project still retain `LoaiHoaDon`, and invoices still require a type internally.
+
+#### NET-TEST-013 - Mostly fixed
+
+- Customer screen now has a `Vi pham` tab.
+- Contract display now maps apartment to `TenCanHo` and `TenToa`.
+- Still needs manual test for customer logout and invoice status synchronization.
+
+#### NET-TEST-014 - Not fixed
+
+- Apartment management still adds grid columns `MaNguoiThaoTac` and `VaiTroNguoiThaoTac` directly.
+- Audit service exists, but UI still shows audit columns in the main grid.
+
+### Summary
+
+The merged branch improves the bug list, but it does not fully close all 14 issues.
+
+Likely fixed: `NET-TEST-004`, `NET-TEST-006`, `NET-TEST-010`.
+
+Mostly fixed but needs final adjustment/manual verification: `NET-TEST-003`, `NET-TEST-008`, `NET-TEST-009`, `NET-TEST-013`.
+
+Partially fixed: `NET-TEST-001`, `NET-TEST-005`, `NET-TEST-007`, `NET-TEST-011`, `NET-TEST-012`.
+
+Still not fixed: `NET-TEST-002`, `NET-TEST-014`.
+
+## 2026-06-01 - Remaining issue fixes after merge
+
+### Context
+
+Continued from branch `codex/merge-bugfix-report-20260601-053618` after merging `codex/bugfix-report`.
+
+### Fixes applied
+
+#### NET-TEST-001
+
+- Applied accent-insensitive search to additional screens that still used `ToLowerInvariant()`:
+  - `frmKhachThue`
+  - `frmKhuVuc`
+  - `frmCanHo`
+  - `frmEmailLog`
+- Existing normalized search remains in public room search and customer account management.
+
+#### NET-TEST-002
+
+- Removed `MaLoai` from public room cards and room detail popup.
+- Removed `MaLoai` from customer home available-room card.
+- Cards now show tower/apartment/floor/area/room code instead of internal apartment type code.
+
+#### NET-TEST-005
+
+- Changed reservation `TrangThai` editor to read-only text instead of a dropdown that still listed system statuses.
+- Users can no longer pick `DaKyHD` or `HetHan` from the reservation form.
+
+#### NET-TEST-007
+
+- Added a tower filter to the contract form.
+- Apartment dropdown is now repopulated by selected tower.
+- The apartment list still only includes apartments that are `Trong` or have a valid `ChoKy` reservation.
+- Selecting an apartment continues to auto-fill the matching reservation and tenant when available.
+
+#### NET-TEST-011
+
+- Changed violation handling so `TruVaoCoc` no longer immediately sets `TinhTrang = DaKhauTru` when recording/editing a violation.
+- Violations marked for deposit deduction stay `ChoXuLy`.
+- `DaKhauTru` is still applied later when the return/deposit deduction process actually runs.
+
+#### NET-TEST-014
+
+- Removed `MaNguoiThaoTac` and `VaiTroNguoiThaoTac` from the main apartment management grid.
+- Audit data remains stored by service/model but no longer clutters the primary apartment list.
+
+### Verification
+
+- `dotnet build QuanLyChoThueNha.sln`: passed.
+- Remaining build output: 14 warnings for unresolved optional/package references related to Excel export dependencies.
+- No compile errors after the remaining issue fixes.
+
+## 2026-06-01 - Build warning cleanup
+
+### Context
+
+After fixing the remaining workflow issues, `dotnet build QuanLyChoThueNha.sln` still passed but showed 14 warnings because GUI referenced package DLLs that were listed in `packages.config` but missing from the local `packages` folder.
+
+### Cause
+
+The solution uses legacy `packages.config`; `dotnet restore` does not restore these packages. The missing references were dependencies used by ClosedXML/export code, such as:
+
+- `ExcelNumberFormat`
+- `Irony`
+- `SixLabors.Fonts`
+- `System.IO.Packaging`
+- `XLParser`
+- several `System.*` support assemblies
+
+NuGet also reported `System.IO.Packaging 6.0.0` has known high severity vulnerabilities.
+
+### Fix
+
+- Restored `packages.config` dependencies using `nuget.exe restore`.
+- Upgraded GUI reference from `System.IO.Packaging 6.0.0` to `8.0.1`.
+- Updated:
+  - `src/QuanLyChoThueNha.GUI/QuanLyChoThueNha.GUI.csproj`
+  - `src/QuanLyChoThueNha.GUI/packages.config`
+  - `src/QuanLyChoThueNha.GUI/App.config`
+
+### Verification
+
+- `nuget.exe restore QuanLyChoThueNha.sln -PackagesDirectory packages`: passed, no vulnerability warning after the package update.
+- `dotnet build QuanLyChoThueNha.sln`: passed with `0 Warning(s)` and `0 Error(s)`.
+
+## 2026-06-01 - Search and dashboard filter update
+
+### Context
+
+User asked whether public room cards can support:
+
+- Searching Vietnamese content with English keywords.
+- Approximate/fuzzy search.
+- Matching text in the middle of a value.
+- Dashboard chart filtering by day/week/month/year using selectable controls instead of manual year input.
+
+### Fix
+
+- Extended `TextFormatHelper.ContainsNormalized`:
+  - Still strips Vietnamese accents.
+  - Still supports substring matching anywhere in the source text.
+  - Adds English/Vietnamese aliases, e.g. `room`, `apartment`, `building`, `area`, `price`, `deposit`, `available`, `rented`.
+  - Adds small typo tolerance using Levenshtein distance for words with length >= 4.
+- Added period report methods in `BaoCaoService`:
+  - `DoanhThuTheoKy`
+  - `CongNoTheoKy`
+  - `HopDongMoiTrongKhoang`
+  - `TopCanHoDoanhThu(DateTime, DateTime, int)`
+- Replaced dashboard manual year input with:
+  - Period dropdown: `Ngày`, `Tuần`, `Tháng`, `Năm`.
+  - Date picker as the report anchor.
+  - Chart/export data now uses the selected date range.
+
+### Verification
+
+- `dotnet build QuanLyChoThueNha.sln`: passed with `0 Warning(s)` and `0 Error(s)`.
