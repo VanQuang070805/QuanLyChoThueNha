@@ -1275,15 +1275,19 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
                 var noiDungChuyenKhoan = NoiDungDatCoc(phieu);
                 string emailStatus;
-                EmailNotificationHelper.GuiThongTinDatTruoc(dialog.Email, dialog.Khach.HoTen,
+                var daGuiEmail = EmailNotificationHelper.GuiThongTinDatTruoc(dialog.Email, dialog.Khach.HoTen,
                     dialog.TenDangNhap, dialog.MatKhau, phieu.MaPhieuDatTruoc, room.MaCanHo,
-                    dialog.TienCoc, phieu.NgayHetHan, noiDungChuyenKhoan, dialog.Khach.MaTaiKhoan, out emailStatus);
+                    dialog.TienCoc, phieu.NgayHetHan, noiDungChuyenKhoan, dialog.Khach.MaTaiKhoan, false, out emailStatus);
+                if (!daGuiEmail)
+                    _taiKhoanService.DoiTrangThai(dialog.Khach.MaTaiKhoan, false);
 
                 var message = new StringBuilder();
-                message.AppendLine("Da tao tai khoan va phieu dat truoc.");
+                message.AppendLine("Đã tạo phiếu đặt trước.");
                 message.AppendLine();
-                message.AppendLine("Tên đăng nhập: " + dialog.TenDangNhap);
-                message.AppendLine("Mật khẩu tạm: " + dialog.MatKhau);
+                if (daGuiEmail)
+                    message.AppendLine("Thông tin tài khoản đã được gửi qua email khách hàng.");
+                else
+                    message.AppendLine("Email chưa gửi thành công. Tài khoản tạm thời đã bị vô hiệu hóa.");
                 message.AppendLine("Mã khách: " + dialog.Khach.MaKhach);
                 message.AppendLine("Mã phiếu: " + phieu.MaPhieuDatTruoc);
                 message.AppendLine("Mã phòng: " + room.MaCanHo);
@@ -1292,7 +1296,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 message.AppendLine("Nội dung CK: " + noiDungChuyenKhoan);
                 message.AppendLine(emailStatus);
                 Clipboard.SetText(message.ToString());
-                MessageBox.Show(message + "\nThông tin đăng nhập và đặt cọc đã được copy.",
+                MessageBox.Show(message + "\nThông tin đặt cọc đã được copy.",
                     "Đặt trước thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 using (var qr = new frmQrThanhToan("QR đặt cọc phòng", phieu.MaPhieuDatTruoc,
                     "Phòng " + room.MaCanHo, dialog.TienCoc, noiDungChuyenKhoan))

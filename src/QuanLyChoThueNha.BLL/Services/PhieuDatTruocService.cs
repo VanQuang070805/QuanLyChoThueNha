@@ -31,19 +31,20 @@ namespace QuanLyChoThueNha.BLL.Services
         // căn hộ được giải phóng về "Trong" để cho người khác thuê.
         public List<PhieuDatTruoc> XuLyPhieuChoCocQuaHan24h()
         {
-            var mocQuaHan = DateTime.Now.AddHours(-24);
-            var quaHan = _uow.PhieuDatTruocs
+            var now = DateTime.Now;
+            var mocGiaiPhongPhong = now.AddHours(-2);
+            var mocXoaTaiKhoan = now.AddHours(-24);
+
+            var canGiaiPhong = _uow.PhieuDatTruocs
                 .Find(p => p.TrangThai == ChoThanhToanCoc &&
-                           p.NgayDatCoc <= mocQuaHan)
+                           p.NgayDatCoc <= mocGiaiPhongPhong)
                 .ToList();
 
-            if (quaHan.Count == 0) return quaHan;
-
-            foreach (var p in quaHan)
+            foreach (var p in canGiaiPhong)
             {
                 p.TrangThai = HetHan;
                 p.GhiChu = NoiGhiChu(p.GhiChu,
-                    string.Format("Tu dong het han luc {0:dd/MM/yyyy HH:mm} do chua xac nhan coc sau 24h.", DateTime.Now));
+                    string.Format("Tu dong giai phong phong luc {0:dd/MM/yyyy HH:mm} do chua thanh toan coc sau 2h.", now));
                 _uow.PhieuDatTruocs.Update(p);
 
                 var canHo = _uow.CanHos.GetById(p.MaCanHo);
@@ -54,8 +55,19 @@ namespace QuanLyChoThueNha.BLL.Services
                 }
             }
 
-            _uow.Complete();
-            return quaHan;
+            var canXoaTaiKhoan = _uow.PhieuDatTruocs
+                .Find(p => (p.TrangThai == ChoThanhToanCoc || p.TrangThai == HetHan) &&
+                           p.NgayDatCoc <= mocXoaTaiKhoan)
+                .ToList();
+
+            foreach (var p in canXoaTaiKhoan)
+                XoaTaiKhoanKhachTamNeuCoThe(p);
+
+            if (canGiaiPhong.Count > 0 || canXoaTaiKhoan.Count > 0)
+                _uow.Complete();
+
+            var daXoa = new HashSet<string>(canXoaTaiKhoan.Select(p => p.MaPhieuDatTruoc));
+            return canGiaiPhong.Where(p => !daXoa.Contains(p.MaPhieuDatTruoc)).ToList();
         }
 
         private void CapNhatPhieuHetHan()
@@ -272,6 +284,13 @@ namespace QuanLyChoThueNha.BLL.Services
             canHo.TinhTrang = "DaDatCoc";
             AuditHelper.GanNguoiThaoTac(canHo);
             _uow.CanHos.Update(canHo);
+            var khach = _uow.KhachThues.GetById(phieu.MaKhach);
+            var taiKhoan = khach == null ? null : _uow.TaiKhoans.GetById(khach.MaTaiKhoan);
+            if (taiKhoan != null && taiKhoan.VaiTro == "KhachThue" && !taiKhoan.TrangThai)
+            {
+                taiKhoan.TrangThai = true;
+                _uow.TaiKhoans.Update(taiKhoan);
+            }
             _uow.Complete();
             return true;
         }
@@ -280,6 +299,40 @@ namespace QuanLyChoThueNha.BLL.Services
         {
             if (string.IsNullOrWhiteSpace(current)) return note;
             return current + Environment.NewLine + note;
+        }
+
+        private void XoaTaiKhoanKhachTamNeuCoThe(PhieuDatTruoc phieu)
+        {
+            if (phieu == null || phieu.TrangThai == DaThanhToanCoc || phieu.TrangThai == ChoKy || phieu.TrangThai == DaKyHD)
+                return;
+            if (_uow.HopDongs.Any(h => h.MaPhieuDatTruoc == phieu.MaPhieuDatTruoc || h.MaKhach == phieu.MaKhach))
+                return;
+
+            var khach = _uow.KhachThues.GetById(phieu.MaKhach);
+            var maTaiKhoan = khach == null ? null : khach.MaTaiKhoan;
+
+            var canHo = _uow.CanHos.GetById(phieu.MaCanHo);
+            if (canHo != null && canHo.TinhTrang == "DaDatCoc")
+            {
+                canHo.TinhTrang = "Trong";
+                _uow.CanHos.Update(canHo);
+            }
+
+            _uow.PhieuDatTruocs.Remove(phieu);
+
+            if (khach == null) return;
+            var conPhieuKhac = _uow.PhieuDatTruocs.Any(p =>
+                p.MaKhach == khach.MaKhach && p.MaPhieuDatTruoc != phieu.MaPhieuDatTruoc);
+            if (conPhieuKhac) return;
+
+            _uow.KhachThues.Remove(khach);
+
+            if (string.IsNullOrWhiteSpace(maTaiKhoan)) return;
+            var taiKhoan = _uow.TaiKhoans.GetById(maTaiKhoan);
+            if (taiKhoan == null || taiKhoan.VaiTro != "KhachThue") return;
+            if (_uow.KhachThues.Any(k => k.MaTaiKhoan == maTaiKhoan && k.MaKhach != khach.MaKhach)) return;
+
+            _uow.TaiKhoans.Remove(taiKhoan);
         }
     }
 }

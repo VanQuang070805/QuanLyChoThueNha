@@ -38,7 +38,7 @@ namespace QuanLyChoThueNha.BLL.Services
             };
             Repo.Add(log);
             if (!thanhCong)
-                XoaEmailTaiKhoanNeuLoiNguoiNhan(maTaiKhoan, emailNguoiNhan, thongBao);
+                XuLyTaiKhoanKhiEmailKhongDenNguoiNhan(maTaiKhoan, emailNguoiNhan, thongBao);
             _uow.Complete();
         }
 
@@ -47,20 +47,24 @@ namespace QuanLyChoThueNha.BLL.Services
             return base.LayTatCa().OrderByDescending(x => x.NgayGui).ToList();
         }
 
-        private void XoaEmailTaiKhoanNeuLoiNguoiNhan(string maTaiKhoan, string emailNguoiNhan, string thongBao)
+        private void XuLyTaiKhoanKhiEmailKhongDenNguoiNhan(string maTaiKhoan, string emailNguoiNhan, string thongBao)
         {
-            if (string.IsNullOrWhiteSpace(maTaiKhoan) || string.IsNullOrWhiteSpace(emailNguoiNhan))
+            if (string.IsNullOrWhiteSpace(maTaiKhoan))
                 return;
-            if (!LaLoiEmailNguoiNhan(thongBao))
+            if (!string.IsNullOrWhiteSpace(emailNguoiNhan) && !LaLoiEmailNguoiNhan(thongBao))
                 return;
 
             var taiKhoan = _uow.TaiKhoans.GetById(maTaiKhoan);
-            if (taiKhoan == null || string.IsNullOrWhiteSpace(taiKhoan.Email))
+            if (taiKhoan == null || taiKhoan.VaiTro != "KhachThue")
                 return;
-            if (!string.Equals(taiKhoan.Email.Trim(), emailNguoiNhan.Trim(), StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(emailNguoiNhan) &&
+                !string.IsNullOrWhiteSpace(taiKhoan.Email) &&
+                !string.Equals(taiKhoan.Email.Trim(), emailNguoiNhan.Trim(), StringComparison.OrdinalIgnoreCase))
                 return;
 
-            taiKhoan.Email = null;
+            if (LaLoiEmailNguoiNhan(thongBao))
+                taiKhoan.Email = null;
+            taiKhoan.TrangThai = false;
             _uow.TaiKhoans.Update(taiKhoan);
         }
 
