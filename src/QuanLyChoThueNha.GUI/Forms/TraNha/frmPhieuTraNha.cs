@@ -17,21 +17,15 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         public frmPhieuTraNha() : base("Quan ly Phieu tra nha", Fields())
         {
             HideDeleteButton();
+            GioiHanNgayTra();
         }
 
         private static IEnumerable<FieldDefinition> Fields()
         {
-            var hopDongService = new HopDongService();
-            var hopDongOptions = hopDongService.LayCoTheLapPhieuTraNha()
-                .OrderBy(h => h.MaHopDong)
-                .Select(h => new ComboOption(h.MaHopDong,
-                    string.Format("{0} - {1} - Con hieu luc", h.MaHopDong, h.MaCanHo)))
-                .ToList();
-
             return new[]
             {
                 new FieldDefinition("MaPhieu", "Ma phieu", typeof(string), true),
-                FieldDefinition.Lookup("MaHopDong", "Hop dong", hopDongOptions),
+                FieldDefinition.Lookup("MaHopDong", "Hop dong", TaoHopDongOptions(false)),
                 new FieldDefinition("MaNhanVien", "Ma nhan vien", typeof(string), true),
                 new FieldDefinition("NgayTra", "Ngay tra", typeof(DateTime)),
                 new FieldDefinition("TinhTrangNha", "Tinh trang nha", typeof(string), false, null, true),
@@ -39,6 +33,26 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 new FieldDefinition("TienKhauTru", "Tien khau tru", typeof(decimal)),
                 new FieldDefinition("GhiChu", "Ghi chu", typeof(string), false, null, true)
             };
+        }
+
+        private static List<ComboOption> TaoHopDongOptions(bool chiHopDongCoTheTra)
+        {
+            var daCoPhieuTra = new PhieuTraNhaService().LayTatCa()
+                .Select(p => p.MaHopDong)
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .ToList();
+
+            var options = new List<ComboOption> { new ComboOption(string.Empty, "(Chon hop dong)") };
+            var hopDongs = new HopDongService().LayTatCa();
+            if (chiHopDongCoTheTra)
+                hopDongs = hopDongs.Where(h => h.TrangThai == "HieuLuc" && !daCoPhieuTra.Contains(h.MaHopDong));
+
+            options.AddRange(hopDongs
+                .OrderBy(h => h.MaHopDong)
+                .Select(h => new ComboOption(h.MaHopDong,
+                    string.Format("{0} - Can ho {1} - Khach {2} - {3}",
+                        h.MaHopDong, h.MaCanHo, h.MaKhach, h.TrangThai))));
+            return options;
         }
 
         protected override IEnumerable<PhieuTraNha> GetItems()
@@ -53,9 +67,38 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             // Gán mã người lập phiếu (NhanVien hoặc Admin) từ phiên đăng nhập.
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             if (item.NgayTra == DateTime.MinValue) item.NgayTra = DateTime.Today;
+            if (item.NgayTra.Date > DateTime.Today) item.NgayTra = DateTime.Today;
             // KHÔNG tự tính TienHoanCoc ở GUI nữa — toàn bộ logic hoàn cọc/khấu trừ vi phạm
             // đã được dồn về PhieuTraNhaService.LapPhieu để đảm bảo nhất quán.
             return _service.LapPhieu(item, out error);
+        }
+
+        protected override void OnAfterAdd()
+        {
+            NapHopDongOptions(true);
+            SetEditorValue("NgayTra", DateTime.Today);
+        }
+
+        private void GioiHanNgayTra()
+        {
+            var ngayTraEditor = GetEditor("NgayTra") as DateTimePicker;
+            if (ngayTraEditor == null) return;
+            ngayTraEditor.MaxDate = DateTime.Today;
+            ngayTraEditor.ValueChanged += delegate
+            {
+                if (ngayTraEditor.Value.Date > DateTime.Today)
+                    ngayTraEditor.Value = DateTime.Today;
+            };
+        }
+
+        private void NapHopDongOptions(bool chiHopDongCoTheTra)
+        {
+            var editor = GetEditor("MaHopDong") as ComboBox;
+            if (editor == null) return;
+            editor.DataSource = TaoHopDongOptions(chiHopDongCoTheTra);
+            editor.DisplayMember = "Display";
+            editor.ValueMember = "Value";
+            if (editor.Items.Count > 0) editor.SelectedIndex = 0;
         }
 
         protected override bool UpdateItem(PhieuTraNha item, out string error)

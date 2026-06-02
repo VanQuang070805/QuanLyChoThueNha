@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Forms;
 using MaterialSkin;
 using MaterialSkin.Controls;
@@ -42,6 +46,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private Panel _detailOverlay;
         private Panel _detailPopup;
         private bool _dangLamMoiBoLoc;
+        private readonly Dictionary<string, GeoPoint> _toaDoCache = new Dictionary<string, GeoPoint>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _diaChiKhongTimThay = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly object _nominatimLock = new object();
+        private static DateTime _lanGoiNominatimCuoi = DateTime.MinValue;
 
         private class FilterOption
         {
@@ -53,6 +61,18 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             public string Value { get; private set; }
             public string Display { get; private set; }
+        }
+
+        private class GeoPoint
+        {
+            public GeoPoint(double lat, double lng)
+            {
+                Lat = lat;
+                Lng = lng;
+            }
+
+            public double Lat { get; private set; }
+            public double Lng { get; private set; }
         }
 
         public frmTimTroPublic()
@@ -1016,15 +1036,115 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         {
             Toa toa;
             if (!toas.TryGetValue(room.MaToa, out toa)) return false;
-            if (toa.MaKhuVuc == selectedMaKhuVuc) return true;
-            if (selectedKhuVuc == null || !selectedKhuVuc.ViDo.HasValue || !selectedKhuVuc.KinhDo.HasValue)
-                return false;
 
             KhuVuc roomKhuVuc;
             if (!khuVucs.TryGetValue(toa.MaKhuVuc, out roomKhuVuc)) return false;
-            if (!roomKhuVuc.ViDo.HasValue || !roomKhuVuc.KinhDo.HasValue) return false;
-            return TinhKhoangCachKm(selectedKhuVuc.ViDo.Value, selectedKhuVuc.KinhDo.Value,
-                roomKhuVuc.ViDo.Value, roomKhuVuc.KinhDo.Value) <= LayBanKinhLoc();
+
+            var diemTrungTam = LayToaDoKhuVuc(selectedKhuVuc);
+            var diemPhong = LayToaDoToa(toa, roomKhuVuc);
+            if (diemTrungTam == null || diemPhong == null)
+                return toa.MaKhuVuc == selectedMaKhuVuc;
+
+            return TinhKhoangCachKm(diemTrungTam.Lat, diemTrungTam.Lng, diemPhong.Lat, diemPhong.Lng) <= LayBanKinhLoc();
+        }
+
+        private GeoPoint LayToaDoToa(Toa toa, KhuVuc khuVuc)
+        {
+            var diaChi = DiaChiDayDu(toa, khuVuc);
+            var toaDo = LayToaDoTuOpenStreetMap(diaChi);
+            return toaDo ?? LayToaDoKhuVuc(khuVuc);
+        }
+
+        private GeoPoint LayToaDoKhuVuc(KhuVuc khuVuc)
+        {
+            if (khuVuc == null) return null;
+            if (khuVuc.ViDo.HasValue && khuVuc.KinhDo.HasValue &&
+                ToaDoHopLe(khuVuc.ViDo.Value, khuVuc.KinhDo.Value))
+                return new GeoPoint(khuVuc.ViDo.Value, khuVuc.KinhDo.Value);
+
+            return LayToaDoTuOpenStreetMap(DiaChiKhuVuc(khuVuc));
+        }
+
+        private GeoPoint LayToaDoTuOpenStreetMap(string diaChi)
+        {
+            if (string.IsNullOrWhiteSpace(diaChi)) return null;
+            diaChi = diaChi.Trim();
+
+            GeoPoint cached;
+            if (_toaDoCache.TryGetValue(diaChi, out cached)) return cached;
+            if (_diaChiKhongTimThay.Contains(diaChi)) return null;
+
+            try
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
+                    Uri.EscapeDataString(diaChi);
+
+                lock (_nominatimLock)
+                {
+                    var cho = 1100 - (int)(DateTime.UtcNow - _lanGoiNominatimCuoi).TotalMilliseconds;
+                    if (cho > 0) Thread.Sleep(cho);
+                    _lanGoiNominatimCuoi = DateTime.UtcNow;
+
+                    var request = (HttpWebRequest)WebRequest.Create(url);
+                    request.Method = "GET";
+                    request.UserAgent = "SmartApart/1.0 radius-filter";
+                    request.Timeout = 8000;
+                    request.ReadWriteTimeout = 8000;
+
+                    using (var response = (HttpWebResponse)request.GetResponse())
+                    using (var stream = response.GetResponseStream())
+                    using (var reader = new StreamReader(stream))
+                    {
+                        var json = reader.ReadToEnd();
+                        var latText = DocGiaTriJson(json, "lat");
+                        var lonText = DocGiaTriJson(json, "lon");
+                        double lat;
+                        double lng;
+                        if (double.TryParse(latText, NumberStyles.Float, CultureInfo.InvariantCulture, out lat) &&
+                            double.TryParse(lonText, NumberStyles.Float, CultureInfo.InvariantCulture, out lng) &&
+                            ToaDoHopLe(lat, lng))
+                        {
+                            var point = new GeoPoint(lat, lng);
+                            _toaDoCache[diaChi] = point;
+                            return point;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Nếu OpenStreetMap tạm thời không phản hồi, bộ lọc vẫn dùng tọa độ đã lưu hoặc fallback cùng khu vực.
+            }
+
+            _diaChiKhongTimThay.Add(diaChi);
+            return null;
+        }
+
+        private static string DocGiaTriJson(string json, string key)
+        {
+            if (string.IsNullOrWhiteSpace(json) || string.IsNullOrWhiteSpace(key)) return null;
+            var match = Regex.Match(json, "\"" + Regex.Escape(key) + "\"\\s*:\\s*\"(?<value>[^\"]+)\"");
+            return match.Success ? match.Groups["value"].Value : null;
+        }
+
+        private static bool ToaDoHopLe(double lat, double lng)
+        {
+            if (Math.Abs(lat) < 0.000001 && Math.Abs(lng) < 0.000001) return false;
+            return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+        }
+
+        private string DiaChiKhuVuc(KhuVuc khuVuc)
+        {
+            if (khuVuc == null) return string.Empty;
+            var parts = new[]
+            {
+                khuVuc.TenKhuVuc,
+                khuVuc.Quan,
+                khuVuc.ThanhPho,
+                "Việt Nam"
+            };
+            return string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
         }
 
         private double LayBanKinhLoc()
@@ -1104,10 +1224,18 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 var khuVucs = _khuVucService.LayTatCa().ToDictionary(k => k.MaKhuVuc);
                 if (!toas.TryGetValue(room.MaToa, out toa)) return;
                 khuVucs.TryGetValue(toa.MaKhuVuc, out khuVuc);
+                var toaDoPhong = LayToaDoToa(toa, khuVuc);
+                GeoPoint tamBanKinh = null;
+                if (_cboKhuVuc.SelectedValue != null && !string.IsNullOrWhiteSpace(_cboKhuVuc.SelectedValue.ToString()))
+                {
+                    KhuVuc selectedKhuVuc;
+                    if (khuVucs.TryGetValue(_cboKhuVuc.SelectedValue.ToString(), out selectedKhuVuc))
+                        tamBanKinh = LayToaDoKhuVuc(selectedKhuVuc);
+                }
 
                 if (_mapView.CoreWebView2 == null)
                     await _mapView.EnsureCoreWebView2Async(null);
-                _mapView.NavigateToString(TaoHtmlBanDoToa(room, toa, khuVuc));
+                _mapView.NavigateToString(TaoHtmlBanDoToa(room, toa, khuVuc, toaDoPhong, tamBanKinh, LayBanKinhLoc()));
             }
             catch
             {
@@ -1141,11 +1269,17 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 </html>";
         }
 
-        private string TaoHtmlBanDoToa(CanHo room, Toa toa, KhuVuc khuVuc)
+        private string TaoHtmlBanDoToa(CanHo room, Toa toa, KhuVuc khuVuc, GeoPoint toaDoPhong, GeoPoint tamBanKinh, double banKinhKm)
         {
             var address = DiaChiDayDu(toa, khuVuc);
-            var fallbackLat = khuVuc != null && khuVuc.ViDo.HasValue ? khuVuc.ViDo.Value : 10.762622;
-            var fallbackLng = khuVuc != null && khuVuc.KinhDo.HasValue ? khuVuc.KinhDo.Value : 106.660172;
+            var khuVucPoint = LayToaDoKhuVuc(khuVuc);
+            var fallbackLat = toaDoPhong != null ? toaDoPhong.Lat : khuVucPoint != null ? khuVucPoint.Lat : 10.762622;
+            var fallbackLng = toaDoPhong != null ? toaDoPhong.Lng : khuVucPoint != null ? khuVucPoint.Lng : 106.660172;
+            var markerLat = toaDoPhong != null ? toaDoPhong.Lat.ToString(CultureInfo.InvariantCulture) : "null";
+            var markerLng = toaDoPhong != null ? toaDoPhong.Lng.ToString(CultureInfo.InvariantCulture) : "null";
+            var radiusLat = tamBanKinh != null ? tamBanKinh.Lat.ToString(CultureInfo.InvariantCulture) : "null";
+            var radiusLng = tamBanKinh != null ? tamBanKinh.Lng.ToString(CultureInfo.InvariantCulture) : "null";
+            var radiusMeters = Math.Max(1, banKinhKm) * 1000;
             var popup = string.Format(
                 "<b>{0} - Căn {1}</b><br/>Địa chỉ: {2}<br/>Giá: {3:N0} đ<br/>Trạng thái: {4}",
                 HtmlEncode(toa.TenToa),
@@ -1176,17 +1310,32 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
+    var knownMarker = [" + markerLat + @", " + markerLng + @"];
+    var radiusCenter = [" + radiusLat + @", " + radiusLng + @"];
+    if (radiusCenter[0] !== null && radiusCenter[1] !== null) {
+      L.circle(radiusCenter, {
+        radius: " + radiusMeters.ToString(CultureInfo.InvariantCulture) + @",
+        color: '#2563eb',
+        weight: 2,
+        fillColor: '#60a5fa',
+        fillOpacity: 0.12
+      }).addTo(map).bindPopup('Bán kính lọc: " + banKinhKm.ToString("0.#", CultureInfo.InvariantCulture) + @" km');
+    }
     function addMarker(lat, lon) {
       map.setView([lat, lon], 16);
       L.marker([lat, lon]).addTo(map).bindPopup('" + JsString(popup) + @"').openPopup();
     }
-    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent('" + JsString(address) + @"'))
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data && data.length > 0) addMarker(parseFloat(data[0].lat), parseFloat(data[0].lon));
-        else addMarker(fallback[0], fallback[1]);
-      })
-      .catch(function() { addMarker(fallback[0], fallback[1]); });
+    if (knownMarker[0] !== null && knownMarker[1] !== null) {
+      addMarker(knownMarker[0], knownMarker[1]);
+    } else {
+      fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent('" + JsString(address) + @"'))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && data.length > 0) addMarker(parseFloat(data[0].lat), parseFloat(data[0].lon));
+          else addMarker(fallback[0], fallback[1]);
+        })
+        .catch(function() { addMarker(fallback[0], fallback[1]); });
+    }
   </script>
 </body>
 </html>";

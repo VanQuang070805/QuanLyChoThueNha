@@ -402,40 +402,67 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void btnLayToaDo_Click(object sender, EventArgs e)
         {
-            var address = string.Format("{0}, {1}, {2}, Viet Nam",
-                txtTen.Text,
-                cboQuan.SelectedItem == null ? string.Empty : cboQuan.SelectedItem.ToString(),
-                cboThanhPho.SelectedItem == null ? string.Empty : cboThanhPho.SelectedItem.ToString());
+            var ten = txtTen.Text;
+            var quan = cboQuan.SelectedItem == null ? string.Empty : cboQuan.SelectedItem.ToString();
+            var thanhPho = cboThanhPho.SelectedItem == null ? string.Empty : cboThanhPho.SelectedItem.ToString();
+            var addresses = new[]
+            {
+                string.Format("{0}, {1}, {2}, Việt Nam", ten, quan, thanhPho),
+                string.Format("{0}, {1}, Việt Nam", quan, thanhPho),
+                string.Format("{0}, Việt Nam", thanhPho)
+            };
 
             try
             {
-                using (var client = new WebClient())
+                string lat = null;
+                string lon = null;
+                string addressFound = null;
+                foreach (var address in addresses.Where(a => !string.IsNullOrWhiteSpace(a)))
                 {
-                    client.Headers[HttpRequestHeader.UserAgent] = "QuanLyChoThueNha/1.0";
-                    var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
-                        Uri.EscapeDataString(address);
-                    var json = client.DownloadString(url);
-                    var lat = DocGiaTriJson(json, "lat");
-                    var lon = DocGiaTriJson(json, "lon");
-                    if (string.IsNullOrWhiteSpace(lat) || string.IsNullOrWhiteSpace(lon))
+                    LayToaDoTuOpenStreetMap(address, out lat, out lon);
+                    if (!string.IsNullOrWhiteSpace(lat) && !string.IsNullOrWhiteSpace(lon))
                     {
-                        MessageBox.Show("Không tìm thấy tọa độ từ địa chỉ này.", "Bản đồ",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
+                        addressFound = address;
+                        break;
                     }
-
-                    numViDo.Value = ClampCoordinate(double.Parse(lat, System.Globalization.CultureInfo.InvariantCulture),
-                        numViDo.Minimum, numViDo.Maximum);
-                    numKinhDo.Value = ClampCoordinate(double.Parse(lon, System.Globalization.CultureInfo.InvariantCulture),
-                        numKinhDo.Minimum, numKinhDo.Maximum);
-                    MessageBox.Show("Đã lấy tọa độ từ OpenStreetMap.", "Bản đồ",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+
+                if (string.IsNullOrWhiteSpace(lat) || string.IsNullOrWhiteSpace(lon))
+                {
+                    MessageBox.Show("Không tìm thấy tọa độ từ khu vực/quận/thành phố này.", "Bản đồ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                numViDo.Value = ClampCoordinate(double.Parse(lat, System.Globalization.CultureInfo.InvariantCulture),
+                    numViDo.Minimum, numViDo.Maximum);
+                numKinhDo.Value = ClampCoordinate(double.Parse(lon, System.Globalization.CultureInfo.InvariantCulture),
+                    numKinhDo.Minimum, numKinhDo.Maximum);
+                MessageBox.Show("Đã lấy tọa độ từ OpenStreetMap: " + addressFound, "Bản đồ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Không lấy được tọa độ: " + ex.Message, "Bản đồ",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void LayToaDoTuOpenStreetMap(string address, out string lat, out string lon)
+        {
+            lat = string.Empty;
+            lon = string.Empty;
+            if (string.IsNullOrWhiteSpace(address)) return;
+
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            using (var client = new WebClient())
+            {
+                client.Headers[HttpRequestHeader.UserAgent] = "QuanLyChoThueNha/1.0";
+                var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
+                    Uri.EscapeDataString(address);
+                var json = client.DownloadString(url);
+                lat = DocGiaTriJson(json, "lat");
+                lon = DocGiaTriJson(json, "lon");
             }
         }
 

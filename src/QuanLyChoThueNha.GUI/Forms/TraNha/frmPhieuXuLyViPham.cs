@@ -19,28 +19,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
 
         private static IEnumerable<FieldDefinition> Fields()
         {
-            var canHoById = new CanHoService().LayTatCa()
-                .GroupBy(c => c.MaCanHo)
-                .ToDictionary(g => g.Key, g => g.First());
-            var toaById = new ToaService().LayTatCa()
-                .GroupBy(t => t.MaToa)
-                .ToDictionary(g => g.Key, g => g.First());
-
-            var hopDongOptions = new HopDongService().LayTatCa()
-                .Where(h => h.TrangThai == "HieuLuc")
-                .OrderBy(h => h.MaHopDong)
-                .Select(h => new ComboOption(h.MaHopDong,
-                    string.Format("{0} | Khach {1} | {2} | {3}",
-                        h.MaHopDong,
-                        h.MaKhach,
-                        LayTenCanHo(h.MaCanHo, canHoById),
-                        LayTenToa(h.MaCanHo, canHoById, toaById))))
-                .ToList();
-
             return new[]
             {
                 new FieldDefinition("MaViPham", "Ma vi pham", typeof(string), true),
-                FieldDefinition.Lookup("MaHopDong", "Ma hop dong", hopDongOptions),
+                FieldDefinition.Lookup("MaHopDong", "Hop dong", TaoHopDongOptions(false)),
                 new FieldDefinition("MaNhanVien", "Ma nhan vien", typeof(string), true),
                 new FieldDefinition("LoaiViPham", "Loai vi pham"),
                 new FieldDefinition("MoTa", "Mo ta", typeof(string), false, null, true),
@@ -50,6 +32,21 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                     new[] { "ChoXuLy", "DaThanhToan", "DaKhauTru" }),
                 new FieldDefinition("NgayGhiNhan", "Ngay ghi nhan", typeof(System.DateTime), true)
             };
+        }
+
+        private static List<ComboOption> TaoHopDongOptions(bool chiHopDongHieuLuc)
+        {
+            var options = new List<ComboOption> { new ComboOption(string.Empty, "(Chon hop dong)") };
+            var hopDongs = new HopDongService().LayTatCa();
+            if (chiHopDongHieuLuc)
+                hopDongs = hopDongs.Where(h => h.TrangThai == "HieuLuc");
+
+            options.AddRange(hopDongs
+                .OrderBy(h => h.MaHopDong)
+                .Select(h => new ComboOption(h.MaHopDong,
+                    string.Format("{0} - Can ho {1} - Khach {2} - {3}",
+                        h.MaHopDong, h.MaCanHo, h.MaKhach, h.TrangThai))));
+            return options;
         }
 
         protected override IEnumerable<PhieuXuLyViPham> GetItems()
@@ -64,6 +61,21 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             if (item.TruVaoCoc) item.TinhTrang = "ChoXuLy";
             return _service.GhiNhan(item, out error);
+        }
+
+        protected override void OnAfterAdd()
+        {
+            NapHopDongOptions(true);
+        }
+
+        private void NapHopDongOptions(bool chiHopDongHieuLuc)
+        {
+            var editor = GetEditor("MaHopDong") as ComboBox;
+            if (editor == null) return;
+            editor.DataSource = TaoHopDongOptions(chiHopDongHieuLuc);
+            editor.DisplayMember = "Display";
+            editor.ValueMember = "Value";
+            if (editor.Items.Count > 0) editor.SelectedIndex = 0;
         }
 
         protected override bool UpdateItem(PhieuXuLyViPham item, out string error)
@@ -152,24 +164,6 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             if (string.IsNullOrWhiteSpace(maNhanVien)) return "Admin";
             string hoTen;
             return nhanViens.TryGetValue(maNhanVien, out hoTen) ? hoTen : maNhanVien;
-        }
-
-        private static string LayTenCanHo(string maCanHo, IDictionary<string, CanHo> canHoById)
-        {
-            CanHo canHo;
-            return canHoById.TryGetValue(maCanHo, out canHo) ? "Can " + canHo.SoCanHo : maCanHo;
-        }
-
-        private static string LayTenToa(
-            string maCanHo,
-            IDictionary<string, CanHo> canHoById,
-            IDictionary<string, Toa> toaById)
-        {
-            CanHo canHo;
-            if (!canHoById.TryGetValue(maCanHo, out canHo)) return string.Empty;
-
-            Toa toa;
-            return toaById.TryGetValue(canHo.MaToa, out toa) ? toa.TenToa : canHo.MaToa;
         }
 
         private static void GanThongTinHienThi(IEnumerable<PhieuXuLyViPham> items)

@@ -156,6 +156,36 @@ namespace QuanLyChoThueNha.BLL.Services
             return hopDong.TrangThai;
         }
 
+        public bool CapNhatTrangThai(string maHopDong, string trangThai, out string loi)
+        {
+            loi = string.Empty;
+            if (string.IsNullOrWhiteSpace(maHopDong))
+            {
+                loi = "Vui long chon hop dong can cap nhat.";
+                return false;
+            }
+
+            trangThai = (trangThai ?? string.Empty).Trim();
+            if (trangThai != "HieuLuc" && trangThai != "HetHan" && trangThai != "DaHuy")
+            {
+                loi = "Trang thai hop dong khong hop le.";
+                return false;
+            }
+
+            var hopDong = _uow.HopDongs.GetById(maHopDong);
+            if (hopDong == null)
+            {
+                loi = "Hop dong khong ton tai.";
+                return false;
+            }
+
+            hopDong.TrangThai = trangThai;
+            AuditHelper.GanNguoiThaoTac(hopDong);
+            _uow.HopDongs.Update(hopDong);
+            _uow.Complete();
+            return true;
+        }
+
         private void CapNhatHopDongHetHan()
         {
             var expired = _uow.HopDongs

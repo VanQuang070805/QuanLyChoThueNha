@@ -114,6 +114,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         // Goi khi vao trang thai Add (sau save thanh cong, khi bam "Them", khi form load).
         // Override de reset ma tu sinh hoac dien san cac truong co dinh.
         protected virtual void OnAfterAdd() { }
+        protected virtual void OnAfterEdit() { }
 
         protected void AddCommandButton(string text, EventHandler handler)
         {
@@ -548,6 +549,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _btnDelete.Enabled = false;
             _btnRefresh.Text = "Hủy";
             UpdateButtonStyles();
+            OnAfterEdit();
         }
 
         // Bat/tat cac editor KHONG ReadOnly theo mode.
