@@ -1179,11 +1179,55 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             var anh = _canHoService.LayAnhDaiDien(maCanHo);
             if (anh != null && File.Exists(anh.DuongDanAnh))
             {
-                using (var temp = Image.FromFile(anh.DuongDanAnh))
-                    picture.Image = new Bitmap(temp);
-                return;
+                Image preview;
+                if (TryCreateRoomPreviewImage(anh.DuongDanAnh, picture.Width, picture.Height, out preview))
+                {
+                    picture.Image = preview;
+                    return;
+                }
             }
 
+            picture.Image = CreateRoomPlaceholderImage();
+        }
+
+        private static bool TryCreateRoomPreviewImage(string path, int maxWidth, int maxHeight, out Image preview)
+        {
+            preview = null;
+            try
+            {
+                if (maxWidth <= 0) maxWidth = 420;
+                if (maxHeight <= 0) maxHeight = 220;
+
+                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var original = Image.FromStream(stream, false, true))
+                {
+                    var ratio = Math.Min((float)maxWidth / original.Width, (float)maxHeight / original.Height);
+                    if (ratio <= 0) ratio = 1f;
+                    if (ratio > 1f) ratio = 1f;
+
+                    var width = Math.Max(1, (int)(original.Width * ratio));
+                    var height = Math.Max(1, (int)(original.Height * ratio));
+                    var bitmap = new Bitmap(width, height);
+                    using (var g = Graphics.FromImage(bitmap))
+                    {
+                        g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                        g.DrawImage(original, 0, 0, width, height);
+                    }
+                    preview = bitmap;
+                    return true;
+                }
+            }
+            catch
+            {
+                preview = null;
+                return false;
+            }
+        }
+
+        private static Image CreateRoomPlaceholderImage()
+        {
             var bitmap = new Bitmap(420, 220);
             using (var g = Graphics.FromImage(bitmap))
             {
@@ -1196,7 +1240,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     g.DrawString(text, font, brush, (bitmap.Width - size.Width) / 2, (bitmap.Height - size.Height) / 2);
                 }
             }
-            picture.Image = bitmap;
+            return bitmap;
         }
 
         private async void HienThiBanDoMacDinh()

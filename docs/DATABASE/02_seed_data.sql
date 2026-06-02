@@ -28,7 +28,17 @@ VALUES ('KH001','TK003',N'Lê Văn Khách','012345678',N'Hà Nội','1995-06-15'
 INSERT INTO KhuVuc (MaKhuVuc, MaAdmin, TenKhuVuc, Quan, ThanhPho, ViDo, KinhDo)
 VALUES
 ('KV001','AD001',N'Khu Cầu Giấy',N'Cầu Giấy',N'Hà Nội',21.036237,105.790583),
-('KV002','AD001',N'Khu Đống Đa',N'Đống Đa',N'Hà Nội',21.018072,105.829949);
+('KV002','AD001',N'Khu Đống Đa',N'Đống Đa',N'Hà Nội',21.018072,105.829949),
+('KV003','AD001',N'Khu Ba Đình',N'Ba Đình',N'Hà Nội',21.035916,105.814120),
+('KV004','AD001',N'Khu Hoàn Kiếm',N'Hoàn Kiếm',N'Hà Nội',21.028511,105.854167),
+('KV005','AD001',N'Khu Hai Bà Trưng',N'Hai Bà Trưng',N'Hà Nội',21.006944,105.857222),
+('KV006','AD001',N'Khu Thanh Xuân',N'Thanh Xuân',N'Hà Nội',20.993134,105.812259),
+('KV007','AD001',N'Khu Tây Hồ',N'Tây Hồ',N'Hà Nội',21.068123,105.823066),
+('KV008','AD001',N'Khu Nam Từ Liêm',N'Nam Từ Liêm',N'Hà Nội',21.016886,105.765458),
+('KV009','AD001',N'Khu Hà Đông',N'Hà Đông',N'Hà Nội',20.971208,105.778393),
+('KV010','AD001',N'Khu Long Biên',N'Long Biên',N'Hà Nội',21.038377,105.888161),
+('KV011','AD001',N'Khu Hoàng Mai',N'Hoàng Mai',N'Hà Nội',20.974388,105.868813),
+('KV012','AD001',N'Khu Gia Lâm',N'Gia Lâm',N'Hà Nội',21.024625,105.941244);
 
 INSERT INTO LoaiCanHo (MaLoai, MaAdmin, TenLoai, MoTa)
 VALUES

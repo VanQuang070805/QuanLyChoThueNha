@@ -17,7 +17,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
     {
         public FieldDefinition(string propertyName, string caption, Type valueType = null,
             bool readOnly = false, string[] options = null, bool multiline = false,
-            IEnumerable<ComboOption> lookupOptions = null)
+            IEnumerable<ComboOption> lookupOptions = null, bool addOnly = false)
         {
             PropertyName = propertyName;
             Caption = caption;
@@ -26,6 +26,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             Options = options;
             Multiline = multiline;
             LookupOptions = lookupOptions == null ? null : lookupOptions.ToList();
+            AddOnly = addOnly;
         }
 
         public string PropertyName { get; private set; }
@@ -35,6 +36,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         public string[] Options { get; private set; }
         public bool Multiline { get; private set; }
         public IList<ComboOption> LookupOptions { get; private set; }
+        public bool AddOnly { get; private set; }
 
         public static FieldDefinition Lookup(string propertyName, string caption,
             IEnumerable<ComboOption> options, bool readOnly = false)
@@ -442,6 +444,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                     Dock = DockStyle.Top,
                     ReadOnly = true,
                     Multiline = field.Multiline,
+                    UseSystemPasswordChar = field.PropertyName.IndexOf("MatKhau", StringComparison.OrdinalIgnoreCase) >= 0,
                     Height = field.Multiline ? 66 : 28,
                     ScrollBars = field.Multiline ? ScrollBars.Vertical : ScrollBars.None
                 };
@@ -560,10 +563,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             {
                 if (field.ReadOnly) continue;
                 var editor = _editors[field.PropertyName];
+                var fieldEnabled = enabled && (!field.AddOnly || _mode == FormMode.Adding);
                 if (editor is TextBox)
-                    ((TextBox)editor).ReadOnly = !enabled;
+                    ((TextBox)editor).ReadOnly = !fieldEnabled;
                 else
-                    editor.Enabled = enabled;
+                    editor.Enabled = fieldEnabled;
             }
         }
 
@@ -640,6 +644,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 EnterViewMode();
                 return;
             }
+            OnRefreshRequested();
+        }
+
+        protected virtual void OnRefreshRequested()
+        {
             ReloadData();
             EnterAddMode();
         }
@@ -678,7 +687,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 {
                     var picker = (DateTimePicker)editor;
                     if (value == null) picker.Checked = false;
-                    else { picker.Checked = true; picker.Value = (DateTime)value; }
+                    else
+                    {
+                        picker.Checked = true;
+                        SetDatePickerValueSafe(picker, (DateTime)value);
+                    }
                 }
                 else if (editor is NumericUpDown)
                 {
@@ -691,11 +704,22 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             }
         }
 
+        private static void SetDatePickerValueSafe(DateTimePicker picker, DateTime value)
+        {
+            var date = value.Date;
+            if (date < picker.MinDate)
+                picker.MinDate = date;
+            if (date > picker.MaxDate)
+                picker.MaxDate = date;
+            picker.Value = date;
+        }
+
         private T ReadInputs(T item, bool updateMode)
         {
             foreach (var field in _fields)
             {
                 if (field.ReadOnly) continue;   // luon bo qua truong ReadOnly
+                if (updateMode && field.AddOnly) continue;
                 var property = GetProperty(field.PropertyName);
                 var value = ReadEditorValue(field, property.PropertyType);
                 property.SetValue(item, value, null);

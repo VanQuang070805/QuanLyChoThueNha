@@ -15,7 +15,6 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         public frmQuanLyTaiKhoan() : base("Quan ly Tai khoan", Fields())
         {
             HideDeleteButton();
-            AddCommandButton("Tao moi", BtnTaoMoi_Click);
             AddCommandButton("Khoa", BtnKhoa_Click);
             AddCommandButton("Mo khoa", BtnMoKhoa_Click);
             SetEditorValue("MaTaiKhoan", _service.LayMaTaiKhoanTiepTheo());
@@ -27,7 +26,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             {
                 new FieldDefinition("MaTaiKhoan", "Ma tai khoan", typeof(string), true),
                 new FieldDefinition("TenDangNhap", "Ten dang nhap"),
-                new FieldDefinition("MatKhauHash", "Mat khau", typeof(string), true),
+                new FieldDefinition("MatKhauHash", "Mat khau", typeof(string), false, null, false, null, true),
                 new FieldDefinition("Email", "Email"),
                 new FieldDefinition("SoDienThoai", "So dien thoai"),
                 new FieldDefinition("VaiTro", "Vai tro", typeof(string), false,
@@ -46,12 +45,12 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         protected override void AfterGridBound()
         {
             if (Grid.Columns.Contains("MatKhauHash"))
-                Grid.Columns["MatKhauHash"].HeaderText = "Mat khau";
+                Grid.Columns["MatKhauHash"].Visible = false;
         }
 
         protected override bool AddItem(TaiKhoan item, out string error)
         {
-            return _service.TaoTaiKhoan(item.TenDangNhap, "Admin@123", item.Email,
+            return _service.TaoTaiKhoan(item.TenDangNhap, item.MatKhauHash, item.Email,
                 item.SoDienThoai, item.VaiTro, out error);
         }
 
@@ -66,19 +65,22 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             return false;
         }
 
-        private void BtnTaoMoi_Click(object sender, EventArgs e)
-        {
-            GoToAddMode();
-        }
-
         protected override void OnAfterAdd()
         {
+            DatMaTaiKhoanMoi();
+        }
+
+        protected override void OnRefreshRequested()
+        {
+            ReloadData();
+            ClearFormInputs();
             DatMaTaiKhoanMoi();
         }
 
         private void DatMaTaiKhoanMoi()
         {
             SetEditorValue("MaTaiKhoan", _service.LayMaTaiKhoanTiepTheo());
+            SetEditorValue("MatKhauHash", string.Empty);
             SetEditorValue("VaiTro", "NhanVien");
             SetEditorValue("TrangThai", true);
         }

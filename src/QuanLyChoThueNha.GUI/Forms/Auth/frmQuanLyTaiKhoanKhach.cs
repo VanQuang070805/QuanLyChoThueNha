@@ -36,7 +36,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             public bool   TrangThai    { get; set; }
         }
 
-        private enum FormMode { View, Editing }
+        private enum FormMode { View, Adding, Editing }
 
         private readonly KhachThueService _khachSvc  = new KhachThueService();
         private readonly TaiKhoanService  _tkSvc     = new TaiKhoanService();
@@ -49,6 +49,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         private MaterialTextBox txtMaKhach;
         private MaterialTextBox txtMaTaiKhoan;
         private MaterialTextBox txtTenDangNhap;
+        private MaterialTextBox txtMatKhau;
         private MaterialTextBox txtHoTen;
         private MaterialTextBox txtCmnd;
         private MaterialTextBox txtDiaChi;
@@ -151,6 +152,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             txtMaKhach     = Txt(string.Empty, true);
             txtMaTaiKhoan  = Txt(string.Empty, true);
             txtTenDangNhap = Txt("Tên đăng nhập", true);  // khong cho doi TDN o day
+            txtMatKhau     = Txt("Mật khẩu", true);
+            txtMatKhau.Password = true;
             txtHoTen       = Txt("Họ tên", false);
             txtCmnd        = Txt("CMND/CCCD", false);
             txtDiaChi      = Txt("Địa chỉ", false);
@@ -174,6 +177,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             AddField(right, "Mã khách",      txtMaKhach);
             AddField(right, "Mã tài khoản",  txtMaTaiKhoan);
             AddField(right, "Tên đăng nhập", txtTenDangNhap);
+            AddField(right, "Mật khẩu *",    txtMatKhau);
             AddField(right, "Họ tên *",      txtHoTen);
             AddField(right, "CMND/CCCD *",   txtCmnd);
             AddField(right, "Địa chỉ",       txtDiaChi);
@@ -231,8 +235,30 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             _mode = FormMode.View;
             HideMsg(); SetEditorsEnabled(false);
             btnSua.Text    = "Sửa thông tin";
+            btnThemMoi.Text = "Thêm mới";
             btnLamMoi.Text = "Làm mới";
             UpdateActionButtons();
+            UpdateButtonStyles();
+        }
+
+        private void EnterAddMode()
+        {
+            _mode = FormMode.Adding;
+            HideMsg();
+            grid.ClearSelection();
+            ClearForm();
+            txtMaKhach.Text = _khachSvc.LayMaKhachTiepTheo();
+            txtMaTaiKhoan.Text = _khachSvc.LayMaTaiKhoanTiepTheo();
+            chkTrangThai.Checked = true;
+            SetEditorsEnabled(true);
+            txtTenDangNhap.ReadOnly = false;
+            txtMatKhau.ReadOnly = false;
+            btnSua.Enabled = false;
+            btnThemMoi.Text = "Lưu";
+            btnLamMoi.Text = "Hủy";
+            btnKhoa.Enabled = false;
+            btnMoKhoa.Enabled = false;
+            txtTenDangNhap.Focus();
             UpdateButtonStyles();
         }
 
@@ -241,6 +267,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             _mode = FormMode.Editing;
             HideMsg();
             // Chi cho sua thong tin khach, khong cho sua tai khoan
+            txtTenDangNhap.ReadOnly = true;
+            txtMatKhau.ReadOnly   = true;
             txtHoTen.ReadOnly    = false;
             txtCmnd.ReadOnly     = false;
             txtDiaChi.ReadOnly   = false;
@@ -256,6 +284,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private void SetEditorsEnabled(bool enabled)
         {
+            txtTenDangNhap.ReadOnly = !enabled;
+            txtMatKhau.ReadOnly  = !enabled;
             txtHoTen.ReadOnly   = !enabled;
             txtCmnd.ReadOnly    = !enabled;
             txtDiaChi.ReadOnly  = !enabled;
@@ -266,6 +296,17 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private void UpdateActionButtons()
         {
+            if (_mode == FormMode.Adding)
+            {
+                btnSua.Enabled = false;
+                btnThemMoi.Enabled = true;
+                btnLamMoi.Enabled = true;
+                btnKhoa.Enabled = false;
+                btnMoKhoa.Enabled = false;
+                UpdateButtonStyles();
+                return;
+            }
+
             var item = CurrentVM();
             bool hasSelection = item != null;
             btnSua.Enabled    = hasSelection;
@@ -322,15 +363,47 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private void BtnThemMoi_Click(object sender, EventArgs e)
         {
-            using (var form = new frmKhachThue())
+            if (_mode != FormMode.Adding)
             {
-                form.ShowDialog(this);
+                EnterAddMode();
+                return;
             }
+
+            string loi;
+            var khach = DocKhachTuForm();
+            try
+            {
+                if (!_khachSvc.TaoKhachKemTaiKhoan(khach, txtTenDangNhap.Text.Trim(),
+                    txtMatKhau.Text, txtEmail.Text.Trim(), txtSdt.Text.Trim(), out loi))
+                {
+                    ShowMsg(loi);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                var inner = ex;
+                while (inner.InnerException != null) inner = inner.InnerException;
+                ShowMsg("Lỗi lưu dữ liệu: " + inner.Message);
+                return;
+            }
+
             ReloadData();
+            EnterViewMode();
+            ShowMsg("Đã thêm tài khoản khách.", false);
         }
 
         private void BtnLamMoi_Click(object sender, EventArgs e)
         {
+            if (_mode == FormMode.Adding)
+            {
+                ReloadData();
+                grid.ClearSelection();
+                ClearForm();
+                EnterViewMode();
+                return;
+            }
+
             if (_mode == FormMode.Editing)
             {
                 // Huy - khoi phuc tu grid
@@ -340,6 +413,17 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             ReloadData();
             grid.ClearSelection();
             ClearForm();
+        }
+
+        private KhachThue DocKhachTuForm()
+        {
+            return new KhachThue
+            {
+                HoTen = txtHoTen.Text.Trim(),
+                SoCMND = txtCmnd.Text.Trim(),
+                DiaChi = txtDiaChi.Text.Trim(),
+                NgaySinh = dtpNgaySinh.Value.Date
+            };
         }
 
         private void BtnKhoa_Click(object sender, EventArgs e)
@@ -446,6 +530,9 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             Rename("NgaySinh", "Ngày sinh");
             Rename("SoDienThoai", "Số điện thoại");
             Rename("TrangThai", "Trạng thái");
+
+            if (grid.Columns.Contains("MatKhau"))
+                grid.Columns["MatKhau"].Visible = false;
         }
 
         private void Rename(string columnName, string header)
@@ -467,6 +554,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             txtMaKhach.Text     = vm.MaKhach;
             txtMaTaiKhoan.Text  = vm.MaTaiKhoan;
             txtTenDangNhap.Text = vm.TenDangNhap;
+            txtMatKhau.Clear();
             txtHoTen.Text       = vm.HoTen;
             txtCmnd.Text        = vm.SoCMND;
             txtDiaChi.Text      = vm.DiaChi;
@@ -486,6 +574,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         private void ClearForm()
         {
             txtMaKhach.Clear(); txtMaTaiKhoan.Clear(); txtTenDangNhap.Clear();
+            txtMatKhau.Clear();
             txtHoTen.Clear(); txtCmnd.Clear(); txtDiaChi.Clear();
             txtEmail.Clear(); txtSdt.Clear();
             dtpNgaySinh.Value = DateTime.Today.AddYears(-18);
@@ -500,7 +589,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         {
             var controls = new Control[]
             {
-                txtMaKhach, txtMaTaiKhoan, txtTenDangNhap, txtHoTen, txtCmnd,
+                txtMaKhach, txtMaTaiKhoan, txtTenDangNhap, txtMatKhau, txtHoTen, txtCmnd,
                 txtDiaChi, txtEmail, txtSdt, dtpNgaySinh, chkTrangThai
             };
 

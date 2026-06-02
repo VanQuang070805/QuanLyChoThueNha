@@ -243,6 +243,26 @@ namespace QuanLyChoThueNha.BLL.Services
         {
             if (string.IsNullOrWhiteSpace(maCanHo) || string.IsNullOrWhiteSpace(duongDanAnh)) return;
             if (_uow.CanHos.GetById(maCanHo) == null) return;
+            var anhHienCo = _uow.HinhAnhNhas
+                .Find(h => h.MaCanHo == maCanHo)
+                .OrderBy(h => h.NgayTaiLen)
+                .ToList();
+
+            if (anhHienCo.Count > 0)
+            {
+                var anhDaiDien = anhHienCo[0];
+                anhDaiDien.DuongDanAnh = duongDanAnh.Trim();
+                anhDaiDien.MoTa = moTa;
+                anhDaiDien.NgayTaiLen = DateTime.Now;
+                _uow.HinhAnhNhas.Update(anhDaiDien);
+
+                foreach (var anhPhu in anhHienCo.Skip(1))
+                    _uow.HinhAnhNhas.Remove(anhPhu);
+
+                _uow.Complete();
+                return;
+            }
+
             _uow.HinhAnhNhas.Add(new HinhAnhNha
             {
                 MaHinhAnh = SinhMaHinhAnh(),
