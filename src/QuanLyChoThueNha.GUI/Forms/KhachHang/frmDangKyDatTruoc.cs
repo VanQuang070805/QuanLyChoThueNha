@@ -23,6 +23,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private readonly NumericUpDown _numTienCoc = new KeyboardOnlyNumericUpDown();
         private readonly ErrorProvider _errors = new ErrorProvider();
         private readonly TaiKhoanService _taiKhoanService = new TaiKhoanService();
+        private bool _dangLocSo;
 
         public KhachThue Khach { get; private set; }
         public string TenDangNhap { get; private set; }
@@ -64,8 +65,10 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             SetupText(_txtHoTen, "Họ tên khách");
             SetupText(_txtCmnd, "CMND/CCCD");
+            SetupDigitsOnly(_txtCmnd);
             SetupText(_txtEmail, "Email nhận tài khoản");
             SetupText(_txtSdt, "Số điện thoại");
+            SetupDigitsOnly(_txtSdt);
 
             _dtpNgaySinh.Dock = DockStyle.Top;
             _dtpNgaySinh.Format = DateTimePickerFormat.Custom;
@@ -172,6 +175,17 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            string loiCmnd;
+            if (!ValidationHelper.CmndHopLe(_txtCmnd.Text.Trim(), out loiCmnd))
+            {
+                _errors.SetError(_txtCmnd, loiCmnd);
+                _txtCmnd.Clear();
+                _txtCmnd.Focus();
+                MessageBox.Show(loiCmnd, "CMND/CCCD không hợp lệ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             var tienCocToiThieu = Math.Ceiling(_room.GiaThueNiemYet * 0.1m);
             if (_numTienCoc.Value < tienCocToiThieu)
             {
@@ -207,6 +221,28 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             if (string.IsNullOrWhiteSpace(letters)) letters = "khach";
             if (string.IsNullOrWhiteSpace(tail)) tail = DateTime.Now.ToString("HHmm");
             return (letters + tail).ToLowerInvariant();
+        }
+
+        private void SetupDigitsOnly(MaterialTextBox textbox)
+        {
+            textbox.KeyPress += delegate(object sender, KeyPressEventArgs e)
+            {
+                if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+                    e.Handled = true;
+            };
+            textbox.TextChanged += delegate
+            {
+                if (_dangLocSo) return;
+
+                var digits = new string((textbox.Text ?? string.Empty).Where(char.IsDigit).ToArray());
+                if (digits == textbox.Text) return;
+
+                _dangLocSo = true;
+                var selectionStart = Math.Min(digits.Length, textbox.SelectionStart);
+                textbox.Text = digits;
+                textbox.SelectionStart = selectionStart;
+                _dangLocSo = false;
+            };
         }
 
         private static string BoDauTiengViet(string value)
