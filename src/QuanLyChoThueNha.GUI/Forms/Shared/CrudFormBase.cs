@@ -71,12 +71,21 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         protected readonly DataGridView Grid = new DataGridView();
         protected readonly TextBox TxtSearch = new PlaceholderTextBox();
         protected readonly Label LblStatus = new Label();
+        protected readonly FlowLayoutPanel FiltersPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            Margin = new Padding(0),
+            Padding = new Padding(0),
+            AutoSize = true
+        };
 
         private FormMode _mode = FormMode.View;
-        private MaterialButton _btnAdd;
-        private MaterialButton _btnUpdate;
-        private MaterialButton _btnDelete;
-        private MaterialButton _btnRefresh;
+        private RoundedButton _btnAdd;
+        private RoundedButton _btnUpdate;
+        private RoundedButton _btnDelete;
+        private RoundedButton _btnRefresh;
         private Label _lblError;
 
         protected CrudFormBase(string title, IEnumerable<FieldDefinition> fields)
@@ -117,6 +126,55 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         {
             if (control == null) return;
             _commandPanel.Controls.Add(control);
+        }
+
+        protected void AddSearchFilter(string headerText, ComboBox comboBox, int width = 140)
+        {
+            var filterBox = new RoundedPanel
+            {
+                Width = width,
+                Height = 60,
+                Radius = 12,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                Padding = new Padding(10, 4, 10, 6),
+                BackColor = Color.White,
+                Margin = new Padding(8, 0, 0, 0)
+            };
+
+            var layout = new TableLayoutPanel 
+            { 
+                Dock = DockStyle.Fill, 
+                RowCount = 2, 
+                ColumnCount = 1,
+                BackColor = Color.White,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            var label = new Label
+            {
+                Text = headerText,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(0)
+            };
+
+            comboBox.Dock = DockStyle.Fill;
+            comboBox.Font = new Font("Segoe UI", 9.5F);
+            comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBox.FlatStyle = FlatStyle.Flat;
+            comboBox.BackColor = Color.White;
+            comboBox.Margin = new Padding(0, 2, 0, 0);
+
+            layout.Controls.Add(label, 0, 0);
+            layout.Controls.Add(comboBox, 0, 1);
+            filterBox.Controls.Add(layout);
+
+            FiltersPanel.Controls.Add(filterBox);
         }
 
         protected void HideDeleteButton()
@@ -174,6 +232,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32));
 
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3 };
+            left.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             left.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             left.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
@@ -206,7 +265,21 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             TxtSearch.TextChanged += delegate { ReloadData(); };
             searchLayout.Controls.Add(TxtSearch, 0, 1);
             searchBox.Controls.Add(searchLayout);
-            left.Controls.Add(searchBox, 0, 0);
+
+            var topSearchPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                Margin = new Padding(0),
+                Padding = new Padding(0),
+                BackColor = Color.Transparent
+            };
+            topSearchPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            topSearchPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            topSearchPanel.Controls.Add(searchBox, 0, 0);
+            topSearchPanel.Controls.Add(FiltersPanel, 1, 0);
+            left.Controls.Add(topSearchPanel, 0, 0);
 
             Grid.Dock = DockStyle.Fill;
             Grid.AutoGenerateColumns = false;
@@ -244,6 +317,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 ColumnCount = 1,
                 Padding = new Padding(10)
             };
+            right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             right.TabStop = true;
             right.MouseEnter += delegate { right.Focus(); };
 
@@ -268,14 +342,15 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _commandPanel.WrapContents = true;
             _commandPanel.Margin = new Padding(0, 12, 0, 0);
 
-            _btnAdd     = CreateButton("Them",    BtnAdd_Click);
-            _btnUpdate  = CreateButton("Sua",     BtnUpdate_Click);
-            _btnDelete  = CreateButton("Xoa",     BtnDelete_Click);
-            _btnRefresh = CreateButton("Lam moi", BtnRefresh_Click);
+            _btnAdd     = CreateButton("Thêm",    BtnAdd_Click);
+            _btnUpdate  = CreateButton("Sửa",     BtnUpdate_Click);
+            _btnDelete  = CreateButton("Xóa",     BtnDelete_Click);
+            _btnRefresh = CreateButton("Làm mới", BtnRefresh_Click);
             _commandPanel.Controls.Add(_btnAdd);
             _commandPanel.Controls.Add(_btnUpdate);
             _commandPanel.Controls.Add(_btnDelete);
             _commandPanel.Controls.Add(_btnRefresh);
+            UpdateButtonStyles();
 
             right.Controls.Add(_commandPanel);
 
@@ -302,43 +377,42 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             var type = Nullable.GetUnderlyingType(field.ValueType ?? GetProperty(field.PropertyName).PropertyType)
                 ?? (field.ValueType ?? GetProperty(field.PropertyName).PropertyType);
 
+            Control ctrl;
+
             if (field.LookupOptions != null && field.LookupOptions.Count > 0)
             {
                 var combo = new ComboBox
                 {
                     Dock = DockStyle.Top,
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    Height = 30,
+                    Height = 32,
                     Enabled = false,
                     DisplayMember = "Display",
                     ValueMember = "Value"
                 };
                 combo.DataSource = field.LookupOptions.ToList();
-                return combo;
+                ctrl = combo;
             }
-
-            if (field.Options != null && field.Options.Length > 0)
+            else if (field.Options != null && field.Options.Length > 0)
             {
                 var combo = new ComboBox
                 {
                     Dock = DockStyle.Top,
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    Height = 30,
+                    Height = 32,
                     Enabled = false
                 };
                 combo.Items.AddRange(field.Options);
                 if (combo.Items.Count > 0) combo.SelectedIndex = 0;
-                return combo;
+                ctrl = combo;
             }
-
-            if (type == typeof(bool))
+            else if (type == typeof(bool))
             {
-                return new CheckBox { Dock = DockStyle.Top, Height = 28, Enabled = false };
+                ctrl = new CheckBox { Dock = DockStyle.Top, Height = 28, Enabled = false };
             }
-
-            if (type == typeof(DateTime))
+            else if (type == typeof(DateTime))
             {
-                return new DateTimePicker
+                ctrl = new DateTimePicker
                 {
                     Dock = DockStyle.Top,
                     Format = DateTimePickerFormat.Custom,
@@ -347,10 +421,9 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                     Enabled = false
                 };
             }
-
-            if (type == typeof(int) || type == typeof(decimal) || type == typeof(float) || type == typeof(double))
+            else if (type == typeof(int) || type == typeof(decimal) || type == typeof(float) || type == typeof(double))
             {
-                return new NumericUpDown
+                var num = new KeyboardOnlyNumericUpDown
                 {
                     Dock = DockStyle.Top,
                     Maximum = 1000000000000,
@@ -359,18 +432,22 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                     ThousandsSeparator = true,
                     Enabled = false
                 };
+                ctrl = num;
+            }
+            else
+            {
+                ctrl = new TextBox
+                {
+                    Dock = DockStyle.Top,
+                    ReadOnly = true,
+                    Multiline = field.Multiline,
+                    Height = field.Multiline ? 66 : 28,
+                    ScrollBars = field.Multiline ? ScrollBars.Vertical : ScrollBars.None
+                };
             }
 
-            // TextBox: bat dau o trang thai ReadOnly=true (ca readonly lan editable)
-            // SetEditorsEnabled se doi ReadOnly=false cho cac truong editable khi vao Add/Edit mode.
-            return new TextBox
-            {
-                Dock = DockStyle.Top,
-                ReadOnly = true,
-                Multiline = field.Multiline,
-                Height = field.Multiline ? 66 : 28,
-                ScrollBars = field.Multiline ? ScrollBars.Vertical : ScrollBars.None
-            };
+            ctrl.Font = new Font("Segoe UI", 10F);
+            return ctrl;
         }
 
         private void TaoCotGrid()
@@ -390,6 +467,10 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
                 else if (field.PropertyName == "MaToa" || field.PropertyName == "Toa")
                 {
                     headerText = "Tên tòa";
+                }
+                else if (field.PropertyName == "MaKhach" || field.PropertyName == "KhachThue")
+                {
+                    headerText = "Tên khách";
                 }
 
                 var column = new DataGridViewTextBoxColumn
@@ -415,12 +496,14 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             }
         }
 
-        private MaterialButton CreateButton(string text, EventHandler handler = null)
+        private RoundedButton CreateButton(string text, EventHandler handler = null)
         {
-            var btn = new MaterialButton
+            var btn = new RoundedButton
             {
                 Text = text,
-                AutoSize = true,
+                Width = 90,
+                Height = 36,
+                Radius = 10,
                 Margin = new Padding(0, 4, 6, 4)
             };
             if (handler != null) btn.Click += handler;
@@ -435,10 +518,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             HideMessage();
             ClearInputs();               // xoa trang, bo chon grid
             SetEditorsEnabled(true);     // bat cac truong co the sua
-            _btnAdd.Text     = "Luu";    _btnAdd.Enabled    = true;
-            _btnUpdate.Text  = "Sua";    _btnUpdate.Enabled = false;
+            _btnAdd.Text     = "Lưu";    _btnAdd.Enabled    = true;
+            _btnUpdate.Text  = "Sửa";    _btnUpdate.Enabled = false;
             _btnDelete.Enabled = false;
-            _btnRefresh.Text = "Lam moi";
+            _btnRefresh.Text = "Làm mới";
+            UpdateButtonStyles();
             OnAfterAdd();               // reset ma tu sinh, dien san truong co dinh
         }
 
@@ -447,10 +531,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _mode = FormMode.View;
             HideMessage();
             SetEditorsEnabled(false);   // tat het (chi xem)
-            _btnAdd.Text     = "Them";  _btnAdd.Enabled    = true;
-            _btnUpdate.Text  = "Sua";   _btnUpdate.Enabled = true;
+            _btnAdd.Text     = "Thêm";  _btnAdd.Enabled    = true;
+            _btnUpdate.Text  = "Sửa";   _btnUpdate.Enabled = true;
             _btnDelete.Enabled = true;
-            _btnRefresh.Text = "Lam moi";
+            _btnRefresh.Text = "Làm mới";
+            UpdateButtonStyles();
         }
 
         private void EnterEditMode()
@@ -458,10 +543,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             _mode = FormMode.Editing;
             HideMessage();
             SetEditorsEnabled(true);    // bat cac truong duoc phep sua
-            _btnAdd.Text     = "Them";  _btnAdd.Enabled    = false;
-            _btnUpdate.Text  = "Luu";   _btnUpdate.Enabled = true;
+            _btnAdd.Text     = "Thêm";  _btnAdd.Enabled    = false;
+            _btnUpdate.Text  = "Lưu";   _btnUpdate.Enabled = true;
             _btnDelete.Enabled = false;
-            _btnRefresh.Text = "Huy";
+            _btnRefresh.Text = "Hủy";
+            UpdateButtonStyles();
         }
 
         // Bat/tat cac editor KHONG ReadOnly theo mode.
@@ -755,6 +841,57 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
         {
             foreach (var editor in _editors.Values)
                 _errorProvider.SetError(editor, string.Empty);
+        }
+
+        private void UpdateButtonStyles()
+        {
+            ApplyButtonStyle(_btnAdd);
+            ApplyButtonStyle(_btnUpdate);
+            ApplyButtonStyle(_btnDelete);
+            ApplyButtonStyle(_btnRefresh);
+        }
+
+        private void ApplyButtonStyle(RoundedButton btn)
+        {
+            if (btn == null) return;
+
+            string txt = btn.Text;
+            if (txt == "Thêm")
+            {
+                btn.BackColor = Color.FromArgb(37, 99, 235); // blue-600
+                btn.BorderColor = Color.FromArgb(29, 78, 216); // blue-700
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Sửa")
+            {
+                btn.BackColor = Color.FromArgb(245, 158, 11); // amber-500
+                btn.BorderColor = Color.FromArgb(217, 119, 6); // amber-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Xóa")
+            {
+                btn.BackColor = Color.FromArgb(239, 68, 68); // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38); // red-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Lưu")
+            {
+                btn.BackColor = Color.FromArgb(16, 185, 129); // emerald-500
+                btn.BorderColor = Color.FromArgb(5, 150, 105); // emerald-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Hủy")
+            {
+                btn.BackColor = Color.FromArgb(239, 68, 68); // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38); // red-600
+                btn.ForeColor = Color.White;
+            }
+            else // "Làm mới" or other
+            {
+                btn.BackColor = Color.FromArgb(107, 114, 128); // gray-500
+                btn.BorderColor = Color.FromArgb(75, 85, 99); // gray-600
+                btn.ForeColor = Color.White;
+            }
         }
     }
 }

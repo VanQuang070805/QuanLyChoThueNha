@@ -11,7 +11,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
     public class frmDashboard : MaterialForm
     {
         private readonly BaoCaoService _service = new BaoCaoService();
-        private readonly FlowLayoutPanel _kpiPanel = new FlowLayoutPanel();
+        private readonly TableLayoutPanel _kpiPanel = new TableLayoutPanel();
         private readonly DataGridView _gridHopDong = new DataGridView();
         private readonly DataGridView _gridDoanhThu = new DataGridView();
 
@@ -30,26 +30,58 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             {
                 Dock = DockStyle.Fill,
                 RowCount = 3,
-                Padding = new Padding(18, 18, 18, 18),
+                Padding = new Padding(20),
                 BackColor = Color.FromArgb(248, 250, 252)
             };
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 116));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 122));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 55));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 45));
 
             _kpiPanel.Dock = DockStyle.Fill;
-            _kpiPanel.WrapContents = true;
-            _kpiPanel.AutoScroll = true;
+            _kpiPanel.RowCount = 1;
+            _kpiPanel.ColumnCount = 6;
+            _kpiPanel.Margin = new Padding(0, 4, 0, 16);
+            _kpiPanel.Padding = new Padding(0);
             _kpiPanel.BackColor = Color.FromArgb(248, 250, 252);
+            for (int i = 0; i < 6; i++)
+                _kpiPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 6f));
             root.Controls.Add(_kpiPanel, 0, 0);
 
             root.Controls.Add(CreateGroup("Hợp đồng sắp hết hạn", _gridHopDong), 0, 1);
             root.Controls.Add(CreateGroup("Doanh thu 12 tháng", _gridDoanhThu), 0, 2);
             Controls.Add(root);
-            Resize += delegate { ResizeKpis(); };
         }
 
         private Control CreateGroup(string title, DataGridView grid)
+        {
+            ConfigureGrid(grid);
+
+            var panel = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 16,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                BackColor = Color.White,
+                Margin = new Padding(0, 8, 0, 10),
+                Padding = new Padding(16)
+            };
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = Color.White };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.Controls.Add(new Label
+            {
+                Text = title,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                TextAlign = ContentAlignment.MiddleLeft
+            }, 0, 0);
+            layout.Controls.Add(grid, 0, 1);
+            panel.Controls.Add(layout);
+            return panel;
+        }
+
+        private static void ConfigureGrid(DataGridView grid)
         {
             grid.Dock = DockStyle.Fill;
             grid.ReadOnly = true;
@@ -60,34 +92,22 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             grid.BackgroundColor = Color.White;
             grid.BorderStyle = BorderStyle.None;
             grid.EnableHeadersVisualStyles = false;
+            grid.GridColor = Color.FromArgb(226, 232, 240);
+            grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            grid.RowTemplate.Height = 34;
             grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(239, 246, 255);
             grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(30, 64, 175);
             grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(239, 246, 255);
+            grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(30, 64, 175);
             grid.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
-
-            var panel = new RoundedPanel
-            {
-                Dock = DockStyle.Fill,
-                Radius = 14,
-                BorderColor = Color.FromArgb(226, 232, 240),
-                BackColor = Color.White,
-                Margin = new Padding(0, 8, 0, 8),
-                Padding = new Padding(14)
-            };
-            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = Color.White };
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            layout.Controls.Add(new Label
-            {
-                Text = title,
-                Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(15, 23, 42),
-                TextAlign = ContentAlignment.MiddleLeft
-            }, 0, 0);
-            layout.Controls.Add(grid, 0, 1);
-            panel.Controls.Add(layout);
-            return panel;
+            grid.DefaultCellStyle.BackColor = Color.White;
+            grid.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            grid.DefaultCellStyle.SelectionForeColor = Color.FromArgb(15, 23, 42);
+            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
         }
 
         private void LoadData()
@@ -106,7 +126,6 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 _gridHopDong.DataSource = _service.HopDongSapHetHan(30).ToList();
                 _gridDoanhThu.DataSource = _service.DoanhThuTheoThang(now.Year).ToList();
                 FormatGrids();
-                ResizeKpis();
             }
             catch (Exception ex)
             {
@@ -142,41 +161,47 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
 
         private void AddKpi(string title, string value, Color color)
         {
+            int index = _kpiPanel.Controls.Count;
+            int left = index == 0 ? 0 : 6;
+            int right = index == 5 ? 0 : 6;
+
             var panel = new RoundedPanel
             {
-                Width = 240,
-                Height = 92,
-                Margin = new Padding(0, 0, 12, 0),
+                Dock = DockStyle.Fill,
+                Margin = new Padding(left, 0, right, 0),
                 BackColor = color,
-                Radius = 14,
-                BorderColor = color
+                Radius = 12,
+                BorderColor = color,
+                Padding = new Padding(12, 10, 12, 10)
             };
-            panel.Controls.Add(new Label
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                BackColor = color
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.Controls.Add(new Label
             {
                 Text = title,
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Location = new Point(14, 12),
-                AutoSize = true
-            });
-            panel.Controls.Add(new Label
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
+            }, 0, 0);
+            layout.Controls.Add(new Label
             {
                 Text = value,
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 20, FontStyle.Bold),
-                Location = new Point(14, 42),
-                AutoSize = true
-            });
-            _kpiPanel.Controls.Add(panel);
-        }
-
-        private void ResizeKpis()
-        {
-            var count = Math.Max(1, _kpiPanel.Controls.Count);
-            var width = Math.Max(180, (_kpiPanel.ClientSize.Width - (12 * Math.Max(0, count - 1))) / count);
-            if (_kpiPanel.ClientSize.Width < 900) width = Math.Max(240, (_kpiPanel.ClientSize.Width - 36) / 2);
-            foreach (Control control in _kpiPanel.Controls)
-                control.Width = width;
+                Font = new Font("Segoe UI", 17F, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
+            }, 0, 1);
+            panel.Controls.Add(layout);
+            _kpiPanel.Controls.Add(panel, index, 0);
         }
     }
 }

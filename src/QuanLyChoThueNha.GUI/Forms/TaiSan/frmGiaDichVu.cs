@@ -13,7 +13,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
     {
         private readonly GiaDichVuService _service = new GiaDichVuService();
 
-        public frmGiaDichVu() : base("Quan ly Gia dich vu", Fields())
+        public frmGiaDichVu() : base("Quản lý Giá dịch vụ", Fields())
         {
         }
 
@@ -27,14 +27,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
             return new[]
             {
-                new FieldDefinition("MaGiaDichVu", "Ma gia", typeof(string), true),
-                FieldDefinition.Lookup("MaToa", "Toa nha", toaOptions),
-                new FieldDefinition("GiaDien", "Gia dien", typeof(decimal)),
-                new FieldDefinition("GiaNuoc", "Gia nuoc", typeof(decimal)),
-                new FieldDefinition("GiaDichVuChung", "Gia dich vu chung", typeof(decimal)),
-                new FieldDefinition("NgayApDung", "Ngay ap dung", typeof(DateTime)),
-                new FieldDefinition("NgayKetThuc", "Ngay ket thuc", typeof(DateTime?)),
-                new FieldDefinition("DangApDung", "Dang ap dung", typeof(bool))
+                new FieldDefinition("MaGiaDichVu", "Mã giá", typeof(string), true),
+                FieldDefinition.Lookup("MaToa", "Tòa nhà", toaOptions),
+                new FieldDefinition("GiaDien", "Giá điện", typeof(decimal)),
+                new FieldDefinition("GiaNuoc", "Giá nước", typeof(decimal)),
+                new FieldDefinition("GiaDichVuChung", "Giá dịch vụ chung", typeof(decimal)),
+                new FieldDefinition("NgayApDung", "Ngày áp dụng", typeof(DateTime)),
+                new FieldDefinition("NgayKetThuc", "Ngày kết thúc", typeof(DateTime?)),
+                new FieldDefinition("DangApDung", "Đang áp dụng", typeof(bool))
             };
         }
 

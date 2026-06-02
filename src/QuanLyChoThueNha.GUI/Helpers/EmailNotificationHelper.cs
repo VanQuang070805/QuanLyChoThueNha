@@ -16,12 +16,20 @@ namespace QuanLyChoThueNha.GUI.Helpers
             string noiDungChuyenKhoan, out string thongBao)
         {
             return GuiThongTinDatTruoc(email, hoTen, tenDangNhap, matKhauTam, maPhieu, maPhong,
-                tienCoc, ngayHetHan, noiDungChuyenKhoan, null, out thongBao);
+                tienCoc, ngayHetHan, noiDungChuyenKhoan, null, true, out thongBao);
         }
 
         public static bool GuiThongTinDatTruoc(string email, string hoTen, string tenDangNhap,
             string matKhauTam, string maPhieu, string maPhong, decimal tienCoc, DateTime ngayHetHan,
             string noiDungChuyenKhoan, string maTaiKhoan, out string thongBao)
+        {
+            return GuiThongTinDatTruoc(email, hoTen, tenDangNhap, matKhauTam, maPhieu, maPhong,
+                tienCoc, ngayHetHan, noiDungChuyenKhoan, maTaiKhoan, true, out thongBao);
+        }
+
+        public static bool GuiThongTinDatTruoc(string email, string hoTen, string tenDangNhap,
+            string matKhauTam, string maPhieu, string maPhong, decimal tienCoc, DateTime ngayHetHan,
+            string noiDungChuyenKhoan, string maTaiKhoan, bool hienThiThongTinTaiKhoan, out string thongBao)
         {
             thongBao = string.Empty;
             var subject = "SmartApart - Thong tin dat coc phong " + maPhong;
@@ -64,7 +72,7 @@ namespace QuanLyChoThueNha.GUI.Helpers
                     var qrImagePath = Config("PaymentQrImagePath", string.Empty);
                     var qrCid = File.Exists(qrImagePath) ? "smartapart_payment_qr" : null;
                     var body = TaoNoiDung(hoTen, tenDangNhap, matKhauTam, maPhieu,
-                        maPhong, tienCoc, ngayHetHan, noiDungChuyenKhoan, qrCid);
+                        maPhong, tienCoc, ngayHetHan, noiDungChuyenKhoan, qrCid, hienThiThongTinTaiKhoan);
                     message.IsBodyHtml = true;
                     if (qrCid == null)
                     {
@@ -172,7 +180,7 @@ namespace QuanLyChoThueNha.GUI.Helpers
 
         private static string TaoNoiDung(string hoTen, string tenDangNhap, string matKhauTam,
             string maPhieu, string maPhong, decimal tienCoc, DateTime ngayHetHan,
-            string noiDungChuyenKhoan, string qrCid)
+            string noiDungChuyenKhoan, string qrCid, bool hienThiThongTinTaiKhoan)
         {
             var bankCode = Config("PaymentBankCode", "MB");
             var accountNo = Config("PaymentAccountNo", "0000000000");
@@ -181,6 +189,10 @@ namespace QuanLyChoThueNha.GUI.Helpers
                 ? TaoVietQrUrl(bankCode, accountNo, accountName, tienCoc, noiDungChuyenKhoan)
                 : "cid:" + qrCid;
             var ten = string.IsNullOrWhiteSpace(hoTen) ? "quy khach" : hoTen;
+            var taiKhoanRows = hienThiThongTinTaiKhoan
+                ? @"<div class=""row""><div class=""label"">Ten dang nhap</div><div class=""value"">" + Html(tenDangNhap) + @"</div></div>
+          <div class=""row""><div class=""label"">Mat khau tam</div><div class=""value"">" + Html(matKhauTam) + @"</div></div>"
+                : @"<div class=""row""><div class=""label"">Tai khoan</div><div class=""value"">Thong tin dang nhap se duoc cap sau khi xac nhan email hoac sau khi nhan coc.</div></div>";
 
             return @"<!doctype html>
 <html>
@@ -228,8 +240,7 @@ namespace QuanLyChoThueNha.GUI.Helpers
         <div class=""card"">
           <div class=""row""><div class=""label"">Noi dung chuyen khoan</div><div class=""value"">" + Html(noiDungChuyenKhoan) + @"</div></div>
           <div class=""row""><div class=""label"">Tai khoan nhan</div><div class=""value"">" + Html(accountNo) + @" - " + Html(accountName) + @"</div></div>
-          <div class=""row""><div class=""label"">Ten dang nhap</div><div class=""value"">" + Html(tenDangNhap) + @"</div></div>
-          <div class=""row""><div class=""label"">Mat khau tam</div><div class=""value"">" + Html(matKhauTam) + @"</div></div>
+          " + taiKhoanRows + @"
         </div>
       </div>
       <div class=""qr"">

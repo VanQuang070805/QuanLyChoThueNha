@@ -41,6 +41,7 @@ namespace QuanLyChoThueNha.Model.Entities
         public string MoTa { get; set; }
 
         [Column(TypeName = "decimal")]
+        [Range(0.0, 1000000000000.0, ErrorMessage = "Phí bồi thường không được âm.")]
         public decimal PhiBoiThuong { get; set; }
 
         public bool TruVaoCoc { get; set; } = false;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using QuanLyChoThueNha.BLL.Helpers;
 using QuanLyChoThueNha.DAL.Interfaces;
+using QuanLyChoThueNha.DAL.Repositories;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.BLL.Services
@@ -26,7 +27,21 @@ namespace QuanLyChoThueNha.BLL.Services
             var hd = _uow.HopDongs.GetById(maHopDong);
             if (hd == null) { loi = "Hop dong khong ton tai."; return false; }
             if (hd.TrangThai != "HieuLuc") { loi = "Chi gia han hop dong dang hieu luc."; return false; }
-            if (ngayKetThucMoi <= hd.NgayKetThuc) { loi = "Ngay ket thuc moi phai sau ngay ket thuc hien tai."; return false; }
+            if (ngayKetThucMoi < DateTime.Today)
+            {
+                loi = "Ngày kết thúc mới không được nhỏ hơn ngày hiện tại.";
+                return false;
+            }
+            if (ngayKetThucMoi <= hd.NgayBatDau)
+            {
+                loi = "Ngày kết thúc mới phải sau ngày bắt đầu hợp đồng.";
+                return false;
+            }
+            if (ngayKetThucMoi <= hd.NgayKetThuc)
+            {
+                loi = "Ngay ket thuc moi phai sau ngay ket thuc hien tai.";
+                return false;
+            }
             var coPhieuDatTruocMo = _uow.PhieuDatTruocs.Any(p =>
                 p.MaCanHo == hd.MaCanHo &&
                 (p.TrangThai == PhieuDatTruocService.ChoThanhToanCoc ||
@@ -371,12 +386,26 @@ namespace QuanLyChoThueNha.BLL.Services
             phieu.MaPhieuTraNha = string.IsNullOrWhiteSpace(phieu.MaPhieuTraNha) ? null : phieu.MaPhieuTraNha.Trim();
             if (!ValidationHelper.KhongRong(phieu.MaHopDong, "Hop dong", out loi)) return false;
             if (_uow.HopDongs.GetById(phieu.MaHopDong) == null) { loi = "Hop dong khong ton tai."; return false; }
-            if (!string.IsNullOrWhiteSpace(phieu.MaPhieuTraNha) && _uow.PhieuTraNhas.GetById(phieu.MaPhieuTraNha) == null)
+            if (!string.IsNullOrWhiteSpace(phieu.MaPhieuTraNha))
             {
-                loi = "Phieu tra nha khong ton tai.";
-                return false;
+                var ptn = _uow.PhieuTraNhas.GetById(phieu.MaPhieuTraNha);
+                if (ptn == null)
+                {
+                    loi = "Phieu tra nha khong ton tai.";
+                    return false;
+                }
+                if (ptn.MaHopDong != phieu.MaHopDong)
+                {
+                    loi = "Phiếu trả nhà không thuộc về hợp đồng đã chọn.";
+                    return false;
+                }
             }
             if (!ValidationHelper.KhongRong(phieu.LoaiViPham, "Loai vi pham", out loi)) return false;
+            if (phieu.PhiBoiThuong < 0)
+            {
+                loi = "Phí bồi thường không được âm.";
+                return false;
+            }
             // BỔ SUNG: nếu vi phạm bị trừ vào cọc thì bắt buộc phí bồi thường > 0.
             if (phieu.TruVaoCoc && phieu.PhiBoiThuong <= 0)
             {
@@ -386,10 +415,171 @@ namespace QuanLyChoThueNha.BLL.Services
 
             phieu.MaViPham = SinhMa();
             phieu.NgayGhiNhan = DateTime.Now;
-            phieu.TinhTrang = "ChoXuLy";
+
+            // BỔ SUNG: Trạng thái tự sinh theo nghiệp vụ trừ vào cọc
+            if (phieu.TruVaoCoc)
+            {
+                phieu.TinhTrang = "ChoXuLy";
+            }
+            else
+            {
+                if (phieu.TinhTrang == "DaKhauTru")
+                {
+                    loi = "Không thể tạo phiếu vi phạm ở trạng thái đã khấu trừ.";
+                    return false;
+                }
+                if (string.IsNullOrWhiteSpace(phieu.TinhTrang) || (phieu.TinhTrang != "ChoXuLy" && phieu.TinhTrang != "DaThanhToan"))
+                {
+                    phieu.TinhTrang = "ChoXuLy";
+                }
+            }
+
             AuditHelper.GanNguoiThaoTac(phieu);
             base.Them(phieu);
             return true;
+        }
+
+        public bool CapNhat(PhieuXuLyViPham phieu, out string loi)
+        {
+            loi = string.Empty;
+
+            using (var tempUow = new UnitOfWork())
+            {
+                var original = tempUow.PhieuXuLyViPhams.GetById(phieu.MaViPham);
+                if (original == null)
+                {
+                    loi = "Phiếu vi phạm không tồn tại.";
+                    return false;
+                }
+                if (original.TinhTrang == "DaKhauTru")
+                {
+                    loi = "Không thể sửa phiếu vi phạm đã được khấu trừ vào tiền cọc.";
+                    return false;
+                }
+            }
+
+            if (!ValidationHelper.KhongRong(phieu.MaHopDong, "Hop dong", out loi)) return false;
+            if (_uow.HopDongs.GetById(phieu.MaHopDong) == null) { loi = "Hop dong khong ton tai."; return false; }
+            if (!string.IsNullOrWhiteSpace(phieu.MaPhieuTraNha))
+            {
+                var ptn = _uow.PhieuTraNhas.GetById(phieu.MaPhieuTraNha);
+                if (ptn == null)
+                {
+                    loi = "Phieu tra nha khong ton tai.";
+                    return false;
+                }
+                if (ptn.MaHopDong != phieu.MaHopDong)
+                {
+                    loi = "Phiếu trả nhà không thuộc về hợp đồng đã chọn.";
+                    return false;
+                }
+            }
+            if (!ValidationHelper.KhongRong(phieu.LoaiViPham, "Loai vi pham", out loi)) return false;
+            if (phieu.PhiBoiThuong < 0)
+            {
+                loi = "Phí bồi thường không được âm.";
+                return false;
+            }
+            if (phieu.TruVaoCoc && phieu.PhiBoiThuong <= 0)
+            {
+                loi = "Vi pham tru vao coc phai co phi boi thuong lon hon 0.";
+                return false;
+            }
+
+            // Đồng bộ trạng thái theo nghiệp vụ trừ vào cọc
+            if (phieu.TruVaoCoc)
+            {
+                phieu.TinhTrang = "ChoXuLy";
+            }
+            else
+            {
+                if (phieu.TinhTrang == "DaKhauTru")
+                {
+                    loi = "Không thể chuyển trạng thái vi phạm sang đã khấu trừ thủ công.";
+                    return false;
+                }
+                if (string.IsNullOrWhiteSpace(phieu.TinhTrang) || (phieu.TinhTrang != "ChoXuLy" && phieu.TinhTrang != "DaThanhToan"))
+                {
+                    phieu.TinhTrang = "ChoXuLy";
+                }
+            }
+
+            var tracked = _uow.PhieuXuLyViPhams.GetById(phieu.MaViPham);
+            if (tracked == null)
+            {
+                loi = "Phiếu vi phạm không tồn tại.";
+                return false;
+            }
+
+            tracked.MaHopDong = phieu.MaHopDong;
+            tracked.MaPhieuTraNha = phieu.MaPhieuTraNha;
+            tracked.LoaiViPham = phieu.LoaiViPham;
+            tracked.MoTa = phieu.MoTa;
+            tracked.PhiBoiThuong = phieu.PhiBoiThuong;
+            tracked.TruVaoCoc = phieu.TruVaoCoc;
+            tracked.TinhTrang = phieu.TinhTrang;
+
+            AuditHelper.GanNguoiThaoTac(tracked);
+            base.Sua(tracked);
+            return true;
+        }
+
+        public bool Xoa(PhieuXuLyViPham phieu, out string loi)
+        {
+            loi = string.Empty;
+            using (var tempUow = new UnitOfWork())
+            {
+                var original = tempUow.PhieuXuLyViPhams.GetById(phieu.MaViPham);
+                if (original == null)
+                {
+                    loi = "Phiếu vi phạm không tồn tại.";
+                    return false;
+                }
+                if (original.TinhTrang == "DaKhauTru")
+                {
+                    loi = "Không thể xóa phiếu vi phạm đã được khấu trừ vào tiền cọc.";
+                    return false;
+                }
+            }
+
+            var tracked = _uow.PhieuXuLyViPhams.GetById(phieu.MaViPham);
+            if (tracked != null)
+            {
+                base.Xoa(tracked);
+            }
+            return true;
+        }
+
+        public override void Sua(PhieuXuLyViPham entity)
+        {
+            if (entity != null)
+            {
+                using (var tempUow = new UnitOfWork())
+                {
+                    var original = tempUow.PhieuXuLyViPhams.GetById(entity.MaViPham);
+                    if (original != null && original.TinhTrang == "DaKhauTru")
+                    {
+                        throw new InvalidOperationException("Không thể sửa phiếu vi phạm đã được khấu trừ vào tiền cọc.");
+                    }
+                }
+            }
+            base.Sua(entity);
+        }
+
+        public override void Xoa(PhieuXuLyViPham entity)
+        {
+            if (entity != null)
+            {
+                using (var tempUow = new UnitOfWork())
+                {
+                    var original = tempUow.PhieuXuLyViPhams.GetById(entity.MaViPham);
+                    if (original != null && original.TinhTrang == "DaKhauTru")
+                    {
+                        throw new InvalidOperationException("Không thể xóa phiếu vi phạm đã được khấu trừ vào tiền cọc.");
+                    }
+                }
+            }
+            base.Xoa(entity);
         }
 
         public IEnumerable<PhieuXuLyViPham> LayTheoHopDong(string maHopDong)

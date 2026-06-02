@@ -12,6 +12,7 @@ namespace QuanLyChoThueNha.GUI.Helpers
         private static readonly object _cacheLock = new object();
         private static Dictionary<string, string> _toaNames = new Dictionary<string, string>();
         private static Dictionary<string, string> _canHoNames = new Dictionary<string, string>();
+        private static Dictionary<string, string> _khachNames = new Dictionary<string, string>();
         private static bool _cacheLoaded = false;
 
         public static void LoadNamesCache()
@@ -28,6 +29,11 @@ namespace QuanLyChoThueNha.GUI.Helpers
                     var canHoService = new CanHoService();
                     var canHos = canHoService.LayTatCa().ToList();
                     _canHoNames = canHos.ToDictionary(c => c.MaCanHo, c => string.Format("Căn {0}", c.SoCanHo));
+
+                    var khachService = new KhachThueService();
+                    var khachs = khachService.LayTatCa().ToList();
+                    _khachNames = khachs.ToDictionary(k => k.MaKhach, k => k.HoTen);
+
                     _cacheLoaded = true;
                 }
                 catch
@@ -43,6 +49,7 @@ namespace QuanLyChoThueNha.GUI.Helpers
             {
                 _toaNames.Clear();
                 _canHoNames.Clear();
+                _khachNames.Clear();
                 _cacheLoaded = false;
             }
         }
@@ -59,6 +66,13 @@ namespace QuanLyChoThueNha.GUI.Helpers
             LoadNamesCache();
             string name;
             return _toaNames.TryGetValue(maToa ?? string.Empty, out name) ? name : maToa;
+        }
+
+        public static string GetKhachName(string maKhach)
+        {
+            LoadNamesCache();
+            string name;
+            return _khachNames.TryGetValue(maKhach ?? string.Empty, out name) ? name : maKhach;
         }
 
         public static void SetupCellFormatting(DataGridView dgv)
@@ -83,6 +97,15 @@ namespace QuanLyChoThueNha.GUI.Helpers
                     if (!string.IsNullOrEmpty(val))
                     {
                         e.Value = GetToaName(val);
+                        e.FormattingApplied = true;
+                    }
+                }
+                else if (colName == "MaKhach" || colName == "KhachThue")
+                {
+                    string val = e.Value.ToString();
+                    if (!string.IsNullOrEmpty(val))
+                    {
+                        e.Value = GetKhachName(val);
                         e.FormattingApplied = true;
                     }
                 }

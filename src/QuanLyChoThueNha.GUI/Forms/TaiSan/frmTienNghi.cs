@@ -10,7 +10,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
     {
         private readonly TienNghiService _service = new TienNghiService();
 
-        public frmTienNghi() : base("Quan ly Tien nghi", Fields())
+        public frmTienNghi() : base("Quản lý Tiện nghi", Fields())
         {
         }
 
@@ -18,10 +18,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             return new[]
             {
-                new FieldDefinition("MaTienNghi", "Ma tien nghi", typeof(string), true),
-                new FieldDefinition("MaAdmin", "Ma admin", typeof(string), true),
-                new FieldDefinition("TenTienNghi", "Ten tien nghi"),
-                new FieldDefinition("MoTa", "Mo ta", typeof(string), false, null, true)
+                new FieldDefinition("MaTienNghi", "Mã tiện nghi", typeof(string), true),
+                new FieldDefinition("MaAdmin", "Mã admin", typeof(string), true),
+                new FieldDefinition("TenTienNghi", "Tên tiện nghi"),
+                new FieldDefinition("MoTa", "Mô tả", typeof(string), false, null, true)
             };
         }
 

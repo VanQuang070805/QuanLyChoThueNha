@@ -4,7 +4,7 @@ namespace QuanLyChoThueNha.GUI.Forms
     {
         private System.ComponentModel.IContainer components = null;
 
-        private System.Windows.Forms.FlowLayoutPanel panelSidebar;
+        private System.Windows.Forms.Panel panelSidebar;
         private System.Windows.Forms.Panel panelNoidung;
 
         private MaterialSkin.Controls.MaterialLabel tabDashboard;
@@ -44,7 +44,7 @@ namespace QuanLyChoThueNha.GUI.Forms
 
         private void InitializeComponent()
         {
-            this.panelSidebar = new System.Windows.Forms.FlowLayoutPanel();
+            this.panelSidebar = new System.Windows.Forms.Panel();
             this.panelNoidung = new System.Windows.Forms.Panel();
 
             this.tabDashboard = new MaterialSkin.Controls.MaterialLabel();
@@ -77,13 +77,9 @@ namespace QuanLyChoThueNha.GUI.Forms
             this.btnDangXuat = new MaterialSkin.Controls.MaterialButton();
             this.SuspendLayout();
 
-            this.panelSidebar.BackColor = System.Drawing.Color.FromArgb(25, 118, 210);
-            this.panelSidebar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panelSidebar.Height = 88;
-            this.panelSidebar.AutoScroll = true;
-            this.panelSidebar.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
-            this.panelSidebar.WrapContents = true;
-            this.panelSidebar.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
+            this.panelSidebar.BackColor = System.Drawing.Color.FromArgb(15, 23, 42);
+            this.panelSidebar.Dock = System.Windows.Forms.DockStyle.Left;
+            this.panelSidebar.Width = 250;
 
             this.panelNoidung.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelNoidung.BackColor = System.Drawing.SystemColors.Control;

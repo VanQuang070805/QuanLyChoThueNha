@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.GUI.Helpers;
 using QuanLyChoThueNha.Model.Entities;
 
@@ -29,16 +30,261 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private DataGridView gridHoaDon;
         private DataGridView gridViPham;
         private MaterialLabel lblHeader;
-        private MaterialButton btnQrThanhToan;
+        private RoundedButton btnQrThanhToan;
+        private TableLayoutPanel _shell;
+        private FlowLayoutPanel _customerMenu;
+        private Panel _contentHost;
+        private RoundedButton _btnHamburger;
+        private readonly Dictionary<string, RoundedButton> _sectionButtons = new Dictionary<string, RoundedButton>();
+        private readonly Dictionary<string, Control> _sectionViews = new Dictionary<string, Control>();
+        private string _activeSection = "dat-truoc";
+        private bool _menuCollapsed;
 
         public frmKhachHangHome()
         {
-            Text = "Giao dien Khach hang";
+            Text = "Giao diện Khách hàng";
             Size = new Size(1120, 720);
             StartPosition = FormStartPosition.CenterParent;
-            BuildLayout();
+            BuildModernLayout();
             Load += delegate { TaiDuLieu(); };
             Resize += delegate { ResizeRoomCards(); };
+        }
+
+        private void BuildModernLayout()
+        {
+            BackColor = Color.FromArgb(248, 250, 252);
+
+            _shell = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Padding = new Padding(18),
+                BackColor = Color.FromArgb(248, 250, 252)
+            };
+            _shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 238));
+            _shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+            var sidebar = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 14,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                BackColor = Color.White,
+                Padding = new Padding(12)
+            };
+
+            var sideLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 3,
+                BackColor = Color.White
+            };
+            sideLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+            sideLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            sideLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+            sidebar.Controls.Add(sideLayout);
+
+            _btnHamburger = new RoundedButton
+            {
+                Text = "Menu",
+                Dock = DockStyle.Fill,
+                Radius = 10,
+                BackColor = Color.FromArgb(15, 23, 42),
+                BorderColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.White,
+                Margin = new Padding(0, 0, 0, 8)
+            };
+            _btnHamburger.Click += delegate { ToggleCustomerMenu(); };
+            sideLayout.Controls.Add(_btnHamburger, 0, 0);
+
+            _customerMenu = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.White,
+                Padding = new Padding(0, 4, 0, 0)
+            };
+            sideLayout.Controls.Add(_customerMenu, 0, 1);
+
+            AddSectionButton("dat-truoc", "Can ho da dat");
+            AddSectionButton("hop-dong", "Hop dong");
+            AddSectionButton("hoa-don", "Hoa don");
+            AddSectionButton("vi-pham", "Vi pham");
+            AddSectionButton("can-ho-trong", "Can ho dang trong");
+
+            var btnLamMoi = new RoundedButton
+            {
+                Text = "Lam moi",
+                Dock = DockStyle.Fill,
+                Radius = 10,
+                BackColor = Color.FromArgb(241, 245, 249),
+                BorderColor = Color.FromArgb(203, 213, 225),
+                ForeColor = Color.FromArgb(51, 65, 85),
+                Margin = new Padding(0, 8, 0, 0)
+            };
+            btnLamMoi.Click += delegate { LamMoiDuLieu(); };
+            sideLayout.Controls.Add(btnLamMoi, 0, 2);
+
+            var content = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(14, 0, 0, 0)
+            };
+            content.RowStyles.Add(new RowStyle(SizeType.Absolute, 68));
+            content.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            var header = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                BackColor = Color.FromArgb(248, 250, 252)
+            };
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 162));
+
+            lblHeader = new MaterialLabel
+            {
+                Dock = DockStyle.Fill,
+                Text = "Thong tin khach hang",
+                Font = new Font("Roboto", 13F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            header.Controls.Add(lblHeader, 0, 0);
+
+            btnQrThanhToan = new RoundedButton
+            {
+                Text = "Hien QR hoa don",
+                Dock = DockStyle.Fill,
+                Radius = 10,
+                BackColor = Color.FromArgb(37, 99, 235),
+                BorderColor = Color.FromArgb(29, 78, 216),
+                ForeColor = Color.White,
+                Margin = new Padding(10, 10, 0, 10)
+            };
+            btnQrThanhToan.Click += BtnQrThanhToan_Click;
+            header.Controls.Add(btnQrThanhToan, 1, 0);
+            content.Controls.Add(header, 0, 0);
+
+            roomCards = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                WrapContents = true,
+                Padding = new Padding(8),
+                BackColor = Color.White
+            };
+            gridHopDong = CreateGrid();
+            gridHoaDon = CreateGrid();
+            gridPhieuDatTruoc = CreateGrid();
+            gridViPham = CreateGrid();
+
+            _contentHost = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White
+            };
+            _sectionViews["dat-truoc"] = CreateContentSurface(gridPhieuDatTruoc);
+            _sectionViews["hop-dong"] = CreateContentSurface(gridHopDong);
+            _sectionViews["hoa-don"] = CreateContentSurface(gridHoaDon);
+            _sectionViews["vi-pham"] = CreateContentSurface(gridViPham);
+            _sectionViews["can-ho-trong"] = CreateContentSurface(roomCards);
+
+            foreach (var view in _sectionViews.Values)
+            {
+                view.Dock = DockStyle.Fill;
+                view.Visible = false;
+                _contentHost.Controls.Add(view);
+            }
+
+            content.Controls.Add(_contentHost, 0, 1);
+            _shell.Controls.Add(sidebar, 0, 0);
+            _shell.Controls.Add(content, 1, 0);
+            Controls.Add(_shell);
+            ShowSection(_activeSection);
+        }
+
+        private Control CreateContentSurface(Control content)
+        {
+            var surface = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 14,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                BackColor = Color.White,
+                Padding = new Padding(12)
+            };
+            content.Dock = DockStyle.Fill;
+            surface.Controls.Add(content);
+            return surface;
+        }
+
+        private void AddSectionButton(string key, string text)
+        {
+            var button = new RoundedButton
+            {
+                Text = text,
+                Width = 210,
+                Height = 40,
+                Radius = 10,
+                BackColor = Color.White,
+                BorderColor = Color.Transparent,
+                ForeColor = Color.FromArgb(71, 85, 105),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(0, 3, 0, 3)
+            };
+            button.Click += delegate { ShowSection(key); };
+            _sectionButtons[key] = button;
+            _customerMenu.Controls.Add(button);
+        }
+
+        private void ShowSection(string key)
+        {
+            _activeSection = key;
+            foreach (var view in _sectionViews)
+                view.Value.Visible = view.Key == key;
+
+            foreach (var item in _sectionButtons)
+            {
+                var active = item.Key == key;
+                item.Value.BackColor = active ? Color.FromArgb(219, 234, 254) : Color.White;
+                item.Value.BorderColor = active ? Color.FromArgb(147, 197, 253) : Color.Transparent;
+                item.Value.ForeColor = active ? Color.FromArgb(29, 78, 216) : Color.FromArgb(71, 85, 105);
+            }
+
+            if (key == "can-ho-trong")
+                ResizeRoomCards();
+        }
+
+        private void ToggleCustomerMenu()
+        {
+            _menuCollapsed = !_menuCollapsed;
+            _shell.ColumnStyles[0].Width = _menuCollapsed ? 74 : 238;
+            _btnHamburger.Text = _menuCollapsed ? "=" : "Menu";
+            foreach (var item in _sectionButtons)
+            {
+                item.Value.Width = _menuCollapsed ? 44 : 210;
+                item.Value.TextAlign = _menuCollapsed ? ContentAlignment.MiddleCenter : ContentAlignment.MiddleLeft;
+                item.Value.Text = _menuCollapsed ? "." : GetSectionText(item.Key);
+            }
+        }
+
+        private string GetSectionText(string key)
+        {
+            switch (key)
+            {
+                case "dat-truoc": return "Can ho da dat";
+                case "hop-dong": return "Hop dong";
+                case "hoa-don": return "Hoa don";
+                case "vi-pham": return "Vi pham";
+                case "can-ho-trong": return "Can ho dang trong";
+                default: return key;
+            }
         }
 
         private void BuildLayout()
@@ -47,7 +293,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             {
                 Dock = DockStyle.Fill,
                 RowCount = 3,
-                Padding = new Padding(16, 76, 16, 14)
+                Padding = new Padding(16, 16, 16, 14)
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
@@ -56,7 +302,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             lblHeader = new MaterialLabel
             {
                 Dock = DockStyle.Fill,
-                Text = "Thong tin khach hang",
+                Text = "Thông tin khách hàng",
                 Font = new Font("Roboto", 13F, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -68,9 +314,27 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 WrapContents = true,
                 Padding = new Padding(0, 8, 0, 0)
             };
-            var btnLamMoi = new MaterialButton { Text = "Lam moi", AutoSize = true };
+            var btnLamMoi = new RoundedButton
+            {
+                Text = "Làm mới",
+                Width = 90,
+                Height = 36,
+                Radius = 10,
+                BackColor = Color.FromArgb(107, 114, 128),
+                BorderColor = Color.FromArgb(75, 85, 99),
+                ForeColor = Color.White
+            };
             btnLamMoi.Click += delegate { LamMoiDuLieu(); };
-            btnQrThanhToan = new MaterialButton { Text = "Hien QR hoa don", AutoSize = true };
+            btnQrThanhToan = new RoundedButton
+            {
+                Text = "Hiện QR hóa đơn",
+                Width = 140,
+                Height = 36,
+                Radius = 10,
+                BackColor = Color.FromArgb(37, 99, 235),
+                BorderColor = Color.FromArgb(29, 78, 216),
+                ForeColor = Color.White
+            };
             btnQrThanhToan.Click += BtnQrThanhToan_Click;
             filters.Controls.Add(btnLamMoi);
             filters.Controls.Add(btnQrThanhToan);
@@ -132,7 +396,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private DataGridView CreateGrid()
         {
-            return new DataGridView
+            var grid = new DataGridView
             {
                 Dock = DockStyle.Fill,
                 AllowUserToAddRows = false,
@@ -141,8 +405,25 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 RowHeadersVisible = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                BackgroundColor = Color.White
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                EnableHeadersVisualStyles = false,
+                GridColor = Color.FromArgb(226, 232, 240),
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None,
+                RowTemplate = { Height = 34 }
             };
+            grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(239, 246, 255);
+            grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(30, 64, 175);
+            grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(239, 246, 255);
+            grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(30, 64, 175);
+            grid.DefaultCellStyle.BackColor = Color.White;
+            grid.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            grid.DefaultCellStyle.SelectionForeColor = Color.FromArgb(15, 23, 42);
+            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
+            return grid;
         }
 
         private void TaiDuLieu()
@@ -239,6 +520,87 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
         private Control CreateRoomCard(CanHo room)
         {
+            return CreateModernRoomCard(room);
+        }
+
+        private Control CreateModernRoomCard(CanHo room)
+        {
+            var card = new RoundedPanel
+            {
+                Width = 300,
+                Height = 180,
+                Margin = new Padding(4, 4, 14, 14),
+                BackColor = Color.White,
+                Tag = "room-card",
+                Radius = 14,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                BorderThickness = 1,
+                Padding = new Padding(14)
+            };
+
+            var body = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 5,
+                BackColor = Color.White
+            };
+            body.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            body.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+            body.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
+            body.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            body.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+
+            body.Controls.Add(new Label
+            {
+                Text = string.Format("{0} - Can {1}", room.MaToa, room.SoCanHo),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                AutoEllipsis = true
+            }, 0, 0);
+            body.Controls.Add(new Label
+            {
+                Text = string.Format("Tang {0} | Ma phong {1}", room.TangSo, room.MaCanHo),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(100, 116, 139),
+                AutoEllipsis = true
+            }, 0, 1);
+            body.Controls.Add(new Label
+            {
+                Text = string.Format("{0:N0} VND/thang", room.GiaThueNiemYet),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(29, 78, 216),
+                AutoEllipsis = true
+            }, 0, 2);
+            body.Controls.Add(new Label
+            {
+                Text = string.Format("Tien coc: {0:N0} VND", room.TienCocNiemYet),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(71, 85, 105),
+                AutoEllipsis = true
+            }, 0, 3);
+
+            var btnDatPhong = new RoundedButton
+            {
+                Text = "Dat phong",
+                Dock = DockStyle.Fill,
+                Radius = 9,
+                BackColor = Color.FromArgb(22, 163, 74),
+                BorderColor = Color.FromArgb(21, 128, 61),
+                ForeColor = Color.White,
+                Margin = new Padding(0)
+            };
+            btnDatPhong.Click += delegate { DatPhong(room); };
+            body.Controls.Add(btnDatPhong, 0, 4);
+            card.Controls.Add(body);
+            return card;
+        }
+
+        private Control CreateLegacyRoomCard(CanHo room)
+        {
             var card = new Panel
             {
                 Width = 280,
@@ -269,10 +631,15 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 AutoSize = true
             });
 
-            var btnDatPhong = new MaterialButton
+            var btnDatPhong = new RoundedButton
             {
-                Text = "Dat phong",
-                AutoSize = true,
+                Text = "Đặt phòng",
+                Width = 100,
+                Height = 32,
+                Radius = 8,
+                BackColor = Color.FromArgb(16, 185, 129),
+                BorderColor = Color.FromArgb(5, 150, 105),
+                ForeColor = Color.White,
                 Location = new Point(8, 92)
             };
             btnDatPhong.Click += delegate { DatPhong(room); };

@@ -46,7 +46,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Shared
             {
                 Dock = DockStyle.Fill,
                 RowCount = 2,
-                Padding = new Padding(22, 78, 22, 18),
+                Padding = new Padding(22, 18, 22, 18),
                 BackColor = Color.FromArgb(248, 250, 252)
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 74));

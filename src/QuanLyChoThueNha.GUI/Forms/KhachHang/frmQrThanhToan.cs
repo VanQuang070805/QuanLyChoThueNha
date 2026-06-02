@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.KhachHang
@@ -35,8 +36,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             _soTienCanTra = Math.Max(0, hoaDon.SoTienPhaiTra - hoaDon.SoTienDaTra);
             _maThanhToan = hoaDon.MaHoaDon;
             _kyThanhToan = hoaDon.KyThanhToan;
-            _tieuDe = "QR thanh toan hoa don";
-            _noiDungChuyenKhoan = string.Format("Thanh toan {0} {1}", hoaDon.MaHoaDon, hoaDon.KyThanhToan);
+            _tieuDe = "QR thanh toán hóa đơn";
+            _noiDungChuyenKhoan = string.Format("Thanh toán {0} {1}", hoaDon.MaHoaDon, hoaDon.KyThanhToan);
             Text = _tieuDe;
             Size = new Size(520, 680);
             StartPosition = FormStartPosition.CenterParent;
@@ -64,7 +65,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             {
                 Dock = DockStyle.Fill,
                 RowCount = 3,
-                Padding = new Padding(16, 76, 16, 16)
+                Padding = new Padding(16, 16, 16, 16)
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -72,8 +73,8 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
 
             _lblInfo.Dock = DockStyle.Fill;
             _lblInfo.Text = string.Format(
-                "{0}: {1}\nThong tin: {2}\nSTK nhan: {3}\nSo tien can thanh toan: {4:N0}",
-                _hoaDon == null ? "Ma thanh toan" : "Hoa don",
+                "{0}: {1}\nThông tin: {2}\nSTK nhận: {3}\nSố tiền cần thanh toán: {4:N0}",
+                _hoaDon == null ? "Mã thanh toán" : "Hóa đơn",
                 _maThanhToan,
                 _kyThanhToan,
                 SoTaiKhoanNhan,
@@ -86,11 +87,21 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             _picture.BackColor = Color.White;
             root.Controls.Add(_picture, 0, 1);
 
-            var btnCopy = new MaterialButton { Text = "Copy thong tin", Dock = DockStyle.Left, AutoSize = true };
+            var btnCopy = new RoundedButton
+            {
+                Text = "Sao chép thông tin",
+                Dock = DockStyle.Left,
+                Width = 150,
+                Height = 36,
+                Radius = 10,
+                BackColor = Color.FromArgb(37, 99, 235),
+                BorderColor = Color.FromArgb(29, 78, 216),
+                ForeColor = Color.White
+            };
             btnCopy.Click += delegate
             {
-                Clipboard.SetText(_lblInfo.Text + "\nNoi dung: " + NoiDungChuyenKhoan());
-                MessageBox.Show("Da copy thong tin thanh toan.", "Thong bao",
+                Clipboard.SetText(_lblInfo.Text + "\nNội dung: " + NoiDungChuyenKhoan());
+                MessageBox.Show("Đã sao chép thông tin thanh toán.", "Thông báo",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             root.Controls.Add(btnCopy, 0, 2);
@@ -101,7 +112,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         {
             if (_soTienCanTra <= 0)
             {
-                _lblInfo.Text += "\nHoa don nay da duoc thanh toan du.";
+                _lblInfo.Text += "\nHóa đơn này đã được thanh toán đủ.";
                 return;
             }
 
@@ -112,7 +123,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
                 {
                     using (var temp = Image.FromFile(customQrPath))
                         _picture.Image = new Bitmap(temp);
-                    _lblInfo.Text += "\nDang dung ma QR ngan hang co dinh. Vui long nhap dung so tien va noi dung chuyen khoan.";
+                    _lblInfo.Text += "\nĐang dùng mã QR ngân hàng cố định. Vui lòng nhập đúng số tiền và nội dung chuyển khoản.";
                     return;
                 }
 
@@ -126,7 +137,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
             }
             catch
             {
-                _lblInfo.Text += "\nKhong tai duoc anh QR. Vui long dung thong tin ben duoi de chuyen khoan.";
+                _lblInfo.Text += "\nKhông tải được ảnh QR. Vui lòng dùng thông tin bên dưới để chuyển khoản.";
             }
         }
 
@@ -145,7 +156,7 @@ namespace QuanLyChoThueNha.GUI.Forms.KhachHang
         private string NoiDungChuyenKhoan()
         {
             return string.IsNullOrWhiteSpace(_noiDungChuyenKhoan)
-                ? string.Format("Thanh toan {0} {1}", _maThanhToan, _kyThanhToan)
+                ? string.Format("Thanh toán {0} {1}", _maThanhToan, _kyThanhToan)
                 : _noiDungChuyenKhoan;
         }
 

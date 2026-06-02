@@ -43,16 +43,17 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private PictureBox picAnh;
 
         // Button references de doi nhan / trang thai theo mode
-        private MaterialButton btnThem;
-        private MaterialButton btnSua;
-        private MaterialButton btnXoa;
-        private MaterialButton btnLamMoi;
+        private RoundedButton btnThem;
+        private RoundedButton btnSua;
+        private RoundedButton btnXoa;
+        private RoundedButton btnLamMoi;
+        private RoundedButton btnThemAnh;
         private Label _lblMsg;
         private string _tinhTrangHienTai = "Trong";
 
         public frmCanHo()
         {
-            Text = "Quan ly Can ho";
+            Text = "Quản lý Căn hộ";
             Size = new Size(1220, 700);
             StartPosition = FormStartPosition.CenterParent;
             _errors.BlinkStyle = ErrorBlinkStyle.NeverBlink;
@@ -68,12 +69,13 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                Padding = new Padding(12, 76, 12, 12)
+                Padding = new Padding(12, 12, 12, 12)
             };
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32));
 
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
+            left.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             left.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
@@ -116,8 +118,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 AutoScroll = true,
                 Padding = new Padding(12, 0, 0, 0)
             };
+            right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            txtMa = CreateTextBox("(tu sinh)", true);
+            txtMa = CreateTextBox(string.Empty, true);
             cboToa = CreateComboBox();
             cboLoai = CreateComboBox();
             numDienTich = CreateNumber(0, 10000, 2);
@@ -132,9 +135,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 Dock = DockStyle.Top,
                 AutoSize = false,
                 Height = 24,
-                ForeColor = Color.FromArgb(75, 85, 99)
+                ForeColor = Color.FromArgb(75, 85, 99),
+                Font = new Font("Segoe UI", 9F)
             };
-            txtMoTa = CreateTextBox("Ghi chu", false);
+            txtMoTa = CreateTextBox("Ghi chú", false);
             txtMoTa.Multiline = true;
             txtMoTa.Height = 72;
             lstTienNghi = new CheckedListBox
@@ -142,9 +146,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 Dock = DockStyle.Top,
                 Height = 110,
                 CheckOnClick = true,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 9.5F)
             };
-            lblTienNghi = new Label { Dock = DockStyle.Top, AutoSize = false, Height = 48, BorderStyle = BorderStyle.FixedSingle };
+            lblTienNghi = new Label { Dock = DockStyle.Top, AutoSize = false, Height = 48, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5F) };
             picAnh = new PictureBox
             {
                 Dock = DockStyle.Top,
@@ -157,41 +162,38 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             // Bat dau tat ca cac truong co the sua - se duoc bat khi vao Add/Edit mode
             SetEditorsEnabled(false);
 
-            AddField(right, "Ma can ho", txtMa);
-            AddField(right, "Toa nha *", cboToa);
-            AddField(right, "Loai can ho *", cboLoai);
-            AddField(right, "Dien tich (m2) *", numDienTich);
-            AddField(right, "Gia thue niem yet *", numGiaThue);
-            AddField(right, "Tien coc niem yet", numTienCoc);
-            AddField(right, "Tang so *", numTang);
-            AddField(right, "So can ho", txtSoCanHo);
-            AddField(right, "Tinh trang", cboTinhTrang);
+            AddField(right, "Mã căn hộ", txtMa);
+            AddField(right, "Tòa nhà *", cboToa);
+            AddField(right, "Loại căn hộ *", cboLoai);
+            AddField(right, "Diện tích (m²) *", numDienTich);
+            AddField(right, "Giá thuê niêm yết *", numGiaThue);
+            AddField(right, "Tiền cọc niêm yết", numTienCoc);
+            AddField(right, "Tầng số *", numTang);
+            AddField(right, "Số căn hộ", txtSoCanHo);
+            AddField(right, "Tình trạng", cboTinhTrang);
             right.Controls.Add(lblTinhTrangHienTai);
-            AddField(right, "Mo ta", txtMoTa);
-            AddField(right, "Tien nghi", lstTienNghi);
-            AddField(right, "Tien nghi da gan", lblTienNghi);
-            AddField(right, "Anh phong", picAnh);
+            AddField(right, "Mô tả", txtMoTa);
+            AddField(right, "Tiện nghi", lstTienNghi);
+            AddField(right, "Tiện nghi đã gán", lblTienNghi);
+            AddField(right, "Ảnh phòng", picAnh);
 
             var commands = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top, AutoSize = true, WrapContents = true,
                 Margin = new Padding(0, 12, 0, 0)
             };
-            btnThem   = CreateButton("Them",    btnThem_Click);
-            btnSua    = CreateButton("Sua",     btnSua_Click);
-            btnXoa    = CreateButton("Xoa",     btnXoa_Click);
-            btnLamMoi = CreateButton("Lam moi", btnLamMoi_Click);
-            var btnThemTienNghi = CreateButton("Gan tien nghi", btnThemTienNghi_Click);
-            var btnXoaTienNghi = CreateButton("Go tien nghi", btnXoaTienNghi_Click);
-            var btnThemAnh = CreateButton("Them anh", btnThemAnh_Click);
+            btnThem   = CreateButton("Thêm",    btnThem_Click);
+            btnSua    = CreateButton("Sửa",     btnSua_Click);
+            btnXoa    = CreateButton("Xóa",     btnXoa_Click);
+            btnLamMoi = CreateButton("Làm mới", btnLamMoi_Click);
+            btnThemAnh = CreateButton("Thêm ảnh", btnThemAnh_Click);
             commands.Controls.Add(btnThem);
             commands.Controls.Add(btnSua);
             commands.Controls.Add(btnXoa);
             commands.Controls.Add(btnLamMoi);
-            commands.Controls.Add(btnThemTienNghi);
-            commands.Controls.Add(btnXoaTienNghi);
             commands.Controls.Add(btnThemAnh);
             right.Controls.Add(commands);
+            UpdateButtonStyles();
 
             root.Controls.Add(left, 0, 0);
             root.Controls.Add(right, 1, 0);
@@ -221,27 +223,30 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             _mode = FormMode.Adding;
             HideMsg(); XoaTrong(); SetEditorsEnabled(true);
-            btnThem.Text  = "Luu";  btnThem.Enabled  = true;
-            btnSua.Text   = "Sua";  btnSua.Enabled   = false;
-            btnXoa.Enabled = false; btnLamMoi.Text = "Lam moi";
+            btnThem.Text  = "Lưu";  btnThem.Enabled  = true;
+            btnSua.Text   = "Sửa";  btnSua.Enabled   = false;
+            btnXoa.Enabled = false; btnLamMoi.Text = "Làm mới";
+            UpdateButtonStyles();
         }
 
         private void EnterViewMode()
         {
             _mode = FormMode.View;
             HideMsg(); SetEditorsEnabled(false);
-            btnThem.Text  = "Them"; btnThem.Enabled  = true;
-            btnSua.Text   = "Sua";  btnSua.Enabled   = true;
-            btnXoa.Enabled = true;  btnLamMoi.Text = "Lam moi";
+            btnThem.Text  = "Thêm"; btnThem.Enabled  = true;
+            btnSua.Text   = "Sửa";  btnSua.Enabled   = true;
+            btnXoa.Enabled = true;  btnLamMoi.Text = "Làm mới";
+            UpdateButtonStyles();
         }
 
         private void EnterEditMode()
         {
             _mode = FormMode.Editing;
             HideMsg(); SetEditorsEnabled(true);
-            btnThem.Text  = "Them"; btnThem.Enabled  = false;
-            btnSua.Text   = "Luu";  btnSua.Enabled   = true;
-            btnXoa.Enabled = false; btnLamMoi.Text = "Huy";
+            btnThem.Text  = "Thêm"; btnThem.Enabled  = false;
+            btnSua.Text   = "Lưu";  btnSua.Enabled   = true;
+            btnXoa.Enabled = false; btnLamMoi.Text = "Hủy";
+            UpdateButtonStyles();
         }
 
         private void SetEditorsEnabled(bool enabled)
@@ -255,6 +260,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             numTang.Enabled       = enabled;
             txtSoCanHo.ReadOnly   = !enabled;
             txtMoTa.ReadOnly      = !enabled;
+            lstTienNghi.Enabled   = enabled;
         }
 
         // ── Helper constructors ──────────────────────────────────────────────────
@@ -295,21 +301,27 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private MaterialTextBox CreateTextBox(string hint, bool readOnly)
         {
-            return new MaterialTextBox { Dock = DockStyle.Top, Hint = hint, ReadOnly = readOnly };
+            var txt = new MaterialTextBox { Dock = DockStyle.Top, Hint = hint, ReadOnly = readOnly };
+            txt.Font = new Font("Segoe UI", 10F);
+            return txt;
         }
 
         private ComboBox CreateComboBox()
         {
-            return new ComboBox { Dock = DockStyle.Top, Height = 30, DropDownStyle = ComboBoxStyle.DropDownList };
+            var combo = new ComboBox { Dock = DockStyle.Top, Height = 32, DropDownStyle = ComboBoxStyle.DropDownList };
+            combo.Font = new Font("Segoe UI", 10F);
+            return combo;
         }
 
         private NumericUpDown CreateNumber(decimal min, decimal max, int decimalPlaces)
         {
-            return new NumericUpDown
+            var num = new KeyboardOnlyNumericUpDown
             {
-                Dock = DockStyle.Top, Height = 30, Minimum = min, Maximum = max,
+                Dock = DockStyle.Top, Height = 32, Minimum = min, Maximum = max,
                 DecimalPlaces = decimalPlaces, ThousandsSeparator = true
             };
+            num.Font = new Font("Segoe UI", 10F);
+            return num;
         }
 
         private void AddField(TableLayoutPanel parent, string label, Control editor)
@@ -323,9 +335,16 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             parent.Controls.Add(editor);
         }
 
-        private MaterialButton CreateButton(string text, EventHandler handler)
+        private RoundedButton CreateButton(string text, EventHandler handler)
         {
-            var btn = new MaterialButton { Text = text, AutoSize = true, Margin = new Padding(0, 4, 6, 4) };
+            var btn = new RoundedButton
+            {
+                Text = text,
+                Width = text.Length > 8 ? 130 : 90,
+                Height = 36,
+                Radius = 10,
+                Margin = new Padding(0, 4, 6, 4)
+            };
             btn.Click += handler;
             return btn;
         }
@@ -456,17 +475,17 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 cboTinhTrang.SelectedItem = c.TinhTrang;
             else
                 cboTinhTrang.SelectedIndex = -1;
-            lblTinhTrangHienTai.Text = "Tinh trang hien tai: " + HienThiTinhTrang(c.TinhTrang);
+            lblTinhTrangHienTai.Text = "Tình trạng hiện tại: " + HienThiTinhTrang(c.TinhTrang);
             txtMoTa.Text = c.MoTa;
             NapTienNghiVaAnh(c.MaCanHo);
         }
 
         private string HienThiTinhTrang(string tinhTrang)
         {
-            if (tinhTrang == "DaDatCoc") return "Da dat coc (tu phieu dat truoc)";
-            if (tinhTrang == "DangThue") return "Dang thue (tu hop dong)";
-            if (tinhTrang == "Trong") return "Con trong";
-            if (tinhTrang == "BaoTri") return "Bao tri";
+            if (tinhTrang == "DaDatCoc") return "Đã đặt cọc (từ phiếu đặt trước)";
+            if (tinhTrang == "DangThue") return "Đang thuê (từ hợp đồng)";
+            if (tinhTrang == "Trong") return "Còn trống";
+            if (tinhTrang == "BaoTri") return "Bảo trì";
             return tinhTrang;
         }
 
@@ -482,7 +501,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                     return tienNghiById.TryGetValue(t.MaTienNghi, out ten) ? ten : t.MaTienNghi;
                 })
                 .ToList();
-            lblTienNghi.Text = names.Count == 0 ? "Chua gan tien nghi." : string.Join(", ", names);
+            lblTienNghi.Text = names.Count == 0 ? "Chưa gán tiện nghi." : string.Join(", ", names);
             CapNhatDanhSachTienNghiDaChon(maCanHo);
 
             if (picAnh.Image != null)
@@ -532,25 +551,25 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             loi = string.Empty;
             if (cboToa.SelectedValue == null)
             {
-                loi = "Vui long chon toa nha.";
+                loi = "Vui lòng chọn tòa nhà.";
                 _errors.SetError(cboToa, loi);
                 return false;
             }
             if (cboLoai.SelectedValue == null)
             {
-                loi = "Vui long chon loai can ho.";
+                loi = "Vui lòng chọn loại căn hộ.";
                 _errors.SetError(cboLoai, loi);
                 return false;
             }
             if (numDienTich.Value <= 0)
             {
-                loi = "Dien tich phai lon hon 0.";
+                loi = "Diện tích phải lớn hơn 0.";
                 _errors.SetError(numDienTich, loi);
                 return false;
             }
             if (numGiaThue.Value <= 0)
             {
-                loi = "Gia thue phai lon hon 0.";
+                loi = "Giá thuê phải lớn hơn 0.";
                 _errors.SetError(numGiaThue, loi);
                 return false;
             }
@@ -591,7 +610,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             if (!ValidateForm(out loi)) { ShowError(loi); return; }
             try
             {
-                if (!_canHoSvc.Them(DocForm(), out loi)) { ShowError(loi); return; }
+                var canHo = DocForm();
+                if (!_canHoSvc.Them(canHo, out loi)) { ShowError(loi); return; }
+                _canHoSvc.DongBoTienNghi(canHo.MaCanHo, LayTienNghiDangTick());
             }
             catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
             TaiDuLieu();
@@ -602,7 +623,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             if (_mode == FormMode.View)
             {
-                if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho can sua."); return; }
+                if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chọn căn hộ cần sửa."); return; }
                 EnterEditMode();
                 return;
             }
@@ -622,7 +643,11 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 canHo.SoCanHo       = upd.SoCanHo;
                 canHo.TinhTrang     = upd.TinhTrang;
                 canHo.MoTa          = upd.MoTa;
-                try { _canHoSvc.Sua(canHo); }
+                try 
+                { 
+                     _canHoSvc.Sua(canHo); 
+                     _canHoSvc.DongBoTienNghi(canHo.MaCanHo, LayTienNghiDangTick());
+                }
                 catch (Exception ex) { ShowError(LayLoiSauCung(ex)); return; }
                 TaiDuLieu();
                 EnterAddMode();
@@ -631,8 +656,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void btnXoa_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho can xoa."); return; }
-            if (MessageBox.Show("Xoa can ho dang chon?", "Xac nhan",
+            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chọn căn hộ cần xóa."); return; }
+            if (MessageBox.Show("Xóa căn hộ đang chọn?", "Xác nhận",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             try
             {
@@ -645,7 +670,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 TaiDuLieu();
                 EnterAddMode();
             }
-            catch (Exception ex) { ShowError("Khong the xoa vi co du lieu lien quan: " + LayLoiSauCung(ex)); }
+            catch (Exception ex) { ShowError("Không thể xóa vì có dữ liệu liên quan: " + LayLoiSauCung(ex)); }
         }
 
         private void btnLamMoi_Click(object sender, EventArgs e)
@@ -663,33 +688,17 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             EnterAddMode();
         }
 
-        private void btnThemTienNghi_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho truoc khi gan tien nghi."); return; }
-            _canHoSvc.DongBoTienNghi(txtMa.Text, LayTienNghiDangTick());
-            NapTienNghiVaAnh(txtMa.Text);
-            HideMsg();
-        }
 
-        private void btnXoaTienNghi_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho truoc khi go tien nghi."); return; }
-            foreach (var index in lstTienNghi.CheckedIndices.Cast<int>().ToList())
-                lstTienNghi.SetItemChecked(index, false);
-            _canHoSvc.DongBoTienNghi(txtMa.Text, Enumerable.Empty<string>());
-            NapTienNghiVaAnh(txtMa.Text);
-            HideMsg();
-        }
 
         private void btnThemAnh_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chon can ho truoc khi them anh."); return; }
+            if (string.IsNullOrWhiteSpace(txtMa.Text)) { ShowError("Chọn căn hộ trước khi thêm ảnh."); return; }
             using (var dialog = new OpenFileDialog())
             {
-                dialog.Title = "Chon anh phong";
+                dialog.Title = "Chọn ảnh phòng";
                 dialog.Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp;*.gif|All files|*.*";
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
-                _canHoSvc.ThemAnh(txtMa.Text, dialog.FileName, "Anh phong");
+                _canHoSvc.ThemAnh(txtMa.Text, dialog.FileName, "Ảnh phòng");
                 NapTienNghiVaAnh(txtMa.Text);
             }
             HideMsg();
@@ -714,8 +723,8 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             if (cboToa.Items.Count > 0) cboToa.SelectedIndex = 0;
             if (cboLoai.Items.Count > 0) cboLoai.SelectedIndex = 0;
             if (cboTinhTrang.Items.Count > 0) cboTinhTrang.SelectedIndex = 0;
-            if (lblTinhTrangHienTai != null) lblTinhTrangHienTai.Text = "Chi duoc chon Trong hoac BaoTri. DaDatCoc/DangThue do he thong cap nhat.";
-            lblTienNghi.Text = "Chon can ho de xem tien nghi.";
+            if (lblTinhTrangHienTai != null) lblTinhTrangHienTai.Text = "Chỉ được chọn Trống hoặc Bảo trì. Đã đặt cọc/Đang thuê do hệ thống cập nhật.";
+            lblTienNghi.Text = "Chọn căn hộ để xem tiện nghi.";
             if (picAnh.Image != null)
             {
                 picAnh.Image.Dispose();
@@ -723,6 +732,64 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             }
             dgv.ClearSelection();
             _errors.Clear();
+        }
+
+        private void UpdateButtonStyles()
+        {
+            ApplyButtonStyle(btnThem);
+            ApplyButtonStyle(btnSua);
+            ApplyButtonStyle(btnXoa);
+            ApplyButtonStyle(btnLamMoi);
+            ApplyButtonStyle(btnThemAnh);
+        }
+
+        private void ApplyButtonStyle(RoundedButton btn)
+        {
+            if (btn == null) return;
+
+            string txt = btn.Text;
+            if (txt == "Thêm")
+            {
+                btn.BackColor = Color.FromArgb(37, 99, 235); // blue-600
+                btn.BorderColor = Color.FromArgb(29, 78, 216); // blue-700
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Sửa")
+            {
+                btn.BackColor = Color.FromArgb(245, 158, 11); // amber-500
+                btn.BorderColor = Color.FromArgb(217, 119, 6); // amber-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Xóa")
+            {
+                btn.BackColor = Color.FromArgb(239, 68, 68); // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38); // red-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Lưu")
+            {
+                btn.BackColor = Color.FromArgb(16, 185, 129); // emerald-500
+                btn.BorderColor = Color.FromArgb(5, 150, 105); // emerald-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Hủy")
+            {
+                btn.BackColor = Color.FromArgb(239, 68, 68); // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38); // red-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Thêm ảnh")
+            {
+                btn.BackColor = Color.FromArgb(6, 182, 212); // cyan-500
+                btn.BorderColor = Color.FromArgb(8, 145, 178); // cyan-600
+                btn.ForeColor = Color.White;
+            }
+            else // "Làm mới" or other
+            {
+                btn.BackColor = Color.FromArgb(107, 114, 128); // gray-500
+                btn.BorderColor = Color.FromArgb(75, 85, 99); // gray-600
+                btn.ForeColor = Color.White;
+            }
         }
     }
 }

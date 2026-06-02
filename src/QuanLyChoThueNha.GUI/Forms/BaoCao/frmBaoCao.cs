@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,7 +41,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             {
                 Dock = DockStyle.Fill,
                 AutoScroll = true,
-                BackColor = Color.FromArgb(248, 249, 252)
+                BackColor = Color.FromArgb(248, 250, 252)
             };
             _scrollHost.Resize += delegate { ResizeReportRoot(); };
 
@@ -49,8 +49,8 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             {
                 Dock = DockStyle.Top,
                 RowCount = 5,
-                Padding = new Padding(18, 18, 18, 18),
-                BackColor = Color.FromArgb(248, 249, 252)
+                Padding = new Padding(20),
+                BackColor = Color.FromArgb(248, 250, 252)
             };
             _root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
             _root.RowStyles.Add(new RowStyle(SizeType.Absolute, 112));
@@ -58,7 +58,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             _root.RowStyles.Add(new RowStyle(SizeType.Percent, 34));
             _root.RowStyles.Add(new RowStyle(SizeType.Percent, 24));
 
-            var toolbar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 9 };
+            var toolbar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 9, BackColor = Color.FromArgb(248, 250, 252) };
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 48));
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
@@ -87,7 +87,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
             _cboKyBaoCao.DropDownStyle = ComboBoxStyle.DropDownList;
             _cboKyBaoCao.Items.AddRange(new object[] { "Ngày", "Tuần", "Tháng", "Năm" });
             _cboKyBaoCao.SelectedIndex = 2;
-            _cboKyBaoCao.Dock = DockStyle.Fill;
+            _cboKyBaoCao.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             _cboKyBaoCao.SelectedIndexChanged += delegate { CapNhatDinhDangMocBaoCao(); };
             toolbar.Controls.Add(_cboKyBaoCao, 2, 0);
 
@@ -99,14 +99,32 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             }, 3, 0);
             _dtpMocBaoCao.Value = DateTime.Today;
-            _dtpMocBaoCao.Dock = DockStyle.Fill;
+            _dtpMocBaoCao.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             toolbar.Controls.Add(_dtpMocBaoCao, 4, 0);
 
-            var btnXem = new MaterialButton { Text = "Xem", Dock = DockStyle.Fill };
+            var btnXem = new RoundedButton
+            {
+                Text = "Xem",
+                Height = 36,
+                Anchor = AnchorStyles.Left | AnchorStyles.Right,
+                Radius = 10,
+                BackColor = Color.FromArgb(37, 99, 235),
+                BorderColor = Color.FromArgb(29, 78, 216),
+                ForeColor = Color.White
+            };
             btnXem.Click += delegate { LoadReport(); };
             toolbar.Controls.Add(btnXem, 5, 0);
 
-            var btnExcel = new MaterialButton { Text = "Xuất Excel", Dock = DockStyle.Fill };
+            var btnExcel = new RoundedButton
+            {
+                Text = "Xuất Excel",
+                Height = 36,
+                Anchor = AnchorStyles.Left | AnchorStyles.Right,
+                Radius = 10,
+                BackColor = Color.FromArgb(16, 185, 129),
+                BorderColor = Color.FromArgb(5, 150, 105),
+                ForeColor = Color.White
+            };
             btnExcel.Click += BtnExcel_Click;
             toolbar.Controls.Add(btnExcel, 6, 0);
 
@@ -117,7 +135,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             }, 7, 0);
-            _zoomBaoCao.Dock = DockStyle.Fill;
+            _zoomBaoCao.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             _zoomBaoCao.Minimum = 80;
             _zoomBaoCao.Maximum = 140;
             _zoomBaoCao.TickFrequency = 20;
@@ -128,7 +146,8 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
 
             _kpiPanel.Dock = DockStyle.Fill;
             _kpiPanel.WrapContents = false;
-            _kpiPanel.AutoScroll = true;
+            _kpiPanel.AutoScroll = false;
+            _kpiPanel.BackColor = Color.FromArgb(248, 250, 252);
             _kpiPanel.SizeChanged += delegate { ResizeKpis(); };
             _root.Controls.Add(_kpiPanel, 0, 1);
 
@@ -261,12 +280,50 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 LoadCharts(tuNgay, denNgay, nhomTheo);
                 _gridCanhBao.DataSource = _service.HopDongCanhBao(45).ToList();
                 _gridCongNo.DataSource = _service.CongNoQuaHan().ToList();
+                DinhDangGrids();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Không tải được báo cáo: " + ex.Message, "Thông báo",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+        }
+
+        private void DinhDangGrids()
+        {
+            if (_gridCanhBao.Columns.Contains("MaHopDong")) _gridCanhBao.Columns["MaHopDong"].HeaderText = "Mã hợp đồng";
+            if (_gridCanhBao.Columns.Contains("MaCanHo")) _gridCanhBao.Columns["MaCanHo"].HeaderText = "Tên căn hộ";
+            if (_gridCanhBao.Columns.Contains("MaKhach")) _gridCanhBao.Columns["MaKhach"].HeaderText = "Tên khách";
+            if (_gridCanhBao.Columns.Contains("NgayKetThuc")) _gridCanhBao.Columns["NgayKetThuc"].HeaderText = "Ngày kết thúc";
+            if (_gridCanhBao.Columns.Contains("SoNgayConLai")) _gridCanhBao.Columns["SoNgayConLai"].HeaderText = "Số ngày còn lại";
+            if (_gridCanhBao.Columns.Contains("TrangThai")) _gridCanhBao.Columns["TrangThai"].HeaderText = "Trạng thái";
+            
+            if (_gridCanhBao.Columns.Contains("NgayKetThuc"))
+                _gridCanhBao.Columns["NgayKetThuc"].DefaultCellStyle.Format = "dd/MM/yyyy";
+            if (_gridCanhBao.Columns.Contains("TenKhach"))
+                _gridCanhBao.Columns["TenKhach"].Visible = false;
+
+            if (_gridCongNo.Columns.Contains("MaHoaDon")) _gridCongNo.Columns["MaHoaDon"].HeaderText = "Mã hóa đơn";
+            if (_gridCongNo.Columns.Contains("MaHopDong")) _gridCongNo.Columns["MaHopDong"].HeaderText = "Mã hợp đồng";
+            if (_gridCongNo.Columns.Contains("MaCanHo")) _gridCongNo.Columns["MaCanHo"].HeaderText = "Tên căn hộ";
+            if (_gridCongNo.Columns.Contains("MaKhach")) _gridCongNo.Columns["MaKhach"].HeaderText = "Tên khách";
+            if (_gridCongNo.Columns.Contains("KyThanhToan")) _gridCongNo.Columns["KyThanhToan"].HeaderText = "Kỳ thanh toán";
+            if (_gridCongNo.Columns.Contains("SoTienConNo")) _gridCongNo.Columns["SoTienConNo"].HeaderText = "Số tiền còn nợ";
+            if (_gridCongNo.Columns.Contains("NgayDaoHan")) _gridCongNo.Columns["NgayDaoHan"].HeaderText = "Ngày đáo hạn";
+            if (_gridCongNo.Columns.Contains("TrangThai")) _gridCongNo.Columns["TrangThai"].HeaderText = "Trạng thái";
+
+            if (_gridCongNo.Columns.Contains("NgayDaoHan"))
+                _gridCongNo.Columns["NgayDaoHan"].DefaultCellStyle.Format = "dd/MM/yyyy";
+            if (_gridCongNo.Columns.Contains("SoTienConNo"))
+            {
+                _gridCongNo.Columns["SoTienConNo"].DefaultCellStyle.Format = "N0";
+                _gridCongNo.Columns["SoTienConNo"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            }
+            if (_gridCongNo.Columns.Contains("TenKhach"))
+                _gridCongNo.Columns["TenKhach"].Visible = false;
+
+            QuanLyChoThueNha.GUI.Helpers.GridFormatterHelper.SetupCellFormatting(_gridCanhBao);
+            QuanLyChoThueNha.GUI.Helpers.GridFormatterHelper.SetupCellFormatting(_gridCongNo);
         }
 
         private void LoadKpis(DateTime tuNgay, DateTime denNgay)
@@ -310,7 +367,34 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 AllowUserToDeleteRows = false,
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                BackgroundColor = Color.White
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                EnableHeadersVisualStyles = false,
+                GridColor = Color.FromArgb(226, 232, 240),
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                RowTemplate = { Height = 34 },
+                ColumnHeadersDefaultCellStyle =
+                {
+                    BackColor = Color.FromArgb(239, 246, 255),
+                    ForeColor = Color.FromArgb(30, 64, 175),
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    SelectionBackColor = Color.FromArgb(239, 246, 255),
+                    SelectionForeColor = Color.FromArgb(30, 64, 175)
+                },
+                DefaultCellStyle =
+                {
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    SelectionBackColor = Color.FromArgb(219, 234, 254),
+                    SelectionForeColor = Color.FromArgb(15, 23, 42),
+                    Font = new Font("Segoe UI", 9F)
+                },
+                AlternatingRowsDefaultCellStyle =
+                {
+                    BackColor = Color.FromArgb(248, 250, 252)
+                }
             };
         }
 
@@ -321,18 +405,18 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
                 Margin = new Padding(8),
-                Padding = new Padding(12),
-                Radius = 12,
+                Padding = new Padding(16),
+                Radius = 16,
                 BorderColor = Color.FromArgb(226, 232, 240)
             };
-            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, BackColor = Color.White };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             layout.Controls.Add(new Label
             {
                 Text = title,
                 Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
                 TextAlign = ContentAlignment.MiddleLeft
             }, 0, 0);
@@ -349,28 +433,38 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                 Width = 260,
                 Height = 94,
                 Margin = new Padding(0, 0, 12, 0),
-                BackColor = Color.White,
-                BorderColor = Color.FromArgb(226, 232, 240),
-                Radius = 10,
-                Padding = new Padding(0)
+                BackColor = color,
+                BorderColor = color,
+                Radius = 12,
+                Padding = new Padding(12, 10, 12, 10)
             };
-            panel.Controls.Add(new Panel { BackColor = color, Dock = DockStyle.Top, Height = 4 });
-            panel.Controls.Add(new Label
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                BackColor = color
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.Controls.Add(new Label
             {
                 Text = title.ToUpperInvariant(),
-                ForeColor = Color.FromArgb(107, 114, 128),
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                Location = new Point(16, 18),
-                AutoSize = true
-            });
-            panel.Controls.Add(new Label
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
+            }, 0, 0);
+            layout.Controls.Add(new Label
             {
                 Text = value,
-                ForeColor = Color.FromArgb(17, 24, 39),
-                Font = new Font("Segoe UI", 18, FontStyle.Bold),
-                Location = new Point(16, 48),
-                AutoSize = true
-            });
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
+            }, 0, 1);
+            panel.Controls.Add(layout);
             _kpiPanel.Controls.Add(panel);
         }
 
@@ -402,7 +496,7 @@ namespace QuanLyChoThueNha.GUI.Forms.BaoCao
                     using (var wb = new XLWorkbook())
                     {
                         WriteSheet(wb, "Doanh thu", _service.DoanhThuTheoKy(tuNgay, denNgay, nhomTheo).Select(x => new { x.Thang, x.TongThu, x.SoHoaDon }).ToList());
-                        WriteSheet(wb, "Cong no", _service.CongNoQuaHan().ToList());
+                        WriteSheet(wb, "Công nợ", _service.CongNoQuaHan().ToList());
                         WriteSheet(wb, "Hop dong canh bao", _service.HopDongCanhBao(45).ToList());
                         WriteSheet(wb, "Loai nha", _service.LoaiCanHoDuocThueNhieuNhat(10).ToList());
                         WriteSheet(wb, "Top can ho", _service.TopCanHoDoanhThu(tuNgay, denNgay, 5).ToList());

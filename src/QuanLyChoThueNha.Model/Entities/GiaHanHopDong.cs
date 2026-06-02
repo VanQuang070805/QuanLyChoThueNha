@@ -20,6 +20,9 @@ namespace QuanLyChoThueNha.Model.Entities
         public string TenNhanVien { get; set; }
 
         [NotMapped]
+        public DateTime? NgayBatDau { get; set; }
+
+        [NotMapped]
         public string TenCanHo { get; set; }
 
         [NotMapped]

@@ -5,6 +5,7 @@ using MaterialSkin;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.GUI.Forms.Auth;
 using QuanLyChoThueNha.GUI.Forms.BaoCao;
 using QuanLyChoThueNha.GUI.Forms.HopDong;
@@ -22,6 +23,14 @@ namespace QuanLyChoThueNha.GUI.Forms
         private FlowLayoutPanel _menuItems;
         private string _activeMenuKey;
         private bool _dangDangXuat;
+
+        private Panel _panelHeader;
+        private Button _btnHamburger;
+        private Label _lblAppTitle;
+        private FlowLayoutPanel _menuFlow;
+        private System.Collections.Generic.Dictionary<string, Button> _parentButtons = new System.Collections.Generic.Dictionary<string, Button>();
+        private System.Collections.Generic.Dictionary<string, FlowLayoutPanel> _subPanels = new System.Collections.Generic.Dictionary<string, FlowLayoutPanel>();
+        private bool _isSidebarCollapsed;
 
         public Form FormDangNhapNguon { get; set; }
         public bool DangDangXuat { get { return _dangDangXuat; } }
@@ -74,194 +83,380 @@ namespace QuanLyChoThueNha.GUI.Forms
             bool qBaoCao = CoQuyenNhanVien(NhanVienPhanQuyenService.BaoCao);
 
             panelSidebar.Controls.Clear();
-            panelSidebar.Height = 88;
-            panelSidebar.Padding = new Padding(12, 6, 12, 6);
-            panelSidebar.FlowDirection = FlowDirection.TopDown;
-            panelSidebar.WrapContents = false;
+            _parentButtons.Clear();
+            _subPanels.Clear();
 
-            _menuGroups = new FlowLayoutPanel
+            // Set up sidebar properties
+            panelSidebar.Dock = DockStyle.Left;
+            panelSidebar.Width = 250;
+            panelSidebar.BackColor = Color.FromArgb(248, 250, 252); // slate-50
+
+            // Create panelHeader
+            _panelHeader = new Panel
             {
-                Width = Math.Max(900, ClientSize.Width - 24),
-                Height = 34,
-                WrapContents = false,
-                BackColor = Color.FromArgb(25, 118, 210),
+                Dock = DockStyle.Top,
+                Height = 60,
+                BackColor = Color.FromArgb(226, 232, 240), // slate-200
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+
+            _btnHamburger = new Button
+            {
+                Dock = DockStyle.Left,
+                Width = 50,
+                FlatStyle = FlatStyle.Flat,
+                Text = "≡",
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(71, 85, 105), // slate-600
+                BackColor = Color.Transparent,
+                Cursor = Cursors.Hand,
                 Margin = new Padding(0)
             };
-            _menuItems = new FlowLayoutPanel
+            _btnHamburger.FlatAppearance.BorderSize = 0;
+            _btnHamburger.FlatAppearance.MouseOverBackColor = Color.FromArgb(226, 232, 240); // slate-200
+            _btnHamburger.Click += delegate { ToggleSidebar(); };
+
+            _lblAppTitle = new Label
             {
-                Width = Math.Max(900, ClientSize.Width - 24),
-                Height = 34,
-                WrapContents = false,
-                BackColor = Color.FromArgb(21, 101, 192),
-                Margin = new Padding(0, 4, 0, 0)
+                Dock = DockStyle.Fill,
+                Text = "QUẢN LÝ THUÊ NHÀ",
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 41, 59), // slate-800
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(8, 0, 0, 0)
             };
 
-            panelSidebar.Controls.Add(_menuGroups);
-            panelSidebar.Controls.Add(_menuItems);
+            _panelHeader.Controls.Add(_lblAppTitle);
+            _panelHeader.Controls.Add(_btnHamburger);
 
-            AddGuideButton();
+            // Create menuFlow panel
+            _menuFlow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.FromArgb(248, 250, 252), // slate-50
+                Margin = new Padding(0),
+                Padding = new Padding(0, 10, 0, 10)
+            };
+            _menuFlow.HorizontalScroll.Maximum = 0;
+            _menuFlow.HorizontalScroll.Visible = false;
 
+            panelSidebar.Controls.Add(_menuFlow);
+            panelSidebar.Controls.Add(_panelHeader);
+
+            // Add Menu Groups
             if (!laKhach && (laAdmin || qDashboard))
-                AddMenuGroup("dashboard", "Tong quan", new[] { new MenuItemInfo("Dashboard", btnDashboard_Click) });
+            {
+                AddVerticalMenuSingleItem("dashboard", btnDashboard_Click);
+            }
             if (laKhach)
-                AddMenuGroup("khach", "Khach hang", new[] { new MenuItemInfo("Trang khach hang", btnKhachHangHome_Click) });
+            {
+                AddVerticalMenuSingleItem("khach", btnKhachHangHome_Click);
+            }
             if (laAdmin || (laNhanVien && qTaiSan))
-                AddMenuGroup("taisan", "Tai san", new[]
+            {
+                AddVerticalMenuGroup("taisan", new[]
                 {
-                    new MenuItemInfo("Khu vuc", btnKhuVuc_Click),
-                    new MenuItemInfo("Toa nha", btnToa_Click),
-                    new MenuItemInfo("Loai can ho", btnLoaiCanHo_Click),
-                    new MenuItemInfo("Can ho", btnCanHo_Click),
-                    new MenuItemInfo("Tien nghi", btnTienNghi_Click),
-                    new MenuItemInfo("Gia dich vu", btnGiaDichVu_Click)
+                    new MenuItemInfo("Khu vực", btnKhuVuc_Click),
+                    new MenuItemInfo("Tòa nhà", btnToa_Click),
+                    new MenuItemInfo("Loại căn hộ", btnLoaiCanHo_Click),
+                    new MenuItemInfo("Căn hộ", btnCanHo_Click),
+                    new MenuItemInfo("Tiện nghi", btnTienNghi_Click),
+                    new MenuItemInfo("Giá dịch vụ", btnGiaDichVu_Click)
                 });
+            }
             if (laAdmin || (laNhanVien && qHopDong))
-                AddMenuGroup("hopdong", "Hop dong", new[]
+            {
+                AddVerticalMenuGroup("hopdong", new[]
                 {
-                    new MenuItemInfo("Khach thue", btnKhachThue_Click),
-                    new MenuItemInfo("Dat truoc", btnPhieuDatTruoc_Click),
-                    new MenuItemInfo("Hop dong", btnHopDong_Click),
-                    new MenuItemInfo("Gia han", btnGiaHan_Click)
+                    new MenuItemInfo("Khách thuê", btnKhachThue_Click),
+                    new MenuItemInfo("Đặt trước", btnPhieuDatTruoc_Click),
+                    new MenuItemInfo("Hợp đồng", btnHopDong_Click),
+                    new MenuItemInfo("Gia hạn", btnGiaHan_Click)
                 });
+            }
             if (laAdmin || (laNhanVien && qThanhToan))
-                AddMenuGroup("thanhtoan", "Thanh toan", new[]
+            {
+                AddVerticalMenuGroup("thanhtoan", new[]
                 {
-                    new MenuItemInfo("Hoa don", btnHoaDon_Click),
-                    new MenuItemInfo("Phieu tra nha", btnPhieuTraNha_Click),
-                    new MenuItemInfo("Xu ly vi pham", btnViPham_Click)
+                    new MenuItemInfo("Hóa đơn", btnHoaDon_Click),
+                    new MenuItemInfo("Phiếu trả nhà", btnPhieuTraNha_Click),
+                    new MenuItemInfo("Xử lý vi phạm", btnViPham_Click)
                 });
+            }
             if (laAdmin)
-                AddMenuGroup("quantri", "Quan tri", new[]
+            {
+                AddVerticalMenuGroup("quantri", new[]
                 {
-                    new MenuItemInfo("Tai khoan", btnQuanLyTaiKhoan_Click),
-                    new MenuItemInfo("Tai khoan khach", btnQuanLyTaiKhoanKhach_Click),
-                    new MenuItemInfo("Phan quyen NV", btnPhanQuyenNhanVien_Click)
+                    new MenuItemInfo("Tài khoản", btnQuanLyTaiKhoan_Click),
+                    new MenuItemInfo("Tài khoản khách", btnQuanLyTaiKhoanKhach_Click),
+                    new MenuItemInfo("Phân quyền NV", btnPhanQuyenNhanVien_Click),
+                    new MenuItemInfo("Lịch sử Email", btnEmailLog_Click)
                 });
+            }
             if (laAdmin || (laNhanVien && qBaoCao))
-                AddMenuGroup("baocao", "Bao cao", new[] { new MenuItemInfo("Bao cao & thong ke", btnBaoCao_Click) });
+            {
+                AddVerticalMenuSingleItem("baocao", btnBaoCao_Click);
+            }
 
-            AddLogoutButton();
-            CapNhatKichThuocMenu();
+            // Separator spacer
+            var spacer = new Panel { Width = 250, Height = 20, BackColor = Color.Transparent, Margin = new Padding(0) };
+            _menuFlow.Controls.Add(spacer);
 
-            // Đồng bộ trạng thái Visible của các control designer để các bài test / smoke test phản ánh đúng quyền truy cập
-            btnDashboard.Visible = !laKhach && (laAdmin || qDashboard);
-            btnKhachHangHome.Visible = laKhach;
-            btnKhuVuc.Visible = laAdmin || (laNhanVien && qTaiSan);
-            btnToa.Visible = laAdmin || (laNhanVien && qTaiSan);
-            btnLoaiCanHo.Visible = laAdmin || (laNhanVien && qTaiSan);
-            btnCanHo.Visible = laAdmin || (laNhanVien && qTaiSan);
-            btnTienNghi.Visible = laAdmin || (laNhanVien && qTaiSan);
-            btnGiaDichVu.Visible = laAdmin || (laNhanVien && qTaiSan);
-            btnKhachThue.Visible = laAdmin || (laNhanVien && qHopDong);
-            btnPhieuDatTruoc.Visible = laAdmin || (laNhanVien && qHopDong);
-            btnHopDong.Visible = laAdmin || (laNhanVien && qHopDong);
-            btnGiaHan.Visible = laAdmin || (laNhanVien && qHopDong);
-            btnLoaiHoaDon.Visible = laAdmin || (laNhanVien && qThanhToan);
-            btnHoaDon.Visible = laAdmin || (laNhanVien && qThanhToan);
-            btnPhieuTraNha.Visible = laAdmin || (laNhanVien && qThanhToan);
-            btnViPham.Visible = laAdmin || (laNhanVien && qThanhToan);
-            btnQuanLyTaiKhoan.Visible = laAdmin;
-            btnQuanLyTaiKhoanKhach.Visible = laAdmin;
-            btnBaoCao.Visible = laAdmin || (laNhanVien && qBaoCao);
+            // Add Guide and Logout buttons
+            AddVerticalMenuSingleItem("huongdan", delegate { new frmHuongDanSuDung().ShowDialog(this); });
+            AddVerticalMenuSingleItem("dangxuat", btnDangXuat_Click);
+        }
+
+        private void SetActiveMenu(string activeKey)
+        {
+            _activeMenuKey = activeKey;
+            foreach (var kvp in _parentButtons)
+            {
+                var key = kvp.Key;
+                var btn = kvp.Value as RoundedButton;
+                if (btn == null) continue;
+
+                if (key == activeKey)
+                {
+                    btn.BackColor = Color.FromArgb(219, 234, 254); // blue-100
+                    btn.ForeColor = Color.FromArgb(29, 78, 216);   // blue-700
+                    btn.BorderColor = Color.FromArgb(147, 197, 253); // blue-300
+                }
+                else
+                {
+                    btn.BackColor = Color.Transparent;
+                    btn.BorderColor = Color.Transparent;
+                    if (key == "dangxuat")
+                    {
+                        btn.ForeColor = Color.FromArgb(239, 68, 68); // red-500
+                    }
+                    else if (key == "huongdan")
+                    {
+                        btn.ForeColor = Color.FromArgb(14, 165, 233); // sky-500
+                    }
+                    else
+                    {
+                        btn.ForeColor = Color.FromArgb(71, 85, 105); // slate-600
+                    }
+                }
+            }
+        }
+
+        private void AddVerticalMenuSingleItem(string key, EventHandler handler)
+        {
+            var btn = new RoundedButton
+            {
+                Width = 226,
+                Height = 40,
+                Radius = 8,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(71, 85, 105), // slate-600
+                BackColor = Color.Transparent,
+                BorderColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(12, 4, 12, 4)
+            };
+
+            if (key == "dangxuat")
+            {
+                btn.ForeColor = Color.FromArgb(239, 68, 68); // red-500
+            }
+            else if (key == "huongdan")
+            {
+                btn.ForeColor = Color.FromArgb(14, 165, 233); // sky-500
+            }
+
+            btn.Click += handler;
+            btn.Click += delegate { SetActiveMenu(key); };
+            _parentButtons[key] = btn;
+            _menuFlow.Controls.Add(btn);
+
+            btn.Text = GetTextForGroup(key);
+        }
+
+        private void AddVerticalMenuGroup(string key, MenuItemInfo[] children)
+        {
+            var btnGroup = new RoundedButton
+            {
+                Width = 226,
+                Height = 40,
+                Radius = 8,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(71, 85, 105), // slate-600
+                BackColor = Color.Transparent,
+                BorderColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(12, 4, 12, 4)
+            };
+
+            _parentButtons[key] = btnGroup;
+            _menuFlow.Controls.Add(btnGroup);
+
+            var subPanel = new FlowLayoutPanel
+            {
+                Width = 226,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoSize = true,
+                Margin = new Padding(12, 0, 12, 0),
+                Padding = new Padding(16, 4, 8, 4), // Indent child items
+                BackColor = Color.FromArgb(239, 246, 255), // blue-50 tinted
+                Visible = false
+            };
+            _subPanels[key] = subPanel;
+
+            foreach (var child in children)
+            {
+                var btnChild = new RoundedButton
+                {
+                    Width = 194,
+                    Height = 32,
+                    Radius = 6,
+                    Font = new Font("Segoe UI", 9F),
+                    ForeColor = Color.FromArgb(37, 99, 235), // blue-600
+                    BackColor = Color.Transparent,
+                    BorderColor = Color.FromArgb(147, 197, 253), // blue-300 border
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Margin = new Padding(0, 1, 0, 1),
+                    Text = "▸  " + child.Text
+                };
+                // Add hover and click effect
+                var localBtn = btnChild;
+                localBtn.MouseEnter += delegate
+                {
+                    localBtn.BackColor = Color.FromArgb(219, 234, 254); // blue-100
+                    localBtn.BorderColor = Color.FromArgb(59, 130, 246); // blue-500
+                    localBtn.Invalidate();
+                };
+                localBtn.MouseLeave += delegate
+                {
+                    localBtn.BackColor = Color.Transparent;
+                    localBtn.BorderColor = Color.FromArgb(147, 197, 253); // blue-300
+                    localBtn.Invalidate();
+                };
+                localBtn.MouseDown += delegate
+                {
+                    localBtn.BackColor = Color.FromArgb(191, 219, 254); // blue-200 pressed
+                    localBtn.Invalidate();
+                };
+                localBtn.MouseUp += delegate
+                {
+                    localBtn.BackColor = Color.FromArgb(219, 234, 254); // back to hover
+                    localBtn.Invalidate();
+                };
+                btnChild.Click += child.Handler;
+                btnChild.Click += delegate { SetActiveMenu(key); };
+                subPanel.Controls.Add(btnChild);
+            }
+
+            _menuFlow.Controls.Add(subPanel);
+
+            btnGroup.Click += delegate
+            {
+                if (_isSidebarCollapsed)
+                {
+                    ToggleSidebar();
+                }
+                subPanel.Visible = !subPanel.Visible;
+                btnGroup.Text = GetTextForGroup(key);
+                SetActiveMenu(key);
+            };
+
+            btnGroup.Text = GetTextForGroup(key);
+        }
+
+        private void ToggleSidebar()
+        {
+            _isSidebarCollapsed = !_isSidebarCollapsed;
+            if (_isSidebarCollapsed)
+            {
+                panelSidebar.Width = 60;
+                _lblAppTitle.Visible = false;
+                _panelHeader.Width = 60;
+                _menuFlow.Width = 60;
+
+                foreach (var panel in _subPanels.Values)
+                {
+                    panel.Visible = false;
+                }
+
+                foreach (var kvp in _parentButtons)
+                {
+                    var btn = kvp.Value as RoundedButton;
+                    if (btn == null) continue;
+                    btn.Width = 44;
+                    btn.Margin = new Padding(8, 4, 8, 4);
+                    btn.Text = GetIconForGroup(kvp.Key);
+                    btn.TextAlign = ContentAlignment.MiddleCenter;
+                }
+            }
+            else
+            {
+                panelSidebar.Width = 250;
+                _lblAppTitle.Visible = true;
+                _panelHeader.Width = 250;
+                _menuFlow.Width = 250;
+
+                foreach (var kvp in _parentButtons)
+                {
+                    var btn = kvp.Value as RoundedButton;
+                    if (btn == null) continue;
+                    btn.Width = 226;
+                    btn.Margin = new Padding(12, 4, 12, 4);
+                    btn.Text = GetTextForGroup(kvp.Key);
+                    btn.TextAlign = ContentAlignment.MiddleLeft;
+                }
+            }
+        }
+
+        private string GetIconForGroup(string key)
+        {
+            switch (key)
+            {
+                case "dashboard": return "📊";
+                case "khach":     return "👤";
+                case "taisan":    return "🏢";
+                case "hopdong":   return "📝";
+                case "thanhtoan": return "💳";
+                case "quantri":   return "⚙️";
+                case "baocao":    return "📈";
+                case "huongdan":  return "❓";
+                case "dangxuat":  return "🚪";
+                default:          return "🔹";
+            }
+        }
+
+        private string GetTextForGroup(string key)
+        {
+            var isExpanded = !_subPanels.ContainsKey(key) || _subPanels[key].Visible;
+            var arrow = isExpanded ? " ▾" : " ▸";
+            switch (key)
+            {
+                case "dashboard": return "📊  Tổng quan";
+                case "khach":     return "👤  Khách hàng";
+                case "taisan":    return "🏢  Quản lý tài sản" + arrow;
+                case "hopdong":   return "📝  Quản lý hợp đồng" + arrow;
+                case "thanhtoan": return "💳  Thanh toán & Trả" + arrow;
+                case "quantri":   return "⚙️  Quản trị hệ thống" + arrow;
+                case "baocao":    return "📈  Báo cáo & Thống kê";
+                case "huongdan":  return "❓  Hướng dẫn sử dụng";
+                case "dangxuat":  return "🚪  Đăng xuất";
+                default:          return "🔹  Menu";
+            }
         }
 
         private void CapNhatKichThuocMenu()
         {
-            if (_menuGroups == null || _menuItems == null) return;
-            var width = Math.Max(720, ClientSize.Width - 24);
-            _menuGroups.Width = width;
-            _menuItems.Width = width;
         }
 
         private bool CoQuyenNhanVien(string maChucNang)
         {
             if (!SessionContext.LaNhanVien) return false;
             return new NhanVienPhanQuyenService().CoQuyen(SessionContext.MaNguoiDung, maChucNang);
-        }
-
-        private void AddMenuGroup(string key, string text, MenuItemInfo[] children)
-        {
-            var button = CreateMenuButton(text, true);
-            button.Tag = children;
-            button.Click += delegate
-            {
-                _activeMenuKey = key;
-                ShowMenuItems(children);
-                HighlightMenuGroup(button);
-            };
-            _menuGroups.Controls.Add(button);
-
-            if (string.IsNullOrEmpty(_activeMenuKey))
-            {
-                _activeMenuKey = key;
-                ShowMenuItems(children);
-                HighlightMenuGroup(button);
-            }
-        }
-
-        private void ShowMenuItems(MenuItemInfo[] items)
-        {
-            _menuItems.Controls.Clear();
-            foreach (var item in items)
-            {
-                var button = CreateMenuButton(item.Text, false);
-                button.Click += item.Handler;
-                _menuItems.Controls.Add(button);
-            }
-        }
-
-        private void HighlightMenuGroup(Button activeButton)
-        {
-            foreach (Control control in _menuGroups.Controls)
-            {
-                var button = control as Button;
-                if (button == null) continue;
-                button.BackColor = button == activeButton ? Color.White : Color.FromArgb(25, 118, 210);
-                button.ForeColor = button == activeButton ? Color.FromArgb(25, 118, 210) : Color.White;
-            }
-        }
-
-        private Button CreateMenuButton(string text, bool group)
-        {
-            var button = new Button
-            {
-                Text = group ? text + "  v" : text,
-                Width = group ? 128 : 142,
-                Height = 30,
-                Margin = new Padding(3, 2, 3, 2),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = group ? Color.FromArgb(25, 118, 210) : Color.FromArgb(21, 101, 192),
-                Cursor = Cursors.Hand,
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            button.FlatAppearance.BorderSize = group ? 1 : 0;
-            button.FlatAppearance.BorderColor = Color.FromArgb(187, 222, 251);
-            button.FlatAppearance.MouseOverBackColor = group ? Color.FromArgb(227, 242, 253) : Color.FromArgb(30, 136, 229);
-            return button;
-        }
-
-        private void AddLogoutButton()
-        {
-            var button = CreateMenuButton("Dang xuat", true);
-            button.Text = "Đăng xuất";
-            button.Width = 112;
-            button.BackColor = Color.FromArgb(198, 40, 40);
-            button.Click += btnDangXuat_Click;
-            _menuGroups.Controls.Add(button);
-        }
-
-        private void AddGuideButton()
-        {
-            var button = CreateMenuButton("Hướng dẫn tôi", true);
-            button.Text = "Hướng dẫn tôi";
-            button.Width = 132;
-            button.BackColor = Color.FromArgb(14, 165, 233);
-            button.ForeColor = Color.White;
-            button.FlatAppearance.BorderColor = Color.FromArgb(186, 230, 253);
-            button.Click += delegate { new frmHuongDanSuDung().ShowDialog(this); };
-            _menuGroups.Controls.Add(button);
         }
 
         private void SetVisible(Control header, bool visible, params Control[] controls)
@@ -299,12 +494,12 @@ namespace QuanLyChoThueNha.GUI.Forms
 
         private void HienThiThongTinNguoiDung()
         {
-            Text = string.Format("Quan ly Cho thue Nha - {0} [{1}]", SessionContext.HoTen, SessionContext.VaiTro);
+            Text = string.Format("Quản lý Cho thuê Nhà - {0} [{1}]", SessionContext.HoTen, SessionContext.VaiTro);
         }
 
         private void btnDangXuat_Click(object sender, EventArgs e)
         {
-            var confirm = MessageBox.Show("Ban co chac muon dang xuat?", "Xac nhan",
+            var confirm = MessageBox.Show("Bạn có chắc muốn đăng xuất?", "Xác nhận",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirm != DialogResult.Yes) return;
 
@@ -352,6 +547,7 @@ namespace QuanLyChoThueNha.GUI.Forms
         private void btnQuanLyTaiKhoan_Click(object sender, EventArgs e) { MoForm(new frmQuanLyTaiKhoan()); }
         private void btnQuanLyTaiKhoanKhach_Click(object sender, EventArgs e) { MoForm(new frmQuanLyTaiKhoanKhach()); }
         private void btnPhanQuyenNhanVien_Click(object sender, EventArgs e) { MoForm(new frmPhanQuyenNhanVien()); }
+        private void btnEmailLog_Click(object sender, EventArgs e) { MoForm(new frmEmailLog()); }
         private void btnBaoCao_Click(object sender, EventArgs e) { MoForm(new frmBaoCao()); }
 
         private void MoForm(Form form)
@@ -359,6 +555,7 @@ namespace QuanLyChoThueNha.GUI.Forms
             panelNoidung.Controls.Clear();
             form.TopLevel = false;
             form.FormBorderStyle = FormBorderStyle.None;
+            form.ControlBox = false; // Hide nested min/max/close control box buttons!
             form.Dock = DockStyle.Fill;
             panelNoidung.Controls.Add(form);
             panelNoidung.Tag = form;

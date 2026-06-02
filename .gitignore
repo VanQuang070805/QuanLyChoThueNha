@@ -30,6 +30,7 @@ binstarTemp/
 [Oo]bj/
 [Log]s/
 [Ll]og/
+[Bb]uild-[Cc]heck/
 
 # Visual Studio 2015/2017/2019/2022 cache directory
 .vs/

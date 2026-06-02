@@ -76,6 +76,27 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         protected override bool UpdateItem(GiaHanHopDong item, out string error)
         {
             error = string.Empty;
+            var hd = new HopDongService().LayTheoMa(item.MaHopDong);
+            if (hd == null)
+            {
+                error = "Hợp đồng không tồn tại.";
+                return false;
+            }
+            if (item.NgayKetThucMoi < DateTime.Today)
+            {
+                error = "Ngày kết thúc mới không được nhỏ hơn ngày hiện tại.";
+                return false;
+            }
+            if (item.NgayKetThucMoi <= hd.NgayBatDau)
+            {
+                error = "Ngày kết thúc mới phải sau ngày bắt đầu hợp đồng.";
+                return false;
+            }
+            if (item.NgayKetThucMoi <= hd.NgayKetThuc)
+            {
+                error = "Ngày kết thúc mới phải sau ngày kết thúc hiện tại.";
+                return false;
+            }
             _service.Sua(item);
             return true;
         }
@@ -111,12 +132,18 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             GridDisplayHelper.AddTextColumn(Grid, "TenCanHo", "Tên căn hộ", 2, 125);
             GridDisplayHelper.AddTextColumn(Grid, "TenToa", "Tên tòa", 3, 115);
             GridDisplayHelper.AddTextColumn(Grid, "TenNhanVien", "Tên nhân viên", 4, 130);
+            GridDisplayHelper.AddTextColumn(Grid, "NgayBatDau", "Ngày bắt đầu HĐ", 5, 120);
+            if (Grid.Columns.Contains("NgayBatDau"))
+            {
+                Grid.Columns["NgayBatDau"].DefaultCellStyle.Format = "dd/MM/yyyy";
+            }
             GridDisplayHelper.HideColumn(Grid, "MaNhanVien");
             GridDisplayHelper.SetFillWeight(Grid, "MaGiaHan", 90);
             GridDisplayHelper.SetFillWeight(Grid, "MaHopDong", 95);
             GridDisplayHelper.SetFillWeight(Grid, "TenCanHo", 125);
             GridDisplayHelper.SetFillWeight(Grid, "TenToa", 110);
             GridDisplayHelper.SetFillWeight(Grid, "TenNhanVien", 130);
+            GridDisplayHelper.SetFillWeight(Grid, "NgayBatDau", 120);
             GridDisplayHelper.SetFillWeight(Grid, "TrangThai", 105);
             GridDisplayHelper.BalanceGrid(Grid);
         }
@@ -141,6 +168,8 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
                 QuanLyChoThueNha.Model.Entities.HopDong hopDong;
                 if (!hopDongs.TryGetValue(giaHan.MaHopDong, out hopDong)) continue;
+                giaHan.NgayBatDau = hopDong.NgayBatDau;
+
                 CanHo canHo;
                 if (!canHos.TryGetValue(hopDong.MaCanHo, out canHo)) continue;
 

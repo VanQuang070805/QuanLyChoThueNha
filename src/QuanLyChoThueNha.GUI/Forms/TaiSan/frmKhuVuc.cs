@@ -36,15 +36,15 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private ComboBox cboQuan;
         private NumericUpDown numViDo;
         private NumericUpDown numKinhDo;
-        private MaterialButton btnThem;
-        private MaterialButton btnSua;
-        private MaterialButton btnXoa;
-        private MaterialButton btnLamMoi;
-        private MaterialButton btnLayToaDo;
+        private RoundedButton btnThem;
+        private RoundedButton btnSua;
+        private RoundedButton btnXoa;
+        private RoundedButton btnLamMoi;
+        private RoundedButton btnLayToaDo;
 
         public frmKhuVuc()
         {
-            Text = "Quan ly Khu vuc";
+            Text = "Quản lý Khu vực";
             Size = new Size(1120, 660);
             StartPosition = FormStartPosition.CenterParent;
             _errors.BlinkStyle = ErrorBlinkStyle.NeverBlink;
@@ -59,12 +59,13 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                Padding = new Padding(12, 76, 12, 12)
+                Padding = new Padding(12, 12, 12, 12)
             };
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32));
 
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
+            left.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             left.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
@@ -94,28 +95,29 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                 AutoScroll = true,
                 Padding = new Padding(12, 0, 0, 0)
             };
+            right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            txtMa = CreateTextBox("(tu sinh)", true);
-            txtTen = CreateTextBox("Nhap ten khu vuc", false);
+            txtMa = CreateTextBox(string.Empty, true);
+            txtTen = CreateTextBox("Nhập tên khu vực", false);
             cboThanhPho = CreateComboBox();
             cboQuan = CreateComboBox();
             numViDo = CreateCoordinateNumber(-90, 90);
             numKinhDo = CreateCoordinateNumber(-180, 180);
             cboThanhPho.SelectedIndexChanged += delegate { NapQuanTheoThanhPho(); };
 
-            AddField(right, "Ma khu vuc", txtMa);
-            AddField(right, "Ten khu vuc *", txtTen);
-            AddField(right, "Thanh pho *", cboThanhPho);
-            AddField(right, "Quan/Huyen *", cboQuan);
-            AddField(right, "Vi do (lat)", numViDo);
-            AddField(right, "Kinh do (lng)", numKinhDo);
+            AddField(right, "Mã khu vực", txtMa);
+            AddField(right, "Tên khu vực *", txtTen);
+            AddField(right, "Thành phố *", cboThanhPho);
+            AddField(right, "Quận/Huyện *", cboQuan);
+            AddField(right, "Vĩ độ (lat)", numViDo);
+            AddField(right, "Kinh độ (lng)", numKinhDo);
 
             var commands = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true, Margin = new Padding(0, 12, 0, 0) };
-            btnThem = CreateButton("Them", btnThem_Click);
-            btnSua = CreateButton("Sua", btnSua_Click);
-            btnXoa = CreateButton("Xoa", btnXoa_Click);
-            btnLamMoi = CreateButton("Lam moi", delegate { TaiDuLieu(); XoaTrong(); });
-            btnLayToaDo = CreateButton("Lay toa do tu ban do", btnLayToaDo_Click);
+            btnThem = CreateButton("Thêm", btnThem_Click);
+            btnSua = CreateButton("Sửa", btnSua_Click);
+            btnXoa = CreateButton("Xóa", btnXoa_Click);
+            btnLamMoi = CreateButton("Làm mới", delegate { TaiDuLieu(); XoaTrong(); });
+            btnLayToaDo = CreateButton("Lấy tọa độ", btnLayToaDo_Click);
             commands.Controls.AddRange(new Control[] { btnThem, btnSua, btnXoa, btnLayToaDo, btnLamMoi });
             right.Controls.Add(commands);
 
@@ -126,7 +128,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private MaterialTextBox CreateTextBox(string hint, bool readOnly)
         {
-            return new MaterialTextBox { Dock = DockStyle.Top, Hint = hint, ReadOnly = readOnly };
+            var txt = new MaterialTextBox { Dock = DockStyle.Top, Hint = hint, ReadOnly = readOnly };
+            txt.Font = new Font("Segoe UI", 10F);
+            return txt;
         }
 
         private Control CreateSearchPanel(string label, string placeholder)
@@ -165,20 +169,24 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private ComboBox CreateComboBox()
         {
-            return new ComboBox { Dock = DockStyle.Top, Height = 30, DropDownStyle = ComboBoxStyle.DropDownList };
+            var combo = new ComboBox { Dock = DockStyle.Top, Height = 32, DropDownStyle = ComboBoxStyle.DropDownList };
+            combo.Font = new Font("Segoe UI", 10F);
+            return combo;
         }
 
         private NumericUpDown CreateCoordinateNumber(decimal min, decimal max)
         {
-            return new NumericUpDown
+            var num = new KeyboardOnlyNumericUpDown
             {
                 Dock = DockStyle.Top,
-                Height = 30,
+                Height = 32,
                 Minimum = min,
                 Maximum = max,
                 DecimalPlaces = 6,
                 Increment = 0.000100M
             };
+            num.Font = new Font("Segoe UI", 10F);
+            return num;
         }
 
         private void AddField(TableLayoutPanel parent, string label, Control editor)
@@ -193,9 +201,48 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             parent.Controls.Add(editor);
         }
 
-        private MaterialButton CreateButton(string text, EventHandler handler)
+        private RoundedButton CreateButton(string text, EventHandler handler)
         {
-            var btn = new MaterialButton { Text = text, AutoSize = true, Margin = new Padding(0, 4, 6, 4) };
+            var btn = new RoundedButton
+            {
+                Text = text,
+                Width = text.Length > 10 ? 140 : 90,
+                Height = 36,
+                Radius = 10,
+                Margin = new Padding(0, 4, 6, 4)
+            };
+
+            if (text == "Thêm")
+            {
+                btn.BackColor = Color.FromArgb(37, 99, 235); // blue-600
+                btn.BorderColor = Color.FromArgb(29, 78, 216); // blue-700
+                btn.ForeColor = Color.White;
+            }
+            else if (text == "Sửa")
+            {
+                btn.BackColor = Color.FromArgb(245, 158, 11); // amber-500
+                btn.BorderColor = Color.FromArgb(217, 119, 6); // amber-600
+                btn.ForeColor = Color.White;
+            }
+            else if (text == "Xóa")
+            {
+                btn.BackColor = Color.FromArgb(239, 68, 68); // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38); // red-600
+                btn.ForeColor = Color.White;
+            }
+            else if (text == "Lấy tọa độ")
+            {
+                btn.BackColor = Color.FromArgb(6, 182, 212); // cyan-500
+                btn.BorderColor = Color.FromArgb(8, 145, 178); // cyan-600
+                btn.ForeColor = Color.White;
+            }
+            else // "Làm mới" or other
+            {
+                btn.BackColor = Color.FromArgb(107, 114, 128); // gray-500
+                btn.BorderColor = Color.FromArgb(75, 85, 99); // gray-600
+                btn.ForeColor = Color.White;
+            }
+
             btn.Click += handler;
             return btn;
         }
@@ -281,19 +328,19 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             loi = string.Empty;
             if (string.IsNullOrWhiteSpace(txtTen.Text))
             {
-                loi = "Ten khu vuc khong duoc de trong.";
+                loi = "Tên khu vực không được để trống.";
                 _errors.SetError(txtTen, loi);
                 return false;
             }
             if (cboThanhPho.SelectedItem == null)
             {
-                loi = "Vui long chon thanh pho.";
+                loi = "Vui lòng chọn thành phố.";
                 _errors.SetError(cboThanhPho, loi);
                 return false;
             }
             if (cboQuan.SelectedItem == null)
             {
-                loi = "Vui long chon quan/huyen.";
+                loi = "Vui lòng chọn quận/huyện.";
                 _errors.SetError(cboQuan, loi);
                 return false;
             }
@@ -303,12 +350,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         private void btnThem_Click(object sender, EventArgs e)
         {
             string loi;
-            if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Lỗi nhập liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (!_svc.Them(txtTen.Text, cboQuan.SelectedItem.ToString(), cboThanhPho.SelectedItem.ToString(),
                     SessionContext.LaAdmin ? SessionContext.MaNguoiDung : null, out loi,
                     (double)numViDo.Value, (double)numKinhDo.Value))
             {
-                MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(loi, "Lỗi nhập liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             TaiDuLieu();
@@ -317,9 +364,9 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void btnSua_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtMa.Text)) { MessageBox.Show("Chon khu vuc can sua."); return; }
+            if (string.IsNullOrWhiteSpace(txtMa.Text)) { MessageBox.Show("Chọn khu vực cần sửa."); return; }
             string loi;
-            if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Loi nhap lieu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!ValidateForm(out loi)) { MessageBox.Show(loi, "Lỗi nhập liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             var kv = _svc.LayTheoMa(txtMa.Text);
             if (kv == null) return;
@@ -334,14 +381,14 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
         private void btnXoa_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtMa.Text)) { MessageBox.Show("Chon khu vuc can xoa."); return; }
-            if (MessageBox.Show("Xoa khu vuc dang chon?", "Xac nhan", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            if (string.IsNullOrWhiteSpace(txtMa.Text)) { MessageBox.Show("Chọn khu vực cần xóa."); return; }
+            if (MessageBox.Show("Xóa khu vực đang chọn?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             try
             {
                 string loi;
                 if (!_svc.XoaKhuVuc(txtMa.Text, out loi))
                 {
-                    MessageBox.Show(loi, "Khong the xoa", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(loi, "Không thể xóa", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 TaiDuLieu();
@@ -349,7 +396,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Khong the xoa vi co du lieu lien quan: " + ex.Message, "Loi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Không thể xóa vì có dữ liệu liên quan: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -372,7 +419,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                     var lon = DocGiaTriJson(json, "lon");
                     if (string.IsNullOrWhiteSpace(lat) || string.IsNullOrWhiteSpace(lon))
                     {
-                        MessageBox.Show("Khong tim thay toa do tu dia chi nay.", "Ban do",
+                        MessageBox.Show("Không tìm thấy tọa độ từ địa chỉ này.", "Bản đồ",
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
@@ -381,13 +428,13 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
                         numViDo.Minimum, numViDo.Maximum);
                     numKinhDo.Value = ClampCoordinate(double.Parse(lon, System.Globalization.CultureInfo.InvariantCulture),
                         numKinhDo.Minimum, numKinhDo.Maximum);
-                    MessageBox.Show("Da lay toa do tu OpenStreetMap.", "Ban do",
+                    MessageBox.Show("Đã lấy tọa độ từ OpenStreetMap.", "Bản đồ",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Khong lay duoc toa do: " + ex.Message, "Ban do",
+                MessageBox.Show("Không lấy được tọa độ: " + ex.Message, "Bản đồ",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }

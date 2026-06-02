@@ -40,8 +40,7 @@ namespace QuanLyChoThueNha.DAL.Repositories
 
         public void Update(T entity)
         {
-            if (_context.Entry(entity).State == EntityState.Detached)
-                _dbSet.Attach(entity);
+            _dbSet.Attach(entity);
             _context.Entry(entity).State = EntityState.Modified;
         }
 

@@ -11,7 +11,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
     {
         private readonly ToaService _service = new ToaService();
 
-        public frmToa() : base("Quan ly Toa nha", Fields())
+        public frmToa() : base("Quản lý Tòa nhà", Fields())
         {
         }
 
@@ -28,12 +28,12 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
 
             return new[]
             {
-                new FieldDefinition("MaToa", "Ma toa", typeof(string), true),
-                FieldDefinition.Lookup("MaKhuVuc", "Khu vuc", khuVucOptions),
-                new FieldDefinition("TenToa", "Ten toa"),
-                new FieldDefinition("DiaChi", "Dia chi"),
-                new FieldDefinition("SoTang", "So tang", typeof(int)),
-                new FieldDefinition("MoTa", "Mo ta", typeof(string), false, null, true)
+                new FieldDefinition("MaToa", "Mã tòa", typeof(string), true),
+                FieldDefinition.Lookup("MaKhuVuc", "Khu vực", khuVucOptions),
+                new FieldDefinition("TenToa", "Tên tòa"),
+                new FieldDefinition("DiaChi", "Địa chỉ"),
+                new FieldDefinition("SoTang", "Số tầng", typeof(int)),
+                new FieldDefinition("MoTa", "Mô tả", typeof(string), false, null, true)
             };
         }
 

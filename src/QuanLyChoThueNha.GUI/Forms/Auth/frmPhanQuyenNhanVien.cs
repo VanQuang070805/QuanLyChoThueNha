@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.Model.Entities;
 
 namespace QuanLyChoThueNha.GUI.Forms.Auth
@@ -19,7 +20,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         public frmPhanQuyenNhanVien()
         {
-            Text = "Phan quyen nhan vien";
+            Text = "Phân quyền nhân viên";
             Size = new Size(1180, 760);
             StartPosition = FormStartPosition.CenterParent;
             BuildLayout();
@@ -32,7 +33,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                Padding = new Padding(18, 76, 18, 18),
+                Padding = new Padding(18, 18, 18, 18),
                 BackColor = Color.FromArgb(248, 249, 252)
             };
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 330));
@@ -50,7 +51,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             leftLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             leftLayout.Controls.Add(new Label
             {
-                Text = "Danh sach nhan vien",
+                Text = "Danh sách nhân viên",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
@@ -77,7 +78,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             right.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
 
             var header = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(30, 42, 69), Padding = new Padding(18, 10, 18, 10) };
-            _lblNhanVien.Text = "Chon nhan vien de phan quyen";
+            _lblNhanVien.Text = "Chọn nhân viên để phân quyền";
             _lblNhanVien.Dock = DockStyle.Fill;
             _lblNhanVien.Font = new Font("Segoe UI", 15F, FontStyle.Bold);
             _lblNhanVien.ForeColor = Color.White;
@@ -92,9 +93,27 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             right.Controls.Add(_permissionPanel, 0, 1);
 
             var commands = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
-            var btnLuu = new MaterialButton { Text = "Luu phan quyen", Width = 150, Height = 38 };
+            var btnLuu = new RoundedButton
+            {
+                Text = "Lưu phân quyền",
+                Width = 150,
+                Height = 36,
+                Radius = 10,
+                BackColor = Color.FromArgb(16, 185, 129),
+                BorderColor = Color.FromArgb(5, 150, 105),
+                ForeColor = Color.White
+            };
             btnLuu.Click += BtnLuu_Click;
-            var btnMacDinh = new MaterialButton { Text = "Khoi phuc mac dinh", Width = 170, Height = 38 };
+            var btnMacDinh = new RoundedButton
+            {
+                Text = "Khôi phục mặc định",
+                Width = 170,
+                Height = 36,
+                Radius = 10,
+                BackColor = Color.FromArgb(107, 114, 128),
+                BorderColor = Color.FromArgb(75, 85, 99),
+                ForeColor = Color.White
+            };
             btnMacDinh.Click += delegate { GanMacDinh(); };
             commands.Controls.Add(btnLuu);
             commands.Controls.Add(btnMacDinh);
@@ -118,7 +137,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             _checks.Clear();
             if (nv == null)
             {
-                _lblNhanVien.Text = "Chon nhan vien de phan quyen";
+                _lblNhanVien.Text = "Chọn nhân viên để phân quyền";
                 return;
             }
 
@@ -163,7 +182,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             });
             card.Controls.Add(new Label
             {
-                Text = item.MacDinh ? "Mac dinh: bat" : "Mac dinh: tat",
+                Text = item.MacDinh ? "Mặc định: bật" : "Mặc định: tắt",
                 Location = new Point(18, 106),
                 AutoSize = true,
                 ForeColor = item.MacDinh ? Color.FromArgb(16, 185, 129) : Color.FromArgb(245, 158, 11),
@@ -184,7 +203,7 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             var nv = _lstNhanVien.SelectedItem as NhanVienQuanLy;
             if (nv == null)
             {
-                MessageBox.Show("Chon nhan vien can phan quyen.", "Thong bao",
+                MessageBox.Show("Chọn nhân viên cần phân quyền.", "Thông báo",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -193,11 +212,11 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             string loi;
             if (!_service.LuuQuyen(nv.MaNhanVien, data, out loi))
             {
-                MessageBox.Show(loi, "Khong luu duoc", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(loi, "Không lưu được", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            MessageBox.Show("Da cap nhat quyen cho nhan vien.", "Thanh cong",
+            MessageBox.Show("Đã cập nhật quyền cho nhân viên.", "Thành công",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }

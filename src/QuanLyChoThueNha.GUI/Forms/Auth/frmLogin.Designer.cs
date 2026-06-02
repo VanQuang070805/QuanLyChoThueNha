@@ -6,8 +6,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
 
         private MaterialSkin.Controls.MaterialTextBox txtTenDangNhap;
         private MaterialSkin.Controls.MaterialTextBox txtMatKhau;
-        private MaterialSkin.Controls.MaterialButton btnDangNhap;
-        private MaterialSkin.Controls.MaterialButton btnThoat;
+        private QuanLyChoThueNha.GUI.Controls.RoundedButton btnDangNhap;
+        private QuanLyChoThueNha.GUI.Controls.RoundedButton btnThoat;
         private MaterialSkin.Controls.MaterialLabel lblTieuDe;
         private MaterialSkin.Controls.MaterialLabel lblTenDangNhap;
         private MaterialSkin.Controls.MaterialLabel lblMatKhau;
@@ -23,8 +23,8 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
         {
             this.txtTenDangNhap = new MaterialSkin.Controls.MaterialTextBox();
             this.txtMatKhau = new MaterialSkin.Controls.MaterialTextBox();
-            this.btnDangNhap = new MaterialSkin.Controls.MaterialButton();
-            this.btnThoat = new MaterialSkin.Controls.MaterialButton();
+            this.btnDangNhap = new QuanLyChoThueNha.GUI.Controls.RoundedButton();
+            this.btnThoat = new QuanLyChoThueNha.GUI.Controls.RoundedButton();
             this.lblTieuDe = new MaterialSkin.Controls.MaterialLabel();
             this.lblTenDangNhap = new MaterialSkin.Controls.MaterialLabel();
             this.lblMatKhau = new MaterialSkin.Controls.MaterialLabel();
@@ -71,21 +71,22 @@ namespace QuanLyChoThueNha.GUI.Forms.Auth
             this.txtMatKhau.Password = true;
             this.txtMatKhau.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtMatKhau_KeyDown);
 
-            this.btnDangNhap.AutoSize = true;
-            this.btnDangNhap.Depth = 0;
-            this.btnDangNhap.HighEmphasis = true;
             this.btnDangNhap.Location = new System.Drawing.Point(80, 372);
             this.btnDangNhap.Size = new System.Drawing.Size(160, 36);
             this.btnDangNhap.Text = "ĐĂNG NHẬP";
-            this.btnDangNhap.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
+            this.btnDangNhap.Radius = 10;
+            this.btnDangNhap.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
+            this.btnDangNhap.BorderColor = System.Drawing.Color.FromArgb(29, 78, 216);
+            this.btnDangNhap.ForeColor = System.Drawing.Color.White;
             this.btnDangNhap.Click += new System.EventHandler(this.btnDangNhap_Click);
 
-            this.btnThoat.AutoSize = true;
-            this.btnThoat.Depth = 0;
             this.btnThoat.Location = new System.Drawing.Point(260, 372);
             this.btnThoat.Size = new System.Drawing.Size(160, 36);
             this.btnThoat.Text = "ĐÓNG CỔNG";
-            this.btnThoat.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined;
+            this.btnThoat.Radius = 10;
+            this.btnThoat.BackColor = System.Drawing.Color.FromArgb(239, 68, 68);
+            this.btnThoat.BorderColor = System.Drawing.Color.FromArgb(220, 38, 38);
+            this.btnThoat.ForeColor = System.Drawing.Color.White;
             this.btnThoat.Click += new System.EventHandler(this.btnThoat_Click);
 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);

@@ -37,12 +37,56 @@ namespace QuanLyChoThueNha.BLL.Services
                 VaiTroNguoiThaoTac = SessionContext.VaiTro
             };
             Repo.Add(log);
+            if (!thanhCong)
+                XuLyTaiKhoanKhiEmailKhongDenNguoiNhan(maTaiKhoan, emailNguoiNhan, thongBao);
             _uow.Complete();
         }
 
         public override IEnumerable<EmailLog> LayTatCa()
         {
             return base.LayTatCa().OrderByDescending(x => x.NgayGui).ToList();
+        }
+
+        private void XuLyTaiKhoanKhiEmailKhongDenNguoiNhan(string maTaiKhoan, string emailNguoiNhan, string thongBao)
+        {
+            if (string.IsNullOrWhiteSpace(maTaiKhoan))
+                return;
+            if (!string.IsNullOrWhiteSpace(emailNguoiNhan) && !LaLoiEmailNguoiNhan(thongBao))
+                return;
+
+            var taiKhoan = _uow.TaiKhoans.GetById(maTaiKhoan);
+            if (taiKhoan == null || taiKhoan.VaiTro != "KhachThue")
+                return;
+            if (!string.IsNullOrWhiteSpace(emailNguoiNhan) &&
+                !string.IsNullOrWhiteSpace(taiKhoan.Email) &&
+                !string.Equals(taiKhoan.Email.Trim(), emailNguoiNhan.Trim(), StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (LaLoiEmailNguoiNhan(thongBao))
+                taiKhoan.Email = null;
+            taiKhoan.TrangThai = false;
+            _uow.TaiKhoans.Update(taiKhoan);
+        }
+
+        private static bool LaLoiEmailNguoiNhan(string thongBao)
+        {
+            if (string.IsNullOrWhiteSpace(thongBao))
+                return false;
+
+            var value = thongBao.ToLowerInvariant();
+            return value.Contains("recipient") ||
+                   value.Contains("mailbox") ||
+                   value.Contains("user unknown") ||
+                   value.Contains("unknown user") ||
+                   value.Contains("no such user") ||
+                   value.Contains("does not exist") ||
+                   value.Contains("not exist") ||
+                   value.Contains("invalid address") ||
+                   value.Contains("bad recipient") ||
+                   value.Contains("undeliverable") ||
+                   value.Contains("550") ||
+                   value.Contains("551") ||
+                   value.Contains("553");
         }
     }
 }

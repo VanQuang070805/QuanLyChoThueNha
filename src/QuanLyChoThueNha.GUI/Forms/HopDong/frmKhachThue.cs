@@ -32,9 +32,9 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         private MaterialTextBox txtEmail;
         private MaterialTextBox txtSdt;
 
-        private MaterialButton btnThem;
-        private MaterialButton btnSua;
-        private MaterialButton btnLamMoi;
+        private RoundedButton btnThem;
+        private RoundedButton btnSua;
+        private RoundedButton btnLamMoi;
         private Label _lblMsg;
 
         public frmKhachThue()
@@ -59,6 +59,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
 
             var left = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
+            left.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             left.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
             left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
@@ -113,9 +114,10 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 Dock = DockStyle.Fill, AutoScroll = true,
                 Padding = new Padding(12, 0, 0, 0)
             };
+            right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            txtMaKhach    = Txt("(tự sinh)", true);
-            txtMaTaiKhoan = Txt("(tự sinh)", true);
+            txtMaKhach    = Txt(string.Empty, true);
+            txtMaTaiKhoan = Txt(string.Empty, true);
             txtHoTen      = Txt("Họ tên khách", false);
             txtCmnd       = Txt("9 hoặc 12 số", false);
             txtDiaChi     = Txt("Địa chỉ", false);
@@ -131,7 +133,8 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "dd/MM/yyyy",
                 MaxDate = DateTime.Today,
-                Value = DateTime.Today.AddYears(-18)
+                Value = DateTime.Today.AddYears(-18),
+                Font = new Font("Segoe UI", 10F)
             };
 
             // Bat dau tat ca truong co the sua (se duoc bat khi vao Add/Edit mode)
@@ -160,6 +163,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             commands.Controls.Add(btnSua);
             commands.Controls.Add(btnLamMoi);
             right.Controls.Add(commands);
+            UpdateButtonStyles();
 
             root.Controls.Add(left, 0, 0);
             root.Controls.Add(right, 1, 0);
@@ -196,6 +200,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             btnThem.Text   = "Lưu";   btnThem.Enabled  = true;
             btnSua.Text    = "Sửa thông tin"; btnSua.Enabled   = false;
             btnLamMoi.Text = "Làm mới";
+            UpdateButtonStyles();
             // Pre-populate ma tu sinh de nguoi dung thay duoc
             txtMaKhach.Text    = _service.LayMaKhachTiepTheo();
             txtMaTaiKhoan.Text = _service.LayMaTaiKhoanTiepTheo();
@@ -209,6 +214,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             btnThem.Text   = "Thêm khách"; btnThem.Enabled  = true;
             btnSua.Text    = "Sửa thông tin"; btnSua.Enabled   = true;
             btnLamMoi.Text = "Làm mới";
+            UpdateButtonStyles();
         }
 
         private void EnterEditMode()
@@ -225,6 +231,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             btnThem.Text   = "Thêm khách"; btnThem.Enabled  = false;
             btnSua.Text    = "Lưu";        btnSua.Enabled   = true;
             btnLamMoi.Text = "Hủy";
+            UpdateButtonStyles();
         }
 
         private void SetEditorsEnabled(bool enabled)
@@ -459,7 +466,9 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         private MaterialTextBox Txt(string hint, bool readOnly)
         {
-            return new MaterialTextBox { Dock = DockStyle.Top, Hint = hint, ReadOnly = readOnly };
+            var txt = new MaterialTextBox { Dock = DockStyle.Top, Hint = hint, ReadOnly = readOnly };
+            txt.Font = new Font("Segoe UI", 10F);
+            return txt;
         }
 
         private void AddField(TableLayoutPanel parent, string label, Control control)
@@ -473,11 +482,62 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             parent.Controls.Add(control);
         }
 
-        private MaterialButton Btn(string text, EventHandler handler)
+        private RoundedButton Btn(string text, EventHandler handler)
         {
-            var b = new MaterialButton { Text = text, AutoSize = true, Margin = new Padding(0, 4, 6, 4) };
+            var b = new RoundedButton
+            {
+                Text = text,
+                Width = text.Length > 8 ? 130 : 90,
+                Height = 36,
+                Radius = 10,
+                Margin = new Padding(0, 4, 6, 4)
+            };
             b.Click += handler;
             return b;
+        }
+
+        private void UpdateButtonStyles()
+        {
+            ApplyButtonStyle(btnThem);
+            ApplyButtonStyle(btnSua);
+            ApplyButtonStyle(btnLamMoi);
+        }
+
+        private void ApplyButtonStyle(RoundedButton btn)
+        {
+            if (btn == null) return;
+
+            string txt = btn.Text;
+            if (txt == "Thêm khách")
+            {
+                btn.BackColor = Color.FromArgb(37, 99, 235); // blue-600
+                btn.BorderColor = Color.FromArgb(29, 78, 216); // blue-700
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Sửa thông tin")
+            {
+                btn.BackColor = Color.FromArgb(245, 158, 11); // amber-500
+                btn.BorderColor = Color.FromArgb(217, 119, 6); // amber-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Lưu")
+            {
+                btn.BackColor = Color.FromArgb(16, 185, 129); // emerald-500
+                btn.BorderColor = Color.FromArgb(5, 150, 105); // emerald-600
+                btn.ForeColor = Color.White;
+            }
+            else if (txt == "Hủy")
+            {
+                btn.BackColor = Color.FromArgb(239, 68, 68); // red-500
+                btn.BorderColor = Color.FromArgb(220, 38, 38); // red-600
+                btn.ForeColor = Color.White;
+            }
+            else // "Làm mới" or other
+            {
+                btn.BackColor = Color.FromArgb(107, 114, 128); // gray-500
+                btn.BorderColor = Color.FromArgb(75, 85, 99); // gray-600
+                btn.ForeColor = Color.White;
+            }
         }
     }
 }

@@ -10,7 +10,7 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
     {
         private readonly LoaiCanHoService _service = new LoaiCanHoService();
 
-        public frmLoaiCanHo() : base("Quan ly Loai can ho", Fields())
+        public frmLoaiCanHo() : base("Quản lý Loại căn hộ", Fields())
         {
         }
 
@@ -18,10 +18,10 @@ namespace QuanLyChoThueNha.GUI.Forms.TaiSan
         {
             return new[]
             {
-                new FieldDefinition("MaLoai", "Ma loai", typeof(string), true),
-                new FieldDefinition("MaAdmin", "Ma admin", typeof(string), true),
-                new FieldDefinition("TenLoai", "Ten loai"),
-                new FieldDefinition("MoTa", "Mo ta", typeof(string), false, null, true)
+                new FieldDefinition("MaLoai", "Mã loại", typeof(string), true),
+                new FieldDefinition("MaAdmin", "Mã admin", typeof(string), true),
+                new FieldDefinition("TenLoai", "Tên loại"),
+                new FieldDefinition("MoTa", "Mô tả", typeof(string), false, null, true)
             };
         }
 

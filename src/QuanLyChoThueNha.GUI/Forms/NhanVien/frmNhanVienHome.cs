@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using MaterialSkin.Controls;
 using QuanLyChoThueNha.BLL;
 using QuanLyChoThueNha.BLL.Services;
+using QuanLyChoThueNha.GUI.Controls;
 using QuanLyChoThueNha.GUI.Forms.KhachHang;
 using QuanLyChoThueNha.GUI.Helpers;
 using QuanLyChoThueNha.Model.Entities;
@@ -26,15 +27,56 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
         private readonly DataGridView _gridDatPhong = CreateGrid();
         private readonly DataGridView _gridHopDong = CreateGrid();
         private readonly DataGridView _gridHoaDon = CreateGrid();
-        private readonly MaterialButton _btnLamMoi = new MaterialButton { Text = "Lam moi", AutoSize = true };
-        private readonly MaterialButton _btnXacNhanCoc = new MaterialButton { Text = "Xac nhan da nhan coc", AutoSize = true };
-        private readonly MaterialButton _btnGuiLaiEmail = new MaterialButton { Text = "Gui lai email/QR", AutoSize = true };
-        private readonly MaterialButton _btnEmailLog = new MaterialButton { Text = "Lich su email", AutoSize = true };
+        
+        private readonly RoundedButton _btnLamMoi = new RoundedButton 
+        { 
+            Text = "Làm mới", 
+            Width = 110, 
+            Height = 36, 
+            Radius = 8, 
+            BackColor = Color.FromArgb(107, 114, 128), 
+            BorderColor = Color.FromArgb(75, 85, 99),
+            Margin = new Padding(0, 8, 8, 4)
+        };
+        
+        private readonly RoundedButton _btnXacNhanCoc = new RoundedButton 
+        { 
+            Text = "Xác nhận đã nhận cọc", 
+            Width = 190, 
+            Height = 36, 
+            Radius = 8, 
+            BackColor = Color.FromArgb(22, 163, 74), 
+            BorderColor = Color.FromArgb(21, 128, 61),
+            Margin = new Padding(0, 8, 8, 4)
+        };
+        
+        private readonly RoundedButton _btnGuiLaiEmail = new RoundedButton 
+        { 
+            Text = "Gửi lại email/QR", 
+            Width = 160, 
+            Height = 36, 
+            Radius = 8, 
+            BackColor = Color.FromArgb(37, 99, 235), 
+            BorderColor = Color.FromArgb(29, 78, 216),
+            Margin = new Padding(0, 8, 8, 4)
+        };
+        
+        private readonly RoundedButton _btnEmailLog = new RoundedButton 
+        { 
+            Text = "Lịch sử email", 
+            Width = 140, 
+            Height = 36, 
+            Radius = 8, 
+            BackColor = Color.FromArgb(124, 58, 237), 
+            BorderColor = Color.FromArgb(109, 40, 217),
+            Margin = new Padding(0, 8, 8, 4)
+        };
+        
         private MaterialLabel _lblHeader;
 
         public frmNhanVienHome()
         {
-            Text = "Trang nhan vien";
+            Text = "Trang nhân viên";
             Size = new Size(1180, 760);
             StartPosition = FormStartPosition.CenterParent;
             BuildLayout();
@@ -47,7 +89,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             {
                 Dock = DockStyle.Fill,
                 RowCount = 4,
-                Padding = new Padding(16, 76, 16, 16)
+                Padding = new Padding(16, 16, 16, 16)
             };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 112));
@@ -57,9 +99,9 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             var toolbar = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
             _lblHeader = new MaterialLabel
             {
-                Text = "Cong viec nhan vien",
+                Text = "Công việc nhân viên",
                 AutoSize = true,
-                Font = new Font("Roboto", 14F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Padding = new Padding(0, 8, 20, 0)
             };
             toolbar.Controls.Add(_lblHeader);
@@ -81,17 +123,17 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             var top = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            top.Controls.Add(CreateGroup("Phieu dat phong can xu ly", _gridDatPhong), 0, 0);
-            top.Controls.Add(CreateGroup("Hop dong sap het han", _gridHopDong), 1, 0);
+            top.Controls.Add(CreateGroup("Phiếu đặt phòng cần xử lý", _gridDatPhong), 0, 0);
+            top.Controls.Add(CreateGroup("Hợp đồng sắp hết hạn", _gridHopDong), 1, 0);
             root.Controls.Add(top, 0, 2);
 
-            root.Controls.Add(CreateGroup("Hoa don can theo doi", _gridHoaDon), 0, 3);
+            root.Controls.Add(CreateGroup("Hóa đơn cần theo dõi", _gridHoaDon), 0, 3);
             Controls.Add(root);
         }
 
         private void LoadData()
         {
-            _lblHeader.Text = string.Format("Cong viec cua {0} [{1}]", SessionContext.HoTen, SessionContext.MaNguoiDung);
+            _lblHeader.Text = string.Format("Công việc của {0} [{1}]", SessionContext.HoTen, SessionContext.MaNguoiDung);
             GuiThongBaoPhieuHetHanMoi();
 
             var tatCaPhieu = _phieuDatTruocService.LayTatCa().ToList();
@@ -113,20 +155,21 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 .ToList();
 
             _kpiPanel.Controls.Clear();
-            AddKpi("Phong trong", _canHoService.LayTheoTinhTrang("Trong").Count().ToString("N0"), Color.FromArgb(0, 137, 123));
-            AddKpi("Cho coc", phieuChoCoc.Count.ToString("N0"), Color.FromArgb(245, 124, 0));
-            AddKpi("Cho ky HD", phieuChoKy.Count.ToString("N0"), Color.FromArgb(25, 118, 210));
-            AddKpi("HD sap het han", hopDongSapHetHan.Count.ToString("N0"), Color.FromArgb(123, 31, 162));
-            AddKpi("Hoa don can xu ly", hoaDonCanTheoDoi.Count.ToString("N0"), Color.FromArgb(198, 40, 40));
+            AddKpi("Phòng trống", _canHoService.LayTheoTinhTrang("Trong").Count().ToString("N0"), Color.FromArgb(0, 137, 123));
+            AddKpi("Chờ cọc", phieuChoCoc.Count.ToString("N0"), Color.FromArgb(245, 124, 0));
+            AddKpi("Chờ ký HĐ", phieuChoKy.Count.ToString("N0"), Color.FromArgb(25, 118, 210));
+            AddKpi("HĐ sắp hết hạn", hopDongSapHetHan.Count.ToString("N0"), Color.FromArgb(123, 31, 162));
+            AddKpi("Hóa đơn cần xử lý", hoaDonCanTheoDoi.Count.ToString("N0"), Color.FromArgb(198, 40, 40));
 
             var canHos = _canHoService.LayTatCa().ToDictionary(c => c.MaCanHo);
             var toas = new ToaService().LayTatCa().ToDictionary(t => t.MaToa);
             var hopDongs = _hopDongService.LayTatCa().ToDictionary(hd => hd.MaHopDong);
+            var khachs = _khachThueService.LayTatCa().ToDictionary(k => k.MaKhach);
 
             _gridDatPhong.DataSource = new BindingList<object>(phieuCanXuLy.Select(p => new
             {
                 p.MaPhieuDatTruoc,
-                p.MaKhach,
+                TenKhach = khachs.ContainsKey(p.MaKhach) ? khachs[p.MaKhach].HoTen : p.MaKhach,
                 TenCanHo = canHos.ContainsKey(p.MaCanHo) ? "Căn " + canHos[p.MaCanHo].SoCanHo : p.MaCanHo,
                 TenToa = canHos.ContainsKey(p.MaCanHo) && toas.ContainsKey(canHos[p.MaCanHo].MaToa) ? toas[canHos[p.MaCanHo].MaToa].TenToa : "",
                 p.SoTienDatCoc,
@@ -138,7 +181,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             _gridHopDong.DataSource = new BindingList<object>(hopDongSapHetHan.Select(h => new
             {
                 h.MaHopDong,
-                h.MaKhach,
+                TenKhach = khachs.ContainsKey(h.MaKhach) ? khachs[h.MaKhach].HoTen : h.MaKhach,
                 TenCanHo = canHos.ContainsKey(h.MaCanHo) ? "Căn " + canHos[h.MaCanHo].SoCanHo : h.MaCanHo,
                 TenToa = canHos.ContainsKey(h.MaCanHo) && toas.ContainsKey(canHos[h.MaCanHo].MaToa) ? toas[canHos[h.MaCanHo].MaToa].TenToa : "",
                 h.NgayKetThuc,
@@ -150,10 +193,12 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 HopDongEntity hd = null;
                 hopDongs.TryGetValue(h.MaHopDong, out hd);
                 var maCanHo = hd?.MaCanHo;
+                var maKhach = hd?.MaKhach;
                 return new
                 {
                     h.MaHoaDon,
                     h.MaHopDong,
+                    TenKhach = maKhach != null && khachs.ContainsKey(maKhach) ? khachs[maKhach].HoTen : maKhach,
                     TenCanHo = maCanHo != null && canHos.ContainsKey(maCanHo) ? "Căn " + canHos[maCanHo].SoCanHo : "",
                     TenToa = maCanHo != null && canHos.ContainsKey(maCanHo) && toas.ContainsKey(canHos[maCanHo].MaToa) ? toas[canHos[maCanHo].MaToa].TenToa : "",
                     h.KyThanhToan,
@@ -167,6 +212,9 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             DinhDangGrid(_gridDatPhong);
             DinhDangGrid(_gridHopDong);
             DinhDangGrid(_gridHoaDon);
+            GridFormatterHelper.SetupCellFormatting(_gridDatPhong);
+            GridFormatterHelper.SetupCellFormatting(_gridHopDong);
+            GridFormatterHelper.SetupCellFormatting(_gridHoaDon);
         }
 
         private void GuiThongBaoPhieuHetHanMoi()
@@ -192,7 +240,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             var maPhieu = LayMaPhieuDangChon();
             if (string.IsNullOrWhiteSpace(maPhieu))
             {
-                MessageBox.Show("Chon phieu dat truoc can xac nhan coc.", "Thong bao",
+                MessageBox.Show("Chọn phiếu đặt trước cần xác nhận cọc.", "Thông báo",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -200,12 +248,12 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             string loi;
             if (!_phieuDatTruocService.XacNhanDaNhanCoc(maPhieu, out loi))
             {
-                MessageBox.Show(loi, "Khong the xac nhan coc", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(loi, "Không thể xác nhận cọc", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            MessageBox.Show("Da xac nhan nhan coc. Phieu da chuyen sang cho ky hop dong.",
-                "Thanh cong", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Đã xác nhận nhận cọc. Phiếu đã chuyển sang chờ ký hợp đồng.",
+                "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
             LoadData();
         }
 
@@ -214,7 +262,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             var maPhieu = LayMaPhieuDangChon();
             if (string.IsNullOrWhiteSpace(maPhieu))
             {
-                MessageBox.Show("Chon phieu dat truoc can gui lai email/QR.", "Thong bao",
+                MessageBox.Show("Chọn phiếu đặt trước cần gửi lại email/QR.", "Thông báo",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -222,7 +270,7 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
             var phieu = _phieuDatTruocService.LayTheoMa(maPhieu);
             if (phieu == null)
             {
-                MessageBox.Show("Khong tim thay phieu.", "Thong bao", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Không tìm thấy phiếu.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -237,9 +285,9 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 phieu.SoTienDatCoc, phieu.NgayHetHan, noiDung, khach == null ? null : khach.MaTaiKhoan,
                 out thongBao);
 
-            MessageBox.Show(thongBao, "Gui lai email", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            using (var qr = new frmQrThanhToan("QR dat coc phong", phieu.MaPhieuDatTruoc,
-                "Phong " + phieu.MaCanHo, phieu.SoTienDatCoc, noiDung))
+            MessageBox.Show(thongBao, "Gửi lại email", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            using (var qr = new frmQrThanhToan("QR đặt cọc phòng", phieu.MaPhieuDatTruoc,
+                "Phòng " + phieu.MaCanHo, phieu.SoTienDatCoc, noiDung))
             {
                 qr.ShowDialog(this);
             }
@@ -256,12 +304,12 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
 
         private string NoiDungDatCoc(PhieuDatTruoc phieu)
         {
-            return string.Format("DAT COC {0} PHONG {1}", phieu.MaPhieuDatTruoc, phieu.MaCanHo);
+            return string.Format("ĐẶT CỌC {0} PHÒNG {1}", phieu.MaPhieuDatTruoc, phieu.MaCanHo);
         }
 
         private static DataGridView CreateGrid()
         {
-            return new DataGridView
+            var grid = new DataGridView
             {
                 Dock = DockStyle.Fill,
                 AllowUserToAddRows = false,
@@ -270,8 +318,16 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 RowHeadersVisible = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                BackgroundColor = Color.White
+                BackgroundColor = Color.White,
+                EnableHeadersVisualStyles = false
             };
+            grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(239, 246, 255);
+            grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(30, 64, 175);
+            grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            grid.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
+            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            grid.DefaultCellStyle.SelectionForeColor = Color.FromArgb(17, 24, 39);
+            return grid;
         }
 
         private static GroupBox CreateGroup(string title, Control content)
@@ -323,7 +379,8 @@ namespace QuanLyChoThueNha.GUI.Forms.NhanVien
                 switch (col.Name)
                 {
                     case "MaPhieuDatTruoc": col.HeaderText = "Mã phiếu"; break;
-                    case "MaKhach": col.HeaderText = "Mã khách"; break;
+                    case "MaKhach":
+                    case "TenKhach": col.HeaderText = "Tên khách"; break;
                     case "TenCanHo": col.HeaderText = "Tên căn hộ"; break;
                     case "TenToa": col.HeaderText = "Tên tòa"; break;
                     case "SoTienDatCoc": col.HeaderText = "Tiền đặt cọc"; break;

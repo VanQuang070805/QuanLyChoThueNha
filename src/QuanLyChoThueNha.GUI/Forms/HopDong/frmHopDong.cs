@@ -17,48 +17,57 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
         private readonly CanHoService _canHoService = new CanHoService();
         private readonly PhieuDatTruocService _phieuDatTruocService = new PhieuDatTruocService();
         private readonly ComboBox _cboToaFilter = new ComboBox();
+        private readonly ComboBox _cboTrangThaiFilter = new ComboBox();
         private string _trangThaiFilter = "TatCa";
         private bool _dangNapCanHo;
 
         public frmHopDong() : base("Quan ly Hop dong", Fields())
         {
             TaoBoLocToa();
+            TaoBoLocTrangThai();
             var canHoEditor = GetEditor("MaCanHo") as ComboBox;
             if (canHoEditor != null)
                 canHoEditor.SelectedIndexChanged += delegate { DienPhieuVaKhachTheoCanHo(); };
-            AddCommandButton("Tat ca", delegate { _trangThaiFilter = "TatCa"; ReloadData(); });
-            AddCommandButton("Hieu luc", delegate { _trangThaiFilter = "HieuLuc"; ReloadData(); });
-            AddCommandButton("Sap het han", delegate { _trangThaiFilter = "SapHetHan"; ReloadData(); });
-            AddCommandButton("Het han", delegate { _trangThaiFilter = "HetHan"; ReloadData(); });
-            AddCommandButton("Da huy", delegate { _trangThaiFilter = "DaHuy"; ReloadData(); });
         }
 
         private void TaoBoLocToa()
         {
-            var label = new Label
-            {
-                Text = "Toa",
-                AutoSize = true,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(10, 9, 4, 0)
-            };
-            AddCommandControl(label);
-
-            var options = new List<ComboOption> { new ComboOption(string.Empty, "Tat ca toa") };
+            var options = new List<ComboOption> { new ComboOption(string.Empty, "Tất cả tòa") };
             options.AddRange(new ToaService().LayTatCa()
                 .OrderBy(t => t.TenToa)
-                .Select(t => new ComboOption(t.MaToa, string.Format("{0} - {1}", t.TenToa, t.MaToa))));
+                .Select(t => new ComboOption(t.MaToa, t.TenToa)));
 
-            _cboToaFilter.DropDownStyle = ComboBoxStyle.DropDownList;
             _cboToaFilter.DisplayMember = "Display";
             _cboToaFilter.ValueMember = "Value";
-            _cboToaFilter.Width = 180;
-            _cboToaFilter.Height = 30;
-            _cboToaFilter.Margin = new Padding(0, 5, 8, 0);
             _cboToaFilter.DataSource = options;
             _cboToaFilter.SelectedIndexChanged += delegate { NapCanHoTheoToa(); };
-            AddCommandControl(_cboToaFilter);
+            AddSearchFilter("Tòa", _cboToaFilter, 130);
             NapCanHoTheoToa();
+        }
+
+        private void TaoBoLocTrangThai()
+        {
+            var options = new List<ComboOption>
+            {
+                new ComboOption("TatCa", "Tất cả"),
+                new ComboOption("HieuLuc", "Hiệu lực"),
+                new ComboOption("SapHetHan", "Sắp hết hạn"),
+                new ComboOption("HetHan", "Hết hạn"),
+                new ComboOption("DaHuy", "Đã hủy")
+            };
+
+            _cboTrangThaiFilter.DisplayMember = "Display";
+            _cboTrangThaiFilter.ValueMember = "Value";
+            _cboTrangThaiFilter.DataSource = options;
+            _cboTrangThaiFilter.SelectedIndexChanged += delegate 
+            {
+                if (_cboTrangThaiFilter.SelectedValue != null)
+                {
+                    _trangThaiFilter = _cboTrangThaiFilter.SelectedValue.ToString();
+                    ReloadData();
+                }
+            };
+            AddSearchFilter("Trạng thái", _cboTrangThaiFilter, 140);
         }
 
         private static IEnumerable<FieldDefinition> Fields()

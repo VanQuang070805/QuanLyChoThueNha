@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -21,7 +22,13 @@ namespace QuanLyChoThueNha.GUI.Controls
         {
             base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = CreatePath(ClientRectangle, Radius))
+            e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            var rect = new Rectangle(
+                ClientRectangle.X + BorderThickness,
+                ClientRectangle.Y + BorderThickness,
+                Math.Max(1, ClientRectangle.Width - BorderThickness * 2 - 1),
+                Math.Max(1, ClientRectangle.Height - BorderThickness * 2 - 1));
+            using (var path = CreatePath(rect, Radius))
             using (var brush = new SolidBrush(BackColor))
             using (var pen = new Pen(BorderColor, BorderThickness))
             {

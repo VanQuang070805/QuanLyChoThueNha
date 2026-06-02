@@ -25,24 +25,18 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
                 .Select(h => new ComboOption(h.MaHopDong,
                     string.Format("{0} | Khach {1} | Phong {2}", h.MaHopDong, h.MaKhach, h.MaCanHo)))
                 .ToList();
-            var phieuTraOptions = new List<ComboOption> { new ComboOption(string.Empty, "(Khong gan phieu tra nha)") };
-            phieuTraOptions.AddRange(new PhieuTraNhaService().LayTatCa()
-                .OrderBy(p => p.MaPhieu)
-                .Select(p => new ComboOption(p.MaPhieu,
-                    string.Format("{0} | Hop dong {1} | {2:dd/MM/yyyy}", p.MaPhieu, p.MaHopDong, p.NgayTra))));
 
             return new[]
             {
                 new FieldDefinition("MaViPham", "Ma vi pham", typeof(string), true),
                 FieldDefinition.Lookup("MaHopDong", "Ma hop dong", hopDongOptions),
-                FieldDefinition.Lookup("MaPhieuTraNha", "Ma phieu tra nha", phieuTraOptions),
                 new FieldDefinition("MaNhanVien", "Ma nhan vien", typeof(string), true),
                 new FieldDefinition("LoaiViPham", "Loai vi pham"),
                 new FieldDefinition("MoTa", "Mo ta", typeof(string), false, null, true),
                 new FieldDefinition("PhiBoiThuong", "Phi boi thuong", typeof(decimal)),
                 new FieldDefinition("TruVaoCoc", "Tru vao coc", typeof(bool)),
                 new FieldDefinition("TinhTrang", "Tinh trang", typeof(string), false,
-                    new[] { "ChoXuLy", "DaThanhToan" }),
+                    new[] { "ChoXuLy", "DaThanhToan", "DaKhauTru" }),
                 new FieldDefinition("NgayGhiNhan", "Ngay ghi nhan", typeof(System.DateTime), true)
             };
         }
@@ -57,25 +51,18 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
         protected override bool AddItem(PhieuXuLyViPham item, out string error)
         {
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
-            item.MaPhieuTraNha = string.IsNullOrWhiteSpace(item.MaPhieuTraNha) ? null : item.MaPhieuTraNha;
             if (item.TruVaoCoc) item.TinhTrang = "ChoXuLy";
             return _service.GhiNhan(item, out error);
         }
 
         protected override bool UpdateItem(PhieuXuLyViPham item, out string error)
         {
-            error = string.Empty;
-            item.MaPhieuTraNha = string.IsNullOrWhiteSpace(item.MaPhieuTraNha) ? null : item.MaPhieuTraNha;
-            if (item.TruVaoCoc) item.TinhTrang = "ChoXuLy";
-            _service.Sua(item);
-            return true;
+            return _service.CapNhat(item, out error);
         }
 
         protected override bool DeleteItem(PhieuXuLyViPham item, out string error)
         {
-            error = string.Empty;
-            _service.Xoa(item);
-            return true;
+            return _service.Xoa(item, out error);
         }
 
         protected override void AfterGridBound()
@@ -139,7 +126,6 @@ namespace QuanLyChoThueNha.GUI.Forms.TraNha
             GridDisplayHelper.HideColumn(Grid, "MaNhanVien");
             GridDisplayHelper.SetFillWeight(Grid, "MaViPham", 90);
             GridDisplayHelper.SetFillWeight(Grid, "MaHopDong", 95);
-            GridDisplayHelper.SetFillWeight(Grid, "MaPhieuTraNha", 95);
             GridDisplayHelper.SetFillWeight(Grid, "TenCanHo", 125);
             GridDisplayHelper.SetFillWeight(Grid, "TenToa", 110);
             GridDisplayHelper.SetFillWeight(Grid, "TenNhanVien", 130);

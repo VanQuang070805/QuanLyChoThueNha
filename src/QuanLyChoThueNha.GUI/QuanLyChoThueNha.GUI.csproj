@@ -155,6 +155,9 @@
     <Compile Include="Controls\PlaceholderTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Controls\KeyboardOnlyNumericUpDown.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Helpers\EmailNotificationHelper.cs" />
     <Compile Include="Helpers\GridFormatterHelper.cs" />
     <Compile Include="Forms\Shared\CrudFormBase.cs" />
