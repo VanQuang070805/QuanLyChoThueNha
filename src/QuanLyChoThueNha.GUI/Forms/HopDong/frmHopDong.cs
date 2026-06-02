@@ -23,11 +23,15 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
 
         public frmHopDong() : base("Quan ly Hop dong", Fields())
         {
+            HideDeleteButton();
             TaoBoLocToa();
             TaoBoLocTrangThai();
             var canHoEditor = GetEditor("MaCanHo") as ComboBox;
             if (canHoEditor != null)
                 canHoEditor.SelectedIndexChanged += delegate { DienPhieuVaKhachTheoCanHo(); };
+            var phieuEditor = GetEditor("MaPhieuDatTruoc") as ComboBox;
+            if (phieuEditor != null)
+                phieuEditor.SelectedIndexChanged += delegate { DienCanHoVaKhachTheoPhieu(); };
         }
 
         private void TaoBoLocToa()
@@ -99,7 +103,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             return new[]
             {
                 new FieldDefinition("MaHopDong", "Ma hop dong", typeof(string), true),
-                FieldDefinition.Lookup("MaPhieuDatTruoc", "Phieu dat truoc", phieuOptions, true),
+                FieldDefinition.Lookup("MaPhieuDatTruoc", "Phieu dat truoc", phieuOptions),
                 FieldDefinition.Lookup("MaCanHo", "Can ho", canHoOptions),
                 FieldDefinition.Lookup("MaKhach", "Khach thue", khachOptions),
                 new FieldDefinition("MaNhanVien", "Ma nhan vien", typeof(string), true),
@@ -107,7 +111,7 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
                 new FieldDefinition("NgayKetThuc", "Ngay ket thuc", typeof(DateTime)),
                 new FieldDefinition("GiaThueChot", "Gia thue chot", typeof(decimal)),
                 new FieldDefinition("TienCocChot", "Tien coc chot", typeof(decimal)),
-                new FieldDefinition("TrangThai", "Trang thai", typeof(string), true,
+                new FieldDefinition("TrangThai", "Trang thai", typeof(string), false,
                     new[] { "HieuLuc", "HetHan", "DaHuy" }),
                 new FieldDefinition("GhiChu", "Ghi chu", typeof(string), false, null, true),
                 new FieldDefinition("NgayTao", "Ngay tao", typeof(DateTime), true)
@@ -142,22 +146,28 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             item.MaNhanVien = SessionContext.LaNhanVien ? SessionContext.MaNguoiDung : null;
             item.TrangThai = "HieuLuc";
             var phieuEditor = GetEditor("MaPhieuDatTruoc") as ComboBox;
-            if (phieuEditor != null && phieuEditor.SelectedValue != null)
+            if (phieuEditor != null && phieuEditor.SelectedValue != null &&
+                !string.IsNullOrWhiteSpace(phieuEditor.SelectedValue.ToString()))
                 item.MaPhieuDatTruoc = phieuEditor.SelectedValue.ToString();
             return _service.KyHopDong(item, item.MaPhieuDatTruoc, out error);
         }
 
         protected override bool UpdateItem(HopDongEntity item, out string error)
         {
-            error = "Hop dong da ky khong nen sua truc tiep tren form nay. Hay lap gia han/phieu tra nha de thay doi trang thai.";
-            return false;
+            var trangThai = ChuanHoaTrangThaiLuu(item.TrangThai);
+            if (trangThai == null)
+            {
+                error = "Trang thai hop dong khong hop le.";
+                return false;
+            }
+
+            return _service.CapNhatTrangThai(item.MaHopDong, trangThai, out error);
         }
 
         protected override bool DeleteItem(HopDongEntity item, out string error)
         {
-            error = string.Empty;
-            _service.Xoa(item);
-            return true;
+            error = "Hop dong da co nghiep vu lien quan nen khong xoa truc tiep. Hay cap nhat trang thai hoac lap phieu tra nha.";
+            return false;
         }
 
         private void DienPhieuVaKhachTheoCanHo()
@@ -182,6 +192,29 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             SetEditorValue("MaPhieuDatTruoc", string.Empty);
             var freeKhachEditor = GetEditor("MaKhach");
             if (freeKhachEditor != null) freeKhachEditor.Enabled = true;
+        }
+
+        private void DienCanHoVaKhachTheoPhieu()
+        {
+            if (_dangNapCanHo) return;
+            var phieuEditor = GetEditor("MaPhieuDatTruoc") as ComboBox;
+            if (phieuEditor == null || phieuEditor.SelectedValue == null) return;
+            var maPhieu = phieuEditor.SelectedValue.ToString();
+            if (string.IsNullOrWhiteSpace(maPhieu))
+            {
+                var khachEditor = GetEditor("MaKhach");
+                if (khachEditor != null) khachEditor.Enabled = true;
+                return;
+            }
+
+            var phieu = _phieuDatTruocService.LayTatCa()
+                .FirstOrDefault(p => p.MaPhieuDatTruoc == maPhieu && p.TrangThai == PhieuDatTruocService.ChoKy);
+            if (phieu == null) return;
+
+            SetEditorValue("MaCanHo", phieu.MaCanHo);
+            SetEditorValue("MaKhach", phieu.MaKhach);
+            var lockedKhachEditor = GetEditor("MaKhach");
+            if (lockedKhachEditor != null) lockedKhachEditor.Enabled = false;
         }
 
         private void NapCanHoTheoToa()
@@ -211,6 +244,71 @@ namespace QuanLyChoThueNha.GUI.Forms.HopDong
             if (options.Count > 0) canHoEditor.SelectedIndex = 0;
             _dangNapCanHo = false;
             DienPhieuVaKhachTheoCanHo();
+        }
+
+        private void NapPhieuChoKy()
+        {
+            var phieuEditor = GetEditor("MaPhieuDatTruoc") as ComboBox;
+            if (phieuEditor == null) return;
+
+            var phieuOptions = new List<ComboOption> { new ComboOption(string.Empty, "(Khong co phieu dat truoc)") };
+            phieuOptions.AddRange(_phieuDatTruocService.LayTatCa()
+                .Where(p => p.TrangThai == PhieuDatTruocService.ChoKy)
+                .Where(p => !_service.LayTatCa().Any(h => h.MaPhieuDatTruoc == p.MaPhieuDatTruoc))
+                .OrderByDescending(p => p.NgayDatCoc)
+                .Select(p => new ComboOption(p.MaPhieuDatTruoc,
+                    string.Format("{0} - {1} - {2}", p.MaPhieuDatTruoc, p.MaCanHo, p.MaKhach))));
+
+            phieuEditor.DataSource = phieuOptions;
+            phieuEditor.DisplayMember = "Display";
+            phieuEditor.ValueMember = "Value";
+            if (phieuOptions.Count > 0) phieuEditor.SelectedIndex = 0;
+        }
+
+        protected override void OnAfterAdd()
+        {
+            NapPhieuChoKy();
+            NapCanHoTheoToa();
+            SetEditorValue("TrangThai", "HieuLuc");
+            KhoaEditor(GetEditor("TrangThai"));
+        }
+
+        protected override void OnAfterEdit()
+        {
+            ChiChoSuaTrangThai();
+        }
+
+        private void ChiChoSuaTrangThai()
+        {
+            KhoaEditor(GetEditor("MaPhieuDatTruoc"));
+            KhoaEditor(GetEditor("MaCanHo"));
+            KhoaEditor(GetEditor("MaKhach"));
+            KhoaEditor(GetEditor("NgayBatDau"));
+            KhoaEditor(GetEditor("NgayKetThuc"));
+            KhoaEditor(GetEditor("GiaThueChot"));
+            KhoaEditor(GetEditor("TienCocChot"));
+            KhoaEditor(GetEditor("GhiChu"));
+            MoEditor(GetEditor("TrangThai"));
+        }
+
+        private static void KhoaEditor(Control editor)
+        {
+            if (editor == null) return;
+            var textBox = editor as TextBox;
+            if (textBox != null)
+            {
+                textBox.ReadOnly = true;
+                return;
+            }
+            editor.Enabled = false;
+        }
+
+        private static void MoEditor(Control editor)
+        {
+            if (editor == null) return;
+            editor.Enabled = true;
+            var textBox = editor as TextBox;
+            if (textBox != null) textBox.ReadOnly = false;
         }
 
         protected override void AfterGridBound()

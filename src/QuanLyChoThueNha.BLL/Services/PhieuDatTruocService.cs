@@ -66,8 +66,7 @@ namespace QuanLyChoThueNha.BLL.Services
             if (canGiaiPhong.Count > 0 || canXoaTaiKhoan.Count > 0)
                 _uow.Complete();
 
-            var daXoa = new HashSet<string>(canXoaTaiKhoan.Select(p => p.MaPhieuDatTruoc));
-            return canGiaiPhong.Where(p => !daXoa.Contains(p.MaPhieuDatTruoc)).ToList();
+            return canGiaiPhong;
         }
 
         private void CapNhatPhieuHetHan()
@@ -310,6 +309,13 @@ namespace QuanLyChoThueNha.BLL.Services
 
             var khach = _uow.KhachThues.GetById(phieu.MaKhach);
             var maTaiKhoan = khach == null ? null : khach.MaTaiKhoan;
+            if (phieu.TrangThai != HetHan)
+            {
+                phieu.TrangThai = HetHan;
+                phieu.GhiChu = NoiGhiChu(phieu.GhiChu,
+                    string.Format("Tu dong khoa tai khoan tam luc {0:dd/MM/yyyy HH:mm} do qua 24h chua thanh toan coc.", DateTime.Now));
+                _uow.PhieuDatTruocs.Update(phieu);
+            }
 
             var canHo = _uow.CanHos.GetById(phieu.MaCanHo);
             if (canHo != null && canHo.TinhTrang == "DaDatCoc")
@@ -318,21 +324,11 @@ namespace QuanLyChoThueNha.BLL.Services
                 _uow.CanHos.Update(canHo);
             }
 
-            _uow.PhieuDatTruocs.Remove(phieu);
-
-            if (khach == null) return;
-            var conPhieuKhac = _uow.PhieuDatTruocs.Any(p =>
-                p.MaKhach == khach.MaKhach && p.MaPhieuDatTruoc != phieu.MaPhieuDatTruoc);
-            if (conPhieuKhac) return;
-
-            _uow.KhachThues.Remove(khach);
-
             if (string.IsNullOrWhiteSpace(maTaiKhoan)) return;
             var taiKhoan = _uow.TaiKhoans.GetById(maTaiKhoan);
             if (taiKhoan == null || taiKhoan.VaiTro != "KhachThue") return;
-            if (_uow.KhachThues.Any(k => k.MaTaiKhoan == maTaiKhoan && k.MaKhach != khach.MaKhach)) return;
-
-            _uow.TaiKhoans.Remove(taiKhoan);
+            taiKhoan.TrangThai = false;
+            _uow.TaiKhoans.Update(taiKhoan);
         }
     }
 }

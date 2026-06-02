@@ -329,6 +329,10 @@ namespace QuanLyChoThueNha.BLL.Services
             decimal tienHoanCoc = Math.Max(0, hd.TienCocChot - tienKhauTru);
 
             if (phieu.NgayTra == DateTime.MinValue) phieu.NgayTra = DateTime.Today;
+            if (phieu.NgayTra.Date > DateTime.Today)
+            {
+                phieu.NgayTra = DateTime.Today;
+            }
 
             _uow.BeginTransaction();
             try
@@ -412,7 +416,6 @@ namespace QuanLyChoThueNha.BLL.Services
                 loi = "Vi pham tru vao coc phai co phi boi thuong lon hon 0.";
                 return false;
             }
-
             phieu.MaViPham = SinhMa();
             phieu.NgayGhiNhan = DateTime.Now;
 
@@ -442,6 +445,7 @@ namespace QuanLyChoThueNha.BLL.Services
         public bool CapNhat(PhieuXuLyViPham phieu, out string loi)
         {
             loi = string.Empty;
+            var trangThaiYeuCau = phieu.TinhTrang;
 
             using (var tempUow = new UnitOfWork())
             {
@@ -503,6 +507,9 @@ namespace QuanLyChoThueNha.BLL.Services
                     phieu.TinhTrang = "ChoXuLy";
                 }
             }
+
+            if (trangThaiYeuCau == "DaThanhToan")
+                phieu.TinhTrang = "DaThanhToan";
 
             var tracked = _uow.PhieuXuLyViPhams.GetById(phieu.MaViPham);
             if (tracked == null)
